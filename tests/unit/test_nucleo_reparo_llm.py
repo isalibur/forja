@@ -12,11 +12,11 @@ class ExemploSchema(BaseModel):
 
 def test_extrair_bloco_json():
     # Markdown
-    com_md = "Aqui está a resposta:\n```json\n{\"chave\": 123}\n```\nObrigado!"
+    com_md = 'Aqui está a resposta:\n```json\n{"chave": 123}\n```\nObrigado!'
     assert extrair_bloco_json(com_md) == '{"chave": 123}'
 
     # Objeto bruto no meio do texto
-    texto_livre = "Com certeza! Segue o resultado: {\"chave\": 456} pronto."
+    texto_livre = 'Com certeza! Segue o resultado: {"chave": 456} pronto.'
     assert extrair_bloco_json(texto_livre) == '{"chave": 456}'
 
 
@@ -37,7 +37,7 @@ def test_validar_ou_reparar_direto():
 
 def test_validar_ou_reparar_com_llm_callback():
     # JSON severamente quebrado
-    json_quebrado = 'titulo: Pompeia shots: 5 aprovado: yes'
+    json_quebrado = "titulo: Pompeia shots: 5 aprovado: yes"
 
     def mock_reparo(prompt: str, schema_name: str) -> str:
         return '{"titulo": "Pompeia Corrigida", "shots": 5, "aprovado": true}'

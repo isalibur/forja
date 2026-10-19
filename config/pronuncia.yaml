@@ -1,0 +1,36 @@
+# Dicionario fonetico de pronuncia do DocForja
+# Substituicoes aplicadas exclusivamente ao texto enviado aos motores de TTS
+
+pt-BR:
+  substituicoes:
+    "Vesúvio": "Vezúvio"
+    "vesúvio": "vezúvio"
+    "Miseno": "Mizêno"
+    "miseno": "mizêno"
+    "Herculano": "Erculano"
+    "herculano": "erculano"
+    "Plínio": "Plínio"
+    "plínio": "plínio"
+    "Estábia": "Estábia"
+    "estábia": "estábia"
+    "Pompeia": "Pompéia"
+    "pompeia": "pompéia"
+    "calendas": "calêndas"
+    "fornici": "fórniti"
+    "afresco": "afrêsco"
+
+en:
+  substituicoes:
+    "Vesuvius": "Vuh-SOO-vee-us"
+    "Herculaneum": "Her-kyoo-LAY-nee-um"
+    "Misenum": "My-SEE-num"
+    "Pliny": "PLIN-ee"
+    "Pompeii": "Pom-PAY"
+
+es:
+  substituicoes:
+    "Vesubio": "Vesúbio"
+    "Herculano": "Erculano"
+    "Miseno": "Misêno"
+    "Plinio": "Plínio"
+    "Pompeya": "Pompéya"

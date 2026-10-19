@@ -65,4 +65,3 @@ def test_api_servir_web_dist():
     assert resp.status_code == 200
     assert "DocForja" in resp.text
     assert '<div id="root">' in resp.text
-
