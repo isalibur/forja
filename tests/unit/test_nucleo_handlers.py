@@ -320,6 +320,16 @@ async def test_pipeline_p6_verifica_plano_com_alinhamento_aprovado(tmp_path):
     verificacao = json.loads((pasta / "verificacao.json").read_text(encoding="utf-8"))
     assert plano["verificacao"]["aprovado"] is True
     assert verificacao["aprovado"] is True
+    assert plano["verificacao"]["fase"] == "pre_resolucao_ativos"
+    for nome in [
+        "plano.json",
+        "plano.md",
+        "verificacao.md",
+        "estimativa.md",
+        "numeros_na_tela.md",
+    ]:
+        assert (pasta / nome).is_file()
+    assert "Rascunho M4" in (pasta / "plano.md").read_text(encoding="utf-8")
     assert [
         sid for bloco in plano["blocos"] for shot in bloco["shots"] for sid in shot["segmentos"]
     ] == ["B1-S01"]
@@ -343,6 +353,11 @@ async def test_pipeline_p6_verifica_plano_com_alinhamento_aprovado(tmp_path):
         (pasta / "plano_verificado.json").read_text(encoding="utf-8")
     )
     assert plano_corrigido["blocos"][0]["shots"][0]["template"] != "T99"
+
+    (pasta / "estimativa.md").write_text("alterado", encoding="utf-8")
+    retomado = await executor.executar(ate_etapa="P6_verificador")
+    assert retomado["P6_verificador"] == "concluida"
+    assert "Rascunho M4" in (pasta / "estimativa.md").read_text(encoding="utf-8")
 
 
 @pytest.mark.anyio

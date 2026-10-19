@@ -12,15 +12,22 @@ from docforja.audio.alinhamento import AlinhadorWhisperX
 from docforja.audio.metricas import calcular_wer
 from docforja.audio.narracao import OrquestradorNarracao, ResultadoSegmentoAudio
 from docforja.esquemas import Ativo, Bloco, Plano, Shot
-from docforja.io import atomic_write_json
+from docforja.io import atomic_write_json, atomic_write_text
 from docforja.nucleo.etapas import calcular_hash_dados
 from docforja.nucleo.executor import ContextoEtapa, ExecutorPipeline
 from docforja.nucleo.projeto import Projeto
 from docforja.planejamento.ativos import consolidar_ativos_plano
 from docforja.planejamento.dosagem import VerificadorDosagem
 from docforja.planejamento.entidades import SegmentoProcessado
+from docforja.planejamento.estimativa import estimar_tempo_plano
 from docforja.planejamento.estrategia import EstrategiaBloco, planejar_estrategias
 from docforja.planejamento.leitura import ler_roteiro_formatado
+from docforja.planejamento.relatorios import (
+    gerar_estimativa_md,
+    gerar_numeros_na_tela_md,
+    gerar_plano_md,
+    gerar_verificacao_md,
+)
 from docforja.planejamento.shots import TEMPLATES_CATALOGO, gerar_shots_bloco
 from docforja.settings import load_settings
 
@@ -186,14 +193,34 @@ def registrar_handlers_disponiveis(
         resultado = verificador.verificar_e_corrigir(
             plano, blocos_processados=ler_roteiro_formatado(ctx.projeto.obter_roteiro())
         )
+        plano.verificacao["fase"] = "pre_resolucao_ativos"
         plano_dados = plano.model_dump(mode="json")
         relatorio_dados = asdict(resultado)
         relatorio_dados["hash_plano"] = calcular_hash_dados(plano_dados)
         relatorio_dados["hash_entradas"] = hashes_entradas_p6(ctx)
         atomic_write_json(pasta / "plano_verificado.json", plano_dados)
-        atomic_write_json(pasta / "verificacao.json", relatorio_dados)
         if not resultado.aprovado:
+            atomic_write_json(pasta / "verificacao.json", relatorio_dados)
             raise RuntimeError("Plano reprovado pela verificação de dosagem D1-D17.")
+
+        blocos_processados = ler_roteiro_formatado(ctx.projeto.obter_roteiro())
+        aviso = "> Rascunho M4: ativos ainda não resolvidos e prévia em vídeo pendente.\n\n"
+        relatorios = {
+            "plano.md": aviso + gerar_plano_md(plano, blocos_processados),
+            "verificacao.md": gerar_verificacao_md(resultado),
+            "estimativa.md": aviso + gerar_estimativa_md(estimar_tempo_plano(plano)),
+            "numeros_na_tela.md": gerar_numeros_na_tela_md(
+                plano, ctx.projeto.obter_roteiro()
+            ),
+        }
+        atomic_write_json(pasta / "plano.json", plano_dados)
+        for nome, conteudo in relatorios.items():
+            atomic_write_text(pasta / nome, conteudo)
+        relatorio_dados["hash_relatorios"] = {
+            nome: calcular_hash_dados(pasta / nome)
+            for nome in ["plano.json", *relatorios]
+        }
+        atomic_write_json(pasta / "verificacao.json", relatorio_dados)
 
     def obter_orquestrador() -> OrquestradorNarracao:
         nonlocal orquestrador
@@ -422,6 +449,15 @@ def registrar_handlers_disponiveis(
             (pasta / "plano_verificado.json").read_text(encoding="utf-8")
         )
         relatorio = json.loads((pasta / "verificacao.json").read_text(encoding="utf-8"))
+        nomes_relatorios = [
+            "plano.json",
+            "plano.md",
+            "verificacao.md",
+            "estimativa.md",
+            "numeros_na_tela.md",
+        ]
+        if any(not (pasta / nome).is_file() for nome in nomes_relatorios):
+            return False
         segmentos_esperados = [
             segmento.id
             for bloco in ler_roteiro_formatado(ctx.projeto.obter_roteiro())
@@ -435,6 +471,10 @@ def registrar_handlers_disponiveis(
             and segmentos_cobertos == segmentos_esperados
             and relatorio.get("hash_plano") == calcular_hash_dados(plano.model_dump(mode="json"))
             and relatorio.get("hash_entradas") == hashes_entradas_p6(ctx)
+            and relatorio.get("hash_relatorios") == {
+                nome: calcular_hash_dados(pasta / nome) for nome in nomes_relatorios
+            }
+            and plano.verificacao.get("fase") == "pre_resolucao_ativos"
             and plano.verificacao.get("aprovado") is True
             and relatorio.get("aprovado") is True
             and plano.verificacao.get("total_violacoes") == relatorio.get("total_violacoes")
