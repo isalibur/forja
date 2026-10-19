@@ -37,7 +37,40 @@ async def test_handlers_integrados_validam_entrada_e_salvam_leitura(tmp_path):
     assert estrategia["blocos"][0]["modo_visual"] == "reconstituição"
 
     status_ate_p4 = await executor.executar(ate_etapa="P4_shots")
-    assert status_ate_p4["P4_shots"] == "falhou"
+    assert status_ate_p4["P4_shots"] == "concluida"
+    shots = json.loads((projeto.pastas.plano / "shots.json").read_text(encoding="utf-8"))
+    assert shots["tempos"] == "estimados"
+    assert [sid for shot in shots["blocos"][0]["shots"] for sid in shot["segmentos"]] == [
+        "B1-S01"
+    ]
+
+
+@pytest.mark.anyio
+async def test_handler_p4_cobre_blocos_e_refaz_saida_corrompida(tmp_path):
+    roteiro = (
+        "## B1 — Primeiro\n\n**B1-S01**\nUma abertura.\n"
+        "## B2 — Segundo\n\n**B2-S01**\nUm detalhe.\n"
+    )
+    projeto = Projeto.criar(nome="teste_p4_blocos", roteiro=roteiro, raiz_projetos=tmp_path)
+    executor = criar_executor_projeto(projeto)
+    status = await executor.executar(ate_etapa="P4_shots")
+    assert status["P4_shots"] == "concluida"
+
+    caminho = projeto.pastas.plano / "shots.json"
+    dados = json.loads(caminho.read_text(encoding="utf-8"))
+    assert [item["bloco_id"] for item in dados["blocos"]] == ["B1", "B2"]
+    assert [
+        sid for bloco in dados["blocos"] for shot in bloco["shots"] for sid in shot["segmentos"]
+    ] == ["B1-S01", "B2-S01"]
+    dados["blocos"][1]["shots"][0]["segmentos"] = []
+    caminho.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
+
+    status_retomado = await executor.executar(ate_etapa="P4_shots")
+    assert status_retomado["P4_shots"] == "concluida"
+    corrigido = json.loads(caminho.read_text(encoding="utf-8"))
+    assert [
+        sid for shot in corrigido["blocos"][1]["shots"] for sid in shot["segmentos"]
+    ] == ["B2-S01"]
 
 
 @pytest.mark.anyio

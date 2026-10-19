@@ -11,12 +11,14 @@ from docforja.audio.adaptadores.kokoro import AdaptadorKokoro
 from docforja.audio.alinhamento import AlinhadorWhisperX
 from docforja.audio.metricas import calcular_wer
 from docforja.audio.narracao import OrquestradorNarracao, ResultadoSegmentoAudio
+from docforja.esquemas import Shot
 from docforja.io import atomic_write_json
 from docforja.nucleo.executor import ContextoEtapa, ExecutorPipeline
 from docforja.nucleo.projeto import Projeto
 from docforja.planejamento.entidades import SegmentoProcessado
-from docforja.planejamento.estrategia import planejar_estrategias
+from docforja.planejamento.estrategia import EstrategiaBloco, planejar_estrategias
 from docforja.planejamento.leitura import ler_roteiro_formatado
+from docforja.planejamento.shots import TEMPLATES_CATALOGO, gerar_shots_bloco
 from docforja.settings import load_settings
 
 
@@ -85,6 +87,34 @@ def registrar_handlers_disponiveis(
         atomic_write_json(
             ctx.projeto.pastas.plano / "estrategia.json",
             {"versao": 1, "blocos": [asdict(item) for item in estrategias]},
+        )
+
+    def gerar_shots(ctx: ContextoEtapa) -> None:
+        estrategia_path = ctx.projeto.pastas.plano / "estrategia.json"
+        if not estrategia_path.is_file():
+            raise FileNotFoundError("Estratégia ausente para gerar os shots.")
+        dados = json.loads(estrategia_path.read_text(encoding="utf-8"))
+        blocos = ler_roteiro_formatado(ctx.projeto.obter_roteiro())
+        estrategias = [EstrategiaBloco(**item) for item in dados.get("blocos", [])]
+        if [item.bloco_id for item in estrategias] != [bloco.id for bloco in blocos]:
+            raise ValueError("Estratégia não corresponde aos blocos do roteiro atual.")
+        ativo_counter = [1]
+        saidas = []
+        for bloco, estrategia in zip(blocos, estrategias, strict=True):
+            shots = gerar_shots_bloco(
+                bloco,
+                estrategia,
+                total_blocos=len(blocos),
+                ativo_counter=ativo_counter,
+            )
+            ids_roteiro = [segmento.id for segmento in bloco.segmentos]
+            ids_cobertos = [sid for shot in shots for sid in shot.segmentos]
+            if ids_cobertos != ids_roteiro:
+                raise ValueError(f"Shots do bloco {bloco.id} não cobrem o roteiro exatamente.")
+            saidas.append({"bloco_id": bloco.id, "shots": [shot.model_dump() for shot in shots]})
+        atomic_write_json(
+            ctx.projeto.pastas.plano / "shots.json",
+            {"versao": 1, "tempos": "estimados", "blocos": saidas},
         )
 
     def obter_orquestrador() -> OrquestradorNarracao:
@@ -240,6 +270,35 @@ def registrar_handlers_disponiveis(
         esperados = [bloco.id for bloco in ler_roteiro_formatado(ctx.projeto.obter_roteiro())]
         return dados.get("versao") == 1 and bool(ids) and ids == esperados
 
+    def shots_validos(ctx: ContextoEtapa) -> bool:
+        caminho = ctx.projeto.pastas.plano / "shots.json"
+        if not caminho.is_file():
+            return False
+        dados = json.loads(caminho.read_text(encoding="utf-8"))
+        blocos = ler_roteiro_formatado(ctx.projeto.obter_roteiro())
+        saidas = dados.get("blocos", [])
+        if dados.get("versao") != 1 or len(saidas) != len(blocos):
+            return False
+        ids_shots: set[str] = set()
+        for bloco, saida in zip(blocos, saidas, strict=True):
+            if saida.get("bloco_id") != bloco.id:
+                return False
+            shots = [Shot.model_validate(item) for item in saida.get("shots", [])]
+            if not shots or any(
+                shot.template not in TEMPLATES_CATALOGO or shot.duracao_s <= 0
+                for shot in shots
+            ):
+                return False
+            if [sid for shot in shots for sid in shot.segmentos] != [
+                segmento.id for segmento in bloco.segmentos
+            ]:
+                return False
+            for shot in shots:
+                if shot.id in ids_shots:
+                    return False
+                ids_shots.add(shot.id)
+        return True
+
     def narracao_valida(ctx: ContextoEtapa) -> bool:
         _, pasta = _audio_idioma(ctx.projeto)
         wav = pasta / "narracao_completa.wav"
@@ -274,6 +333,7 @@ def registrar_handlers_disponiveis(
     executor.registrar_handler("E00_entrada", validar_entrada)
     executor.registrar_handler("P1_leitura", ler_roteiro, validador=leitura_valida)
     executor.registrar_handler("P3_estrategia", planejar_estrategia, validador=estrategia_valida)
+    executor.registrar_handler("P4_shots", gerar_shots, validador=shots_validos)
     executor.registrar_handler("P2_narracao", gerar_narracao, validador=narracao_valida)
     executor.registrar_handler("P2b_alinhamento", alinhar_narracao, validador=alinhamento_valido)
     return executor
