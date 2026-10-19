@@ -369,18 +369,38 @@ class RealBenchmarkRunner:
         duration = spec["parallax"]["duracao_segundos"]
         worker = Path(__file__).parent / "workers" / "depthflow_benchmark.py"
         args = [
-            str(python), str(worker), "da2", "--model", cfg["model"],
-            "input", str(source), "main", "--output", str(target),
-            "--time", str(duration), "--fps", str(cfg["fps"]),
-            "--width", str(cfg["width"]), "--height", str(cfg["height"]),
+            str(python),
+            str(worker),
+            "da2",
+            "--model",
+            cfg["model"],
+            "input",
+            str(source),
+            "main",
+            "--output",
+            str(target),
+            "--time",
+            str(duration),
+            "--fps",
+            str(cfg["fps"]),
+            "--width",
+            str(cfg["width"]),
+            "--height",
+            str(cfg["height"]),
         ]
         env = dict(os.environ, PYTHONIOENCODING="utf-8", HF_HUB_OFFLINE="1")
         started = time.perf_counter()
         with VramSampler() as sampler:
             try:
                 completed = subprocess.run(
-                    args, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                    timeout=300, check=False, env=env,
+                    args,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=300,
+                    check=False,
+                    env=env,
                 )
                 log = completed.stdout + completed.stderr
                 exit_code = completed.returncode
@@ -393,15 +413,29 @@ class RealBenchmarkRunner:
         success = exit_code == 0 and target.is_file() and target.stat().st_size > 0
         if success:
             probe = subprocess.run(
-                ["ffprobe", "-v", "error", "-show_entries", "stream=width,height,nb_frames",
-                 "-show_entries", "format=duration", "-of", "json", str(target)],
-                capture_output=True, text=True, timeout=30, check=False,
+                [
+                    "ffprobe",
+                    "-v",
+                    "error",
+                    "-show_entries",
+                    "stream=width,height,nb_frames",
+                    "-show_entries",
+                    "format=duration",
+                    "-of",
+                    "json",
+                    str(target),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
             )
             if probe.returncode == 0:
                 info = json.loads(probe.stdout)
                 stream = info["streams"][0]
                 metrics.update(
-                    width=int(stream["width"]), height=int(stream["height"]),
+                    width=int(stream["width"]),
+                    height=int(stream["height"]),
                     frames=int(stream["nb_frames"]),
                     video_seconds=float(info["format"]["duration"]),
                 )
@@ -414,17 +448,18 @@ class RealBenchmarkRunner:
             else:
                 success = False
         return BenchmarkResult(
-            id=identifier, category="parallax", candidate=candidate["id"],
+            id=identifier,
+            category="parallax",
+            candidate=candidate["id"],
             status=CheckStatus.OK if success else CheckStatus.ERROR,
-            duration_seconds=round(elapsed, 3), peak_vram_mb=sampler.peak,
+            duration_seconds=round(elapsed, 3),
+            peak_vram_mb=sampler.peak,
             outputs=[target] if success else [],
             message="vídeo de 5 s gerado" if success else "falha; consulte o log",
             metrics=metrics,
         )
 
-    def _cutout(
-        self, candidate: dict, known_results: list[BenchmarkResult]
-    ) -> BenchmarkResult:
+    def _cutout(self, candidate: dict, known_results: list[BenchmarkResult]) -> BenchmarkResult:
         cfg = candidate["benchmark"]
         source = next(
             (
@@ -450,10 +485,18 @@ class RealBenchmarkRunner:
         with VramSampler() as sampler:
             try:
                 completed = subprocess.run(
-                    [str(python), str(Path(__file__).parent / "workers" / "rembg_benchmark.py"),
-                     str(request_file)],
-                    capture_output=True, text=True, encoding="utf-8", errors="replace",
-                    timeout=300, check=False, env=env,
+                    [
+                        str(python),
+                        str(Path(__file__).parent / "workers" / "rembg_benchmark.py"),
+                        str(request_file),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=300,
+                    check=False,
+                    env=env,
                 )
                 log = completed.stdout + completed.stderr
                 exit_code = completed.returncode
@@ -468,17 +511,18 @@ class RealBenchmarkRunner:
         metrics["source"] = str(source)
         metrics["vram_scope"] = "GPU inteira; amostragem 0,5 s"
         return BenchmarkResult(
-            id=identifier, category="recorte", candidate=candidate["id"],
+            id=identifier,
+            category="recorte",
+            candidate=candidate["id"],
             status=CheckStatus.OK if success else CheckStatus.ERROR,
-            duration_seconds=round(elapsed, 3), peak_vram_mb=sampler.peak,
+            duration_seconds=round(elapsed, 3),
+            peak_vram_mb=sampler.peak,
             outputs=[target] if success else [],
             message="recorte PNG gerado" if success else "falha; consulte o log",
             metrics=metrics,
         )
 
-    def _upscale(
-        self, candidate: dict, known_results: list[BenchmarkResult]
-    ) -> BenchmarkResult:
+    def _upscale(self, candidate: dict, known_results: list[BenchmarkResult]) -> BenchmarkResult:
         cfg = candidate["benchmark"]
         source = next(
             (
@@ -496,8 +540,11 @@ class RealBenchmarkRunner:
         identifier = f"upscale_{candidate['id']}"
         target = self.output / f"{identifier}.png"
         request = {
-            "source": str(source), "output": str(target), "weights": cfg["weights"],
-            "scale": cfg["scale"], "tile": cfg["tile"],
+            "source": str(source),
+            "output": str(target),
+            "weights": cfg["weights"],
+            "scale": cfg["scale"],
+            "tile": cfg["tile"],
         }
         request_file = self.output / f"{identifier}.request.json"
         atomic_write_json(request_file, request)
@@ -531,9 +578,12 @@ class RealBenchmarkRunner:
         metrics["source"] = str(source)
         metrics["vram_scope"] = "GPU inteira; amostragem 0,5 s"
         return BenchmarkResult(
-            id=identifier, category="upscale", candidate=candidate["id"],
+            id=identifier,
+            category="upscale",
+            candidate=candidate["id"],
             status=CheckStatus.OK if success else CheckStatus.ERROR,
-            duration_seconds=round(elapsed, 3), peak_vram_mb=sampler.peak,
+            duration_seconds=round(elapsed, 3),
+            peak_vram_mb=sampler.peak,
             outputs=[target] if success else [],
             message="PNG ampliado" if success else "falha; consulte o log",
             metrics=metrics,
@@ -684,4 +734,3 @@ class RealBenchmarkRunner:
             else "falha; consulte o log",
             metrics=metrics,
         )
-

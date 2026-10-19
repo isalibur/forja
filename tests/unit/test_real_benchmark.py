@@ -241,5 +241,3 @@ def test_parallax_benchmark_mocked_success(tmp_path, monkeypatch):
     assert result.metrics["height"] == 576
     assert result.metrics["frames"] == 120
     assert result.metrics["video_seconds"] == 5.0
-
-

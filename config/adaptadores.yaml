@@ -20,4 +20,17 @@ python_environments:
   realesrgan: envs/realesrgan/Scripts/python.exe
   kokoro: D:/IA/audio_factory/.venv/Scripts/python.exe
   rembg: D:/INSTALACOES/python/python.exe
+llm:
+  structured:
+    provedor: openai_compat
+    base_url: http://127.0.0.1:20128/v1
+    modelo: default
+  local:
+    provedor: ollama
+    base_url: http://127.0.0.1:11434
+    modelo: qwen3:8b
+  visao:
+    provedor: ollama
+    base_url: http://127.0.0.1:11434
+    modelo: qwen2.5vl:7b
 

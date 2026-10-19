@@ -1,0 +1,190 @@
+schema_version: 1
+
+tipos:
+  longo:
+    # ENTRADA
+    E00_entrada:
+      needs: []
+    # PLANEJAMENTO
+    P1_leitura:
+      needs: [E00_entrada]
+      llm: structured
+    P2_narracao:
+      needs: [P1_leitura]
+      gpu: tts
+      skip_if: narracao_pronta
+    P2b_alinhamento:
+      needs: [P2_narracao]
+      gpu: whisper
+    P3_estrategia:
+      needs: [P1_leitura]
+      llm: structured
+    P4_shots:
+      needs: [P3_estrategia]
+      llm: structured
+      por: bloco
+    P5_ativos:
+      needs: [P4_shots]
+    P6_verificador:
+      needs: [P5_ativos, P2b_alinhamento]
+      loop_llm: 3
+    P7_resolucao:
+      needs: [P6_verificador]
+      por: ativo
+    P8_estimativa_previa:
+      needs: [P7_resolucao]
+    T1_traducao:
+      needs: [P1_leitura]
+      por: idioma_extra
+    T2_narracao_idiomas:
+      needs: [T1_traducao]
+      gpu: tts
+      por: idioma_extra
+    PRE_imagens:
+      needs: [P8_estimativa_previa]
+      gpu: imagem
+      opcional: pre_gerar
+    REVISAO:
+      gate: true
+      needs: [P8_estimativa_previa]
+    # PRODUÇÃO
+    R1_imagens:
+      needs: [REVISAO]
+      gpu: imagem
+      por: ativo_gerar
+    R2_tratamento:
+      needs: [R1_imagens]
+      gpu: leve
+      por: ativo
+    R3_mapas:
+      needs: [REVISAO]
+    R4_trilha_sfx:
+      needs: [REVISAO]
+    R5_montagem:
+      needs: [R2_tratamento, R3_mapas, R4_trilha_sfx, T2_narracao_idiomas]
+      por: idioma
+    R6_mix:
+      needs: [R5_montagem]
+      por: idioma
+    R7_render:
+      needs: [R6_mix]
+      por: idioma
+    R8_qa:
+      needs: [R7_render]
+      por: idioma
+      autocorrecao: 2
+    R9_pacote:
+      needs: [R8_qa]
+      por: idioma
+      llm: structured
+    R10_biblioteca:
+      needs: [R9_pacote]
+      opcional: true
+
+  short_derivado:
+    E00_entrada:
+      needs: []
+    S1_candidatos:
+      needs: [E00_entrada]
+      llm: structured
+    S2_ponte:
+      needs: [S1_candidatos]
+      gate: true
+    S3_verticalizar:
+      needs: [S2_ponte]
+    P6_verificador:
+      needs: [S3_verticalizar]
+    R5_montagem:
+      needs: [P6_verificador]
+      por: idioma
+    R6_mix:
+      needs: [R5_montagem]
+      por: idioma
+    R7_render:
+      needs: [R6_mix]
+      por: idioma
+    R8_qa:
+      needs: [R7_render]
+      por: idioma
+    R9_pacote:
+      needs: [R8_qa]
+      por: idioma
+      llm: structured
+
+  short_avulso:
+    E00_entrada:
+      needs: []
+    SA1_roteiro:
+      needs: [E00_entrada]
+      llm: structured
+    P1_leitura:
+      needs: [SA1_roteiro]
+      llm: structured
+    P2_narracao:
+      needs: [P1_leitura]
+      gpu: tts
+    P2b_alinhamento:
+      needs: [P2_narracao]
+      gpu: whisper
+    P3_estrategia:
+      needs: [P1_leitura]
+      llm: structured
+    P4_shots:
+      needs: [P3_estrategia]
+      llm: structured
+      por: bloco
+    P5_ativos:
+      needs: [P4_shots]
+    P6_verificador:
+      needs: [P5_ativos, P2b_alinhamento]
+    P7_resolucao:
+      needs: [P6_verificador]
+      por: ativo
+    P8_estimativa_previa:
+      needs: [P7_resolucao]
+    REVISAO:
+      gate: true
+      needs: [P8_estimativa_previa]
+    R1_imagens:
+      needs: [REVISAO]
+      gpu: imagem
+      por: ativo_gerar
+    R2_tratamento:
+      needs: [R1_imagens]
+      gpu: leve
+      por: ativo
+    R5_montagem:
+      needs: [R2_tratamento]
+    R6_mix:
+      needs: [R5_montagem]
+    R7_render:
+      needs: [R6_mix]
+    R8_qa:
+      needs: [R7_render]
+    R9_pacote:
+      needs: [R8_qa]
+      llm: structured
+
+  musica:
+    E00_entrada:
+      needs: []
+    MU1_faixas:
+      needs: [E00_entrada]
+    MU2_cena:
+      needs: [MU1_faixas]
+      gpu: imagem
+    MU3_loop:
+      needs: [MU2_cena]
+      gpu: leve
+    REVISAO:
+      gate: true
+      needs: [MU3_loop]
+    MU4_audio:
+      needs: [REVISAO]
+    MU5_montagem:
+      needs: [MU4_audio]
+    R8_qa:
+      needs: [MU5_montagem]
+    R9_pacote:
+      needs: [R8_qa]
+      llm: structured

@@ -20,11 +20,18 @@ class PathSettings(BaseModel):
     benchmark_output: Path = Path("benchmark_out")
 
 
+class LlmSettings(BaseModel):
+    provedor: str = "openai_compat"
+    base_url: str = "http://127.0.0.1:20128/v1"
+    modelo: str = "default"
+
+
 class AppSettings(BaseModel):
     minimum_free_disk_gb: int = 200
     paths: PathSettings = Field(default_factory=PathSettings)
     services: list[ServiceSettings] = Field(default_factory=list)
     python_environments: dict[str, Path] = Field(default_factory=dict)
+    llm: dict[str, LlmSettings] = Field(default_factory=dict)
 
 
 def load_settings(path: Path = Path("config/adaptadores.yaml")) -> AppSettings:

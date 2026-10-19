@@ -1,0 +1,358 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DocForja API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/saude": {
+      "get": {
+        "summary": "Obter Saude",
+        "operationId": "obter_saude_api_saude_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Obter Saude Api Saude Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projetos": {
+      "get": {
+        "summary": "Listar Projetos",
+        "operationId": "listar_projetos_api_projetos_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Projetos Api Projetos Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Criar Projeto",
+        "operationId": "criar_projeto_api_projetos_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CriarProjetoPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Criar Projeto Api Projetos Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projetos/{slug}": {
+      "get": {
+        "summary": "Obter Projeto",
+        "operationId": "obter_projeto_api_projetos__slug__get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Obter Projeto Api Projetos  Slug  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projetos/{slug}/executar": {
+      "post": {
+        "summary": "Acionar Execucao",
+        "operationId": "acionar_execucao_api_projetos__slug__executar_post",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Acionar Execucao Api Projetos  Slug  Executar Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projetos/{slug}/aprovar_gate": {
+      "post": {
+        "summary": "Aprovar Gate",
+        "operationId": "aprovar_gate_api_projetos__slug__aprovar_gate_post",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AprovarGatePayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Aprovar Gate Api Projetos  Slug  Aprovar Gate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/eventos": {
+      "get": {
+        "summary": "Fluxo Eventos",
+        "description": "Stream de eventos em tempo real via Server-Sent Events (SSE).",
+        "operationId": "fluxo_eventos_api_eventos_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AprovarGatePayload": {
+        "properties": {
+          "gate": {
+            "type": "string",
+            "title": "Gate",
+            "default": "REVISAO"
+          }
+        },
+        "type": "object",
+        "title": "AprovarGatePayload"
+      },
+      "CriarProjetoPayload": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "tipo": {
+            "type": "string",
+            "title": "Tipo",
+            "default": "longo"
+          },
+          "roteiro": {
+            "type": "string",
+            "title": "Roteiro",
+            "default": ""
+          },
+          "idioma_principal": {
+            "type": "string",
+            "title": "Idioma Principal",
+            "default": "pt-BR"
+          },
+          "idiomas_extras": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Idiomas Extras"
+          },
+          "preset": {
+            "type": "string",
+            "title": "Preset",
+            "default": "padrao"
+          },
+          "kit": {
+            "type": "string",
+            "title": "Kit",
+            "default": "cinza-e-brasa@1.0"
+          },
+          "opcoes_adicionais": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Opcoes Adicionais"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome"
+        ],
+        "title": "CriarProjetoPayload"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
