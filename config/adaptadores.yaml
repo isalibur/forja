@@ -20,6 +20,8 @@ python_environments:
   realesrgan: envs/realesrgan/Scripts/python.exe
   kokoro: D:/IA/audio_factory/.venv/Scripts/python.exe
   rembg: D:/INSTALACOES/python/python.exe
+alinhamento:
+  modelo_asr: E:/05_PROJETOS/forja/modelos/whisper-large-v3-turbo-ct2
 llm:
   structured:
     provedor: openai_compat

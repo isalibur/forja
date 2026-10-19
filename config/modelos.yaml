@@ -49,6 +49,10 @@ tts:
             path: E:/05_PROJETOS/forja/modelos/kokoro/ef_dora.pt
 alinhamento:
   candidatos:
+    - id: whisper-large-v3-turbo-local
+      adaptador: whisperx
+      modelo_asr: E:/05_PROJETOS/forja/modelos/whisper-large-v3-turbo-ct2
+      idioma: pt-BR
     - id: whisperx-large-v3
       adaptador: whisperx
     - id: whisperx-en-base

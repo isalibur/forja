@@ -37,11 +37,12 @@ from docforja.planejamento.shots import (
 from docforja.settings import load_settings
 
 
-def _criar_orquestrador(modelo_whisper: str = "base") -> OrquestradorNarracao:
-    ambientes = load_settings().python_environments
+def _criar_orquestrador() -> OrquestradorNarracao:
+    settings = load_settings()
+    ambientes = settings.python_environments
     kokoro = AdaptadorKokoro(python_path=ambientes.get("kokoro"))
     whisperx = AlinhadorWhisperX(
-        python_path=ambientes.get("whisperx"), modelo=modelo_whisper
+        python_path=ambientes.get("whisperx"), modelo=settings.alinhamento.modelo_asr
     )
     return OrquestradorNarracao(adaptador_tts=kokoro, alinhador=whisperx)
 
@@ -350,6 +351,7 @@ def registrar_handlers_disponiveis(
 
     def alinhar_narracao_sync(ctx: ContextoEtapa) -> None:
         motor = obter_orquestrador()
+        modelo_asr = getattr(motor.alinhador, "modelo", None)
         if not motor.alinhador.disponivel():
             raise RuntimeError("WhisperX configurado não está disponível.")
         idioma, pasta_idioma = _audio_idioma(ctx.projeto)
@@ -429,6 +431,7 @@ def registrar_handlers_disponiveis(
                 qualidade_json,
                 {
                     "origem": "whisperx",
+                    "modelo_asr": modelo_asr,
                     "status": "reprovado",
                     "wer": wer,
                     "wer_bruto_primeira_passagem": wer_bruto_primeira_passagem,
@@ -449,6 +452,7 @@ def registrar_handlers_disponiveis(
             qualidade_json,
             {
                 "origem": "whisperx",
+                "modelo_asr": modelo_asr,
                 "status": "aprovado",
                 "wer": wer,
                 "wer_bruto_primeira_passagem": wer_bruto_primeira_passagem,
@@ -612,8 +616,10 @@ def registrar_handlers_disponiveis(
         ids_esperados = {
             item.id for item in _segmentos_projeto(ctx.projeto) if item.texto_limpo.split()
         }
+        modelo_asr = getattr(obter_orquestrador().alinhador, "modelo", None)
         return (
             qualidade.get("origem") == "whisperx"
+            and qualidade.get("modelo_asr") == modelo_asr
             and qualidade.get("status") == "aprovado"
             and isinstance(qualidade.get("wer"), (float, int))
             and qualidade["wer"] <= qualidade.get("limite_wer", 0.02)

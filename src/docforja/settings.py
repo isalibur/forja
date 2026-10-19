@@ -26,12 +26,17 @@ class LlmSettings(BaseModel):
     modelo: str = "default"
 
 
+class AlignmentSettings(BaseModel):
+    modelo_asr: str = "base"
+
+
 class AppSettings(BaseModel):
     minimum_free_disk_gb: int = 200
     paths: PathSettings = Field(default_factory=PathSettings)
     services: list[ServiceSettings] = Field(default_factory=list)
     python_environments: dict[str, Path] = Field(default_factory=dict)
     llm: dict[str, LlmSettings] = Field(default_factory=dict)
+    alinhamento: AlignmentSettings = Field(default_factory=AlignmentSettings)
 
 
 def load_settings(path: Path = Path("config/adaptadores.yaml")) -> AppSettings:

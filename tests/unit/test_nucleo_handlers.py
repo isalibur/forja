@@ -192,6 +192,8 @@ class AlinhadorFalso:
     ) -> None:
         self._disponivel = disponivel
         self.texto_asr = texto_asr
+        self.modelo = "modelo-a"
+        self.chamadas = 0
 
     def disponivel(self) -> bool:
         return self._disponivel
@@ -206,6 +208,7 @@ class AlinhadorFalso:
         device: str | None = None,
         timeout: float = 300,
     ) -> tuple[Path, Path]:
+        self.chamadas += 1
         if segmentos_info is None:
             textos = self.texto_asr if isinstance(self.texto_asr, list) else [self.texto_asr]
             segmentos = [
@@ -257,6 +260,34 @@ async def test_pipeline_narracao_e_alinhamento_reais_com_adaptadores_falsos(tmp_
     status_retomado = await executor.executar(ate_etapa="P2b_alinhamento")
     assert status_retomado["P2b_alinhamento"] == "concluida"
     assert (pasta_audio / "qualidade.json").is_file()
+
+
+@pytest.mark.anyio
+async def test_troca_modelo_asr_invalida_alinhamento_aprovado(tmp_path):
+    projeto = Projeto.criar(
+        nome="teste_troca_modelo_asr", roteiro=ROTEIRO_VALIDO, raiz_projetos=tmp_path
+    )
+    alinhador = AlinhadorFalso()
+    executor = registrar_handlers_disponiveis(
+        ExecutorPipeline(projeto),
+        orquestrador=OrquestradorNarracao(
+            adaptador_tts=TTSFalso(), alinhador=alinhador
+        ),
+    )
+    await executor.executar(ate_etapa="P2b_alinhamento")
+    pasta = projeto.pastas.audio / "pt-BR"
+    qualidade = pasta / "qualidade.json"
+    assert json.loads(qualidade.read_text(encoding="utf-8"))["modelo_asr"] == "modelo-a"
+    chamadas_iniciais = alinhador.chamadas
+
+    await executor.executar(ate_etapa="P2b_alinhamento")
+    assert alinhador.chamadas == chamadas_iniciais
+
+    alinhador.modelo = "modelo-b"
+    status = await executor.executar(ate_etapa="P2b_alinhamento")
+    assert status["P2b_alinhamento"] == "concluida"
+    assert alinhador.chamadas > chamadas_iniciais
+    assert json.loads(qualidade.read_text(encoding="utf-8"))["modelo_asr"] == "modelo-b"
 
 
 @pytest.mark.anyio

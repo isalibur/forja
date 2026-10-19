@@ -67,6 +67,21 @@ artefatos_em_avaliacao:
       af_sarah.pt: 49bd364ea3be9eb3e9685e8f9a15448c4883112a7c0ff7ab139fa4088b08cef9
       pf_dora.pt: 07e4ff987c5d5a8c3995efd15cc4f0db7c4c15e881b198d8ab7f67ecf51f5eb7
       ef_dora.pt: d9d69b0f8a2b87a345f269d89639f89dfbd1a6c9da0c498ae36dd34afcf35530
+  whisper_large_v3_turbo:
+    repositorio: https://huggingface.co/openai/whisper-large-v3-turbo
+    revisao: 41f01f3fe87f28c78e2fbf8b568835947dd65ed9
+    licenca_declarada_modelo: MIT
+    conversao: CTranslate2 float16 local
+    arquivo_convertido: E:/05_PROJETOS/forja/modelos/whisper-large-v3-turbo-ct2/model.bin
+    sha256_arquivo_convertido: e76620f83d5f5b69efd3d87e3dc180c1bd21df9fbebacfd4335e5e1efcc018da
+    aprovado_producao: false
+    pendencias: validar WER no roteiro completo e registrar artefatos auxiliares da conversão
+  alinhador_portugues:
+    repositorio: https://huggingface.co/jonatasgrosman/wav2vec2-large-xlsr-53-portuguese
+    revisao_cache_local: 634ac655299bcdc46c83bc01da9bab52d2987e4f
+    licenca_declarada_modelo: Apache-2.0
+    aprovado_producao: false
+    pendencias: fixar explicitamente o modelo de alinhamento no adaptador e conferir hash dos pesos
   flux_schnell_gguf:
     arquivo: C:/ComfyUI/models/unet/flux1-schnell-Q4_K_S.gguf
     aprovado_producao: false

@@ -13,14 +13,20 @@ import sys
 import tempfile
 from pathlib import Path
 
-from docforja.nucleo.handlers import criar_executor_projeto
+from docforja.audio.adaptadores.kokoro import AdaptadorKokoro
+from docforja.audio.alinhamento import AlinhadorWhisperX
+from docforja.audio.narracao import OrquestradorNarracao
+from docforja.nucleo.executor import ExecutorPipeline
+from docforja.nucleo.handlers import criar_executor_projeto, registrar_handlers_disponiveis
 from docforja.nucleo.projeto import Projeto
 from docforja.planejamento.leitura import ler_roteiro_formatado
+from docforja.settings import load_settings
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--projeto", type=Path, help="Retoma um projeto de teste existente")
+    parser.add_argument("--modelo-asr", help="Modelo ASR local para o teste")
     args = parser.parse_args()
     if args.projeto:
         projeto = Projeto.carregar(args.projeto)
@@ -34,7 +40,19 @@ def main() -> None:
         raiz = Path(tempfile.mkdtemp(prefix="smoke-p6-", dir="E:/05_PROJETOS/forja"))
         projeto = Projeto.criar(nome="p6-real", roteiro=roteiro, raiz_projetos=raiz)
     print(f"Projeto de teste: {projeto.raiz}", flush=True)
-    executor = criar_executor_projeto(projeto)
+    if args.modelo_asr:
+        ambientes = load_settings().python_environments
+        orquestrador = OrquestradorNarracao(
+            adaptador_tts=AdaptadorKokoro(python_path=ambientes.get("kokoro")),
+            alinhador=AlinhadorWhisperX(
+                python_path=ambientes.get("whisperx"), modelo=args.modelo_asr
+            ),
+        )
+        executor = registrar_handlers_disponiveis(
+            ExecutorPipeline(projeto), orquestrador=orquestrador
+        )
+    else:
+        executor = criar_executor_projeto(projeto)
     status = asyncio.run(executor.executar(ate_etapa="P6_verificador"))
     print(f"Etapas: {json.dumps(status, ensure_ascii=False)}", flush=True)
     qualidade = projeto.pastas.audio / "pt-BR" / "qualidade.json"
