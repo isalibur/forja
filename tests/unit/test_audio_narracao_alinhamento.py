@@ -2,7 +2,10 @@ import json
 import wave
 from pathlib import Path
 
+import pytest
+
 from docforja.audio.adaptadores.base import AdaptadorTTS
+from docforja.audio.adaptadores.chatterbox import AdaptadorChatterbox
 from docforja.audio.adaptadores.pronta import AdaptadorNarracaoPronta
 from docforja.audio.narracao import OrquestradorNarracao
 from docforja.planejamento.entidades import SegmentoProcessado
@@ -104,3 +107,11 @@ def test_adaptador_narracao_pronta(tmp_path: Path):
     with wave.open(str(saida_wav), "rb") as w:
         assert w.getnchannels() == 1
         assert w.getframerate() == 24000
+
+
+def test_chatterbox_indisponivel_nao_se_disfarca_de_kokoro(tmp_path: Path):
+    adaptador = AdaptadorChatterbox(tmp_path / "python-inexistente.exe")
+
+    assert adaptador.disponivel() is False
+    with pytest.raises(RuntimeError, match="Chatterbox não disponível"):
+        adaptador.gerar("teste", tmp_path / "saida.wav")

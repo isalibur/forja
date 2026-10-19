@@ -23,6 +23,16 @@ def grafo_teste():
     return PipelineGrafo(etapas)
 
 
+def registrar_handlers_falsos(executor: ExecutorPipeline, grafo: PipelineGrafo) -> None:
+    """Handlers explícitos para testes de infraestrutura do executor."""
+
+    async def mock_handler(_ctx: ContextoEtapa) -> None:
+        return None
+
+    for etapa_id in grafo.etapas:
+        executor.registrar_handler(etapa_id, mock_handler)
+
+
 @pytest.mark.anyio
 async def test_executor_paralelismo_e_dependencias(tmp_path, grafo_teste):
     projeto = Projeto.criar(nome="teste_paralelismo", raiz_projetos=tmp_path)
@@ -55,6 +65,7 @@ async def test_executor_exclusividade_gpu(tmp_path, grafo_teste):
     projeto = Projeto.criar(nome="teste_gpu", raiz_projetos=tmp_path)
     semaforo = SemaforoGPU()
     executor = ExecutorPipeline(projeto, grafo=grafo_teste, semaforo=semaforo)
+    registrar_handlers_falsos(executor, grafo_teste)
     executor.aprovar_gate("GATE")
 
     simultaneos_gpu = 0
@@ -79,6 +90,7 @@ async def test_executor_exclusividade_gpu(tmp_path, grafo_teste):
 async def test_executor_gate_revisao(tmp_path, grafo_teste):
     projeto = Projeto.criar(nome="teste_gate", raiz_projetos=tmp_path)
     executor = ExecutorPipeline(projeto, grafo=grafo_teste)
+    registrar_handlers_falsos(executor, grafo_teste)
 
     # 1ª rodada: para no GATE
     status1 = await executor.executar()
@@ -108,6 +120,7 @@ async def test_executor_retomada_apos_kill(tmp_path, grafo_teste):
 
     # Novo executor simula processo reiniciado
     executor2 = ExecutorPipeline(projeto, grafo=grafo_teste)
+    registrar_handlers_falsos(executor2, grafo_teste)
     etapa_p2a = executor2.banco.obter_etapa("P2A")
     assert etapa_p2a["status"] == "pendente"  # Resetado para pendente
 
@@ -121,6 +134,7 @@ async def test_executor_retomada_apos_kill(tmp_path, grafo_teste):
 async def test_executor_invalidacao_seletiva(tmp_path, grafo_teste):
     projeto = Projeto.criar(nome="teste_invalidacao", raiz_projetos=tmp_path)
     executor = ExecutorPipeline(projeto, grafo=grafo_teste)
+    registrar_handlers_falsos(executor, grafo_teste)
     executor.aprovar_gate("GATE")
 
     await executor.executar()
@@ -151,8 +165,24 @@ async def test_concorrencia_estabilidade_20_vezes(tmp_path):
     for i in range(20):
         proj = Projeto.criar(nome=f"run_estabilidade_{i}", raiz_projetos=tmp_path)
         ex = ExecutorPipeline(proj, grafo=grafo)
+        registrar_handlers_falsos(ex, grafo)
         res = await ex.executar(max_concorrencia=3)
         assert res["A"] == "concluida"
         assert res["B1"] == "concluida"
         assert res["B2"] == "concluida"
         assert res["C"] == "concluida"
+
+
+@pytest.mark.anyio
+async def test_etapa_sem_handler_falha_em_vez_de_marcada_concluida(tmp_path):
+    projeto = Projeto.criar(nome="teste_handler_ausente", raiz_projetos=tmp_path)
+    grafo = PipelineGrafo({"E00": DefinicaoEtapa(id="E00", needs=[])})
+    executor = ExecutorPipeline(projeto, grafo=grafo)
+    hash_entrada = executor._calcular_hash_etapa(grafo.etapas["E00"])
+    executor.banco.salvar_etapa("E00", status="concluida", hash_entrada=hash_entrada)
+
+    status = await executor.executar()
+
+    assert status["E00"] == "falhou"
+    etapa = executor.banco.obter_etapa("E00")
+    assert etapa["erro"] == "A etapa E00 não possui um processador registrado."

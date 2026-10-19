@@ -29,6 +29,10 @@ class ContextoEtapa:
 HandlerEtapa = Callable[[ContextoEtapa], Coroutine[Any, Any, Any] | Any]
 
 
+class HandlerEtapaAusenteError(RuntimeError):
+    """Indica que uma etapa não possui implementação registrada."""
+
+
 class ExecutorPipeline:
     """Executa o pipeline do projeto respeitando DAG, concorrência e semáforo de GPU."""
 
@@ -126,6 +130,7 @@ class ExecutorPipeline:
             registro
             and registro["status"] == "concluida"
             and registro["hash_entrada"] == hash_atual
+            and def_etapa.id in self._handlers
         ):
             # Já concluído com a mesma entrada; não reexecuta
             return
@@ -191,18 +196,42 @@ class ExecutorPipeline:
 
     async def _despachar_handler(self, etapa_id: str, ctx: ContextoEtapa) -> None:
         handler = self._handlers.get(etapa_id)
-        if handler:
-            res = handler(ctx)
-            if asyncio.iscoroutine(res):
-                await res
-        else:
-            # Handler padrão (etapa placeholder/mockada para testes rápidos)
-            await asyncio.sleep(0.01)
+        if handler is None:
+            raise HandlerEtapaAusenteError(
+                f"A etapa {etapa_id} não possui um processador registrado."
+            )
+
+        res = handler(ctx)
+        if asyncio.iscoroutine(res):
+            await res
 
     async def executar(self, max_concorrencia: int = 4) -> dict[str, str]:
         """Loop de execução contínua até que não haja mais etapas prontas ou atinja um gate."""
         executando: set[str] = set()
         background_tasks: set[asyncio.Task[None]] = set()
+
+        # Bancos de versões anteriores podem conter etapas concluídas pelo handler
+        # placeholder. Rebaixa esses resultados para falha até que haja processador real.
+        for etapa in self.grafo.etapas.values():
+            registro = self.banco.obter_etapa(etapa.id)
+            if (
+                registro
+                and registro["status"] == "concluida"
+                and not etapa.gate
+                and etapa.id not in self._handlers
+            ):
+                self.banco.salvar_etapa(
+                    etapa.id,
+                    status="falhou",
+                    erro=f"A etapa {etapa.id} não possui um processador registrado.",
+                )
+
+        def _coletar_tarefa(task: asyncio.Task[None]) -> None:
+            background_tasks.discard(task)
+            if not task.cancelled():
+                # O estado de falha já é persistido em _executar_etapa; consumir
+                # a exceção evita avisos não tratados no loop do asyncio.
+                task.exception()
 
         while True:
             # Atualiza status das etapas no banco
@@ -249,7 +278,7 @@ class ExecutorPipeline:
                 for coro in tarefas_coros:
                     task = asyncio.create_task(coro)
                     background_tasks.add(task)
-                    task.add_done_callback(background_tasks.discard)
+                    task.add_done_callback(_coletar_tarefa)
 
             await asyncio.sleep(0.02)
 

@@ -128,6 +128,11 @@ class Projeto:
         # Inicializa arquivo de escolhas de mídia
         atomic_write_json(projeto.pastas.midias / "escolhas.json", {"ativos": {}})
 
+        # O banco também faz parte da estrutura inicial do projeto (M1).
+        from docforja.nucleo.banco import BancoProjeto
+
+        BancoProjeto(projeto.banco_file)
+
         return projeto
 
     @classmethod
@@ -153,3 +158,17 @@ class Projeto:
         if roteiro_file.is_file():
             return roteiro_file.read_text(encoding="utf-8")
         return ""
+
+    def artefatos_m3_m4_ausentes(self) -> list[Path]:
+        """Lista saídas de aceitação de M3/M4 que ainda não existem no projeto."""
+        opcoes = self.obter_opcoes()
+        idioma = opcoes.get("idiomas", {}).get("principal", "pt-BR")
+        obrigatorios = [
+            self.pastas.audio / idioma / "narracao_completa.wav",
+            self.pastas.audio / idioma / "palavras.json",
+            self.pastas.plano / "plano.json",
+            self.pastas.plano / "plano.md",
+            self.pastas.plano / "verificacao.md",
+            self.pastas.plano / "estimativa.md",
+        ]
+        return [caminho for caminho in obrigatorios if not caminho.is_file()]

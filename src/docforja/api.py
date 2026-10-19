@@ -72,14 +72,37 @@ def listar_projetos() -> list[dict[str, Any]]:
                 opcoes = proj.obter_opcoes()
                 banco = BancoProjeto(proj.banco_file)
                 etapas = banco.listar_etapas()
-                etapa_atual = "Concluído"
+                etapa_atual = "Aguardando início"
                 for e in etapas:
+                    if e["status"] == "falhou":
+                        etapa_atual = f"Falha: {e['id']}"
+                        break
                     if e["status"] in ("executando", "pausada_revisao"):
                         etapa_atual = f"{e['id']} ({e['status']})"
                         break
                     if e["status"] == "pendente":
                         etapa_atual = f"{e['id']} (aguardando)"
                         break
+                else:
+                    status_por_id = {e["id"]: e["status"] for e in etapas}
+                    gate_m3_m4 = {
+                        "P2_narracao",
+                        "P4_shots",
+                        "P6_verificador",
+                        "P8_estimativa_previa",
+                        "REVISAO",
+                    }
+                    if gate_m3_m4.issubset(status_por_id) and all(
+                        status_por_id[etapa] == "concluida" for etapa in gate_m3_m4
+                    ):
+                        ausentes = proj.artefatos_m3_m4_ausentes()
+                        etapa_atual = (
+                            "Saídas pendentes de M3/M4"
+                            if ausentes
+                            else "Concluído"
+                        )
+                    elif etapas and all(e["status"] == "concluida" for e in etapas):
+                        etapa_atual = "Concluído"
 
                 projetos.append(
                     {

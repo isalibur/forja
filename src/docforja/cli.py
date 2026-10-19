@@ -172,6 +172,24 @@ def status(
             e["erro"] or "",
         )
     console.print(table)
+    status_por_id = {e["id"]: e["status"] for e in etapas}
+    gate_m3_m4 = {
+        "P2_narracao",
+        "P4_shots",
+        "P6_verificador",
+        "P8_estimativa_previa",
+        "REVISAO",
+    }
+    if gate_m3_m4.issubset(status_por_id) and all(
+        status_por_id[etapa] == "concluida" for etapa in gate_m3_m4
+    ):
+        ausentes = projeto.artefatos_m3_m4_ausentes()
+        if ausentes:
+            console.print(
+                "[bold yellow]Saídas obrigatórias de M3/M4 ausentes:[/bold yellow]"
+            )
+            for caminho in ausentes:
+                console.print(f" - {caminho}")
 
 
 @app.command()
@@ -194,9 +212,16 @@ def executar(
 
     console.print(f"Iniciando pipeline para [bold]{projeto.slug}[/bold]...")
     resultados = asyncio.run(executor.executar(max_concorrencia=concorrencia))
-    console.print("[bold green]Execução finalizada.[/bold green]")
     for etapa, st in resultados.items():
         console.print(f" - {etapa}: {st}")
+    falhadas = [etapa for etapa, st in resultados.items() if st == "falhou"]
+    if falhadas:
+        console.print(
+            "[bold red]Execução interrompida por falha nas etapas: "
+            f"{', '.join(falhadas)}.[/bold red]"
+        )
+        raise typer.Exit(code=1)
+    console.print("[bold green]Execução finalizada.[/bold green]")
 
 
 @app.command()

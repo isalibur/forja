@@ -38,17 +38,33 @@ def test_api_projetos_fluxo(tmp_path, monkeypatch):
     assert res_data["sucesso"] is True
     slug = res_data["slug"]
     assert slug == "vesuvio-teste-api"
+    projeto_raiz = tmp_path / slug
+    assert (projeto_raiz / "sistema" / "banco.db").is_file()
+
+    # Um projeto sem etapas executadas não pode aparecer como concluído.
+    resp_list = client.get("/api/projetos")
+    projeto_novo = next(p for p in resp_list.json() if p["slug"] == slug)
+    assert projeto_novo["etapa_atual"] == "Aguardando início"
 
     # Inicializa banco para simular etapa
     proj = Projeto.carregar(slug, raiz_projetos=tmp_path)
     banco = BancoProjeto(proj.banco_file)
     banco.salvar_etapa("P1_leitura", status="concluida")
+    for etapa_id in (
+        "P2_narracao",
+        "P4_shots",
+        "P6_verificador",
+        "P8_estimativa_previa",
+        "REVISAO",
+    ):
+        banco.salvar_etapa(etapa_id, status="concluida")
 
     # 2. Listar projetos
     resp_list = client.get("/api/projetos")
     assert resp_list.status_code == 200
     projetos = resp_list.json()
-    assert any(p["slug"] == slug for p in projetos)
+    item = next(p for p in projetos if p["slug"] == slug)
+    assert item["etapa_atual"] == "Saídas pendentes de M3/M4"
 
     # 3. Obter projeto individual
     resp_get = client.get(f"/api/projetos/{slug}")

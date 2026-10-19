@@ -392,7 +392,7 @@ def test_d14_cobertura_100_narra():
 
 
 def test_d15_orcamento_tempo():
-    """Valida D15: Estimativa de produção que estoura orçamento é corrigida com ações."""
+    """Valida D15: não aprova orçamento usando economias que não mudaram o plano."""
     verificador = VerificadorDosagem()
     plano = criar_plano_base()
     plano.orcamento_producao_min = 10  # Orçamento que força redução
@@ -409,8 +409,12 @@ def test_d15_orcamento_tempo():
         for i in range(1, 80)
     ]
 
-    res = verificador.verificar_e_corrigir(plano, autocorrige=True)
-    assert any("economia" in aj for aj in res.ajustes)
+    templates_antes = [shot.template for shot in bloco.shots]
+    res = verificador.verificar_e_corrigir(plano, autocorrige=False)
+    violacao_d15 = next(v for v in res.violacoes if v.regra == "D15")
+    assert violacao_d15.corrigida is False
+    assert res.aprovado is False
+    assert [shot.template for shot in bloco.shots] == templates_antes
 
 
 def test_d16_capitulos():

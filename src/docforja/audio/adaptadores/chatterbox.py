@@ -4,20 +4,16 @@ import subprocess
 from pathlib import Path
 
 from docforja.audio.adaptadores.base import AdaptadorTTS
-from docforja.audio.adaptadores.kokoro import AdaptadorKokoro
 
 
 class AdaptadorChatterbox(AdaptadorTTS):
-    """Adaptador para o Chatterbox TTS pt-BR com fallback transparente para Kokoro."""
+    """Adaptador para o Chatterbox TTS pt-BR, sem trocar de motor silenciosamente."""
 
     def __init__(self, python_path: Path | None = None) -> None:
         self.python_path = python_path
-        self._fallback = AdaptadorKokoro()
 
     def disponivel(self) -> bool:
-        if self.python_path and self.python_path.exists():
-            return True
-        return self._fallback.disponivel()
+        return self.python_path is not None and self.python_path.is_file()
 
     def gerar(
         self,
@@ -27,9 +23,8 @@ class AdaptadorChatterbox(AdaptadorTTS):
         idioma: str = "pt-BR",
         velocidade: float = 1.0,
     ) -> Path:
-        # Se nao houver ambiente exclusivo configurado para o Chatterbox, redireciona para o Kokoro
-        if not (self.python_path and self.python_path.exists()):
-            return self._fallback.gerar(texto, saida_wav, voz, idioma, velocidade)
+        if not self.disponivel():
+            raise RuntimeError("Chatterbox não disponível: configure o executável do ambiente.")
 
         # Se houver comando chatterbox configurado
         cmd = [
@@ -43,6 +38,9 @@ class AdaptadorChatterbox(AdaptadorTTS):
         ]
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
         if res.returncode != 0:
-            # Fallback para Kokoro em caso de erro no Chatterbox
-            return self._fallback.gerar(texto, saida_wav, voz, idioma, velocidade)
+            raise RuntimeError(f"Falha ao sintetizar com Chatterbox: {res.stderr.strip()}")
+        if not saida_wav.is_file():
+            raise FileNotFoundError(
+                f"Chatterbox executou mas não criou o arquivo de saída: {saida_wav}"
+            )
         return saida_wav

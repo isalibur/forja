@@ -195,45 +195,8 @@ def estimar_tempo_plano(
     tempo_total = sum(it.tempo_minutos for it in itens)
     orcamento = plano.orcamento_producao_min or 120
 
-    ajustes: list[str] = []
-
-    # Regra D15: Se exceder o orçamento, aplica correções automáticas
-    if tempo_total > orcamento:
-        # Ação 1: reduzir variações de imagem para 1 se estava em 2 ou 3
-        if variacoes_imagem > 1:
-            tempo_economizado = (
-                ativos_gerar * (variacoes_imagem - 1) * rates["gerar_imagem_s"]
-            ) / 60.0
-            tempo_total -= tempo_economizado
-            ajustes.append(
-                f"Redução de variações de imagem gerada de {variacoes_imagem} para 1 "
-                f"(economia: {tempo_economizado:.1f} min)"
-            )
-
-        # Ação 2: se ainda estourar, converter excesso de T02 em T01
-        if tempo_total > orcamento and shots_t02 > 0:
-            qtd_converter = min(
-                shots_t02, int((tempo_total - orcamento) * 60 / rates["parallax_s"]) + 1
-            )
-            tempo_economizado = (qtd_converter * rates["parallax_s"]) / 60.0
-            tempo_total -= tempo_economizado
-            ajustes.append(
-                f"Conversão de {qtd_converter} shots T02 para T01 "
-                f"(economia: {tempo_economizado:.1f} min)"
-            )
-
-        # Ação 3: se ainda estourar, trocar 'gerar' por 'pesquisar' ou 'biblioteca'
-        if tempo_total > orcamento and ativos_gerar > 5:
-            qtd_trocar = min(
-                ativos_gerar - 5, int((tempo_total - orcamento) * 60 / rates["gerar_imagem_s"]) + 1
-            )
-            tempo_economizado = (qtd_trocar * rates["gerar_imagem_s"]) / 60.0
-            tempo_total -= tempo_economizado
-            ajustes.append(
-                f"Substituição de {qtd_trocar} ativos 'gerar' por fotos de acervo "
-                f"(economia: {tempo_economizado:.1f} min)"
-            )
-
+    # A estimativa não altera o plano: reporta o custo calculado sem creditar
+    # economias de ações que ainda não foram aplicadas aos shots e ativos.
     aprovado = tempo_total <= orcamento
 
     return RelatorioEstimativa(
@@ -242,5 +205,5 @@ def estimar_tempo_plano(
         tempo_total_minutos=round(tempo_total, 1),
         aprovado=aprovado,
         itens=itens,
-        ajustes_realizados=ajustes,
+        ajustes_realizados=[],
     )
