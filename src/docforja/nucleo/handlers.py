@@ -11,11 +11,13 @@ from docforja.audio.adaptadores.kokoro import AdaptadorKokoro
 from docforja.audio.alinhamento import AlinhadorWhisperX
 from docforja.audio.metricas import calcular_wer
 from docforja.audio.narracao import OrquestradorNarracao, ResultadoSegmentoAudio
-from docforja.esquemas import Ativo, Bloco, Shot
+from docforja.esquemas import Ativo, Bloco, Plano, Shot
 from docforja.io import atomic_write_json
+from docforja.nucleo.etapas import calcular_hash_dados
 from docforja.nucleo.executor import ContextoEtapa, ExecutorPipeline
 from docforja.nucleo.projeto import Projeto
 from docforja.planejamento.ativos import consolidar_ativos_plano
+from docforja.planejamento.dosagem import VerificadorDosagem
 from docforja.planejamento.entidades import SegmentoProcessado
 from docforja.planejamento.estrategia import EstrategiaBloco, planejar_estrategias
 from docforja.planejamento.leitura import ler_roteiro_formatado
@@ -145,6 +147,53 @@ def registrar_handlers_disponiveis(
                 "ativos": {aid: item.model_dump(mode="json") for aid, item in ativos.items()},
             },
         )
+
+    def verificar_dosagem(ctx: ContextoEtapa) -> None:
+        if not alinhamento_valido(ctx):
+            raise ValueError("Alinhamento aprovado ausente para verificar a dosagem.")
+        if not estrategia_valida(ctx) or not ativos_validos(ctx):
+            raise ValueError("Estratégia, shots ou ativos ausentes/inválidos para verificação.")
+
+        pasta = ctx.projeto.pastas.plano
+        estrategias = json.loads((pasta / "estrategia.json").read_text(encoding="utf-8"))["blocos"]
+        estrategias_por_id = {item["bloco_id"]: item for item in estrategias}
+        blocos = blocos_com_shots(ctx)
+        for bloco in blocos:
+            estrategia = estrategias_por_id[bloco.id]
+            bloco.modo_visual = estrategia["modo_visual"]
+            bloco.clima_musical = estrategia["clima_musical"]
+            bloco.contexto = estrategia.get("contexto")
+        ativos_dados = json.loads((pasta / "ativos.json").read_text(encoding="utf-8"))["ativos"]
+        ativos = {aid: Ativo.model_validate(item) for aid, item in ativos_dados.items()}
+        opcoes = ctx.projeto.obter_opcoes()
+        preset = opcoes.get("preset", "padrao")
+        verificador = VerificadorDosagem()
+        presets = verificador.config.get("presets", {})
+        if preset not in presets:
+            raise ValueError(f"Preset de dosagem desconhecido: {preset}")
+        plano = Plano(
+            versao=3,
+            projeto=ctx.projeto.slug,
+            kit=opcoes.get("kit", "cinza-e-brasa@1.0"),
+            preset=preset,
+            tipo="longo",
+            idiomas=opcoes.get("idiomas", {"principal": "pt-BR", "extras": []}),
+            orcamento_producao_min=int(presets[preset]["orcamento_minutos"]),
+            blocos=blocos,
+            ativos=ativos,
+            musica=[{"bloco": b.id, "clima": b.clima_musical, "faixa": None} for b in blocos],
+        )
+        resultado = verificador.verificar_e_corrigir(
+            plano, blocos_processados=ler_roteiro_formatado(ctx.projeto.obter_roteiro())
+        )
+        plano_dados = plano.model_dump(mode="json")
+        relatorio_dados = asdict(resultado)
+        relatorio_dados["hash_plano"] = calcular_hash_dados(plano_dados)
+        relatorio_dados["hash_entradas"] = hashes_entradas_p6(ctx)
+        atomic_write_json(pasta / "plano_verificado.json", plano_dados)
+        atomic_write_json(pasta / "verificacao.json", relatorio_dados)
+        if not resultado.aprovado:
+            raise RuntimeError("Plano reprovado pela verificação de dosagem D1-D17.")
 
     def obter_orquestrador() -> OrquestradorNarracao:
         nonlocal orquestrador
@@ -350,6 +399,48 @@ def registrar_handlers_disponiveis(
             aid: item.model_dump(mode="json") for aid, item in esperados.items()
         }
 
+    def hashes_entradas_p6(ctx: ContextoEtapa) -> dict[str, str]:
+        _, pasta_audio = _audio_idioma(ctx.projeto)
+        caminhos = {
+            "estrategia": ctx.projeto.pastas.plano / "estrategia.json",
+            "shots": ctx.projeto.pastas.plano / "shots.json",
+            "ativos": ctx.projeto.pastas.plano / "ativos.json",
+            "qualidade": pasta_audio / "qualidade.json",
+            "palavras": pasta_audio / "palavras.json",
+        }
+        return {nome: calcular_hash_dados(caminho) for nome, caminho in caminhos.items()}
+
+    def dosagem_valida(ctx: ContextoEtapa) -> bool:
+        pasta = ctx.projeto.pastas.plano
+        if not (pasta / "plano_verificado.json").is_file() or not (
+            pasta / "verificacao.json"
+        ).is_file():
+            return False
+        if not alinhamento_valido(ctx) or not estrategia_valida(ctx) or not ativos_validos(ctx):
+            return False
+        plano = Plano.model_validate_json(
+            (pasta / "plano_verificado.json").read_text(encoding="utf-8")
+        )
+        relatorio = json.loads((pasta / "verificacao.json").read_text(encoding="utf-8"))
+        segmentos_esperados = [
+            segmento.id
+            for bloco in ler_roteiro_formatado(ctx.projeto.obter_roteiro())
+            for segmento in bloco.segmentos
+        ]
+        segmentos_cobertos = [
+            sid for bloco in plano.blocos for shot in bloco.shots for sid in shot.segmentos
+        ]
+        return (
+            plano.projeto == ctx.projeto.slug
+            and segmentos_cobertos == segmentos_esperados
+            and relatorio.get("hash_plano") == calcular_hash_dados(plano.model_dump(mode="json"))
+            and relatorio.get("hash_entradas") == hashes_entradas_p6(ctx)
+            and plano.verificacao.get("aprovado") is True
+            and relatorio.get("aprovado") is True
+            and plano.verificacao.get("total_violacoes") == relatorio.get("total_violacoes")
+            and plano.verificacao.get("ajustes") == len(relatorio.get("ajustes", []))
+        )
+
     def narracao_valida(ctx: ContextoEtapa) -> bool:
         _, pasta = _audio_idioma(ctx.projeto)
         wav = pasta / "narracao_completa.wav"
@@ -386,6 +477,7 @@ def registrar_handlers_disponiveis(
     executor.registrar_handler("P3_estrategia", planejar_estrategia, validador=estrategia_valida)
     executor.registrar_handler("P4_shots", gerar_shots, validador=shots_validos)
     executor.registrar_handler("P5_ativos", consolidar_ativos, validador=ativos_validos)
+    executor.registrar_handler("P6_verificador", verificar_dosagem, validador=dosagem_valida)
     executor.registrar_handler("P2_narracao", gerar_narracao, validador=narracao_valida)
     executor.registrar_handler("P2b_alinhamento", alinhar_narracao, validador=alinhamento_valido)
     return executor

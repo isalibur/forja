@@ -298,6 +298,74 @@ async def test_pipeline_aceita_numero_equivalente_no_asr(tmp_path):
 
 
 @pytest.mark.anyio
+async def test_pipeline_p6_verifica_plano_com_alinhamento_aprovado(tmp_path):
+    projeto = Projeto.criar(
+        nome="teste_p6_integrado", roteiro=ROTEIRO_VALIDO, raiz_projetos=tmp_path
+    )
+    executor = ExecutorPipeline(projeto)
+    registrar_handlers_disponiveis(
+        executor,
+        orquestrador=OrquestradorNarracao(
+            adaptador_tts=TTSFalso(), alinhador=AlinhadorFalso()
+        ),
+    )
+
+    status = await executor.executar(ate_etapa="P6_verificador")
+    assert status["P2b_alinhamento"] == "concluida"
+    assert status["P5_ativos"] == "concluida"
+    assert status["P6_verificador"] == "concluida"
+
+    pasta = projeto.pastas.plano
+    plano = json.loads((pasta / "plano_verificado.json").read_text(encoding="utf-8"))
+    verificacao = json.loads((pasta / "verificacao.json").read_text(encoding="utf-8"))
+    assert plano["verificacao"]["aprovado"] is True
+    assert verificacao["aprovado"] is True
+    assert [
+        sid for bloco in plano["blocos"] for shot in bloco["shots"] for sid in shot["segmentos"]
+    ] == ["B1-S01"]
+
+    verificacao["aprovado"] = False
+    (pasta / "verificacao.json").write_text(
+        json.dumps(verificacao, ensure_ascii=False), encoding="utf-8"
+    )
+    retomado = await executor.executar(ate_etapa="P6_verificador")
+    assert retomado["P6_verificador"] == "concluida"
+    corrigido = json.loads((pasta / "verificacao.json").read_text(encoding="utf-8"))
+    assert corrigido["aprovado"] is True
+
+    plano["blocos"][0]["shots"][0]["template"] = "T99"
+    (pasta / "plano_verificado.json").write_text(
+        json.dumps(plano, ensure_ascii=False), encoding="utf-8"
+    )
+    retomado = await executor.executar(ate_etapa="P6_verificador")
+    assert retomado["P6_verificador"] == "concluida"
+    plano_corrigido = json.loads(
+        (pasta / "plano_verificado.json").read_text(encoding="utf-8")
+    )
+    assert plano_corrigido["blocos"][0]["shots"][0]["template"] != "T99"
+
+
+@pytest.mark.anyio
+async def test_pipeline_p6_nao_avanca_sem_alinhamento_aprovado(tmp_path):
+    projeto = Projeto.criar(
+        nome="teste_p6_sem_alinhamento", roteiro=ROTEIRO_VALIDO, raiz_projetos=tmp_path
+    )
+    executor = ExecutorPipeline(projeto)
+    registrar_handlers_disponiveis(
+        executor,
+        orquestrador=OrquestradorNarracao(
+            adaptador_tts=TTSFalso(),
+            alinhador=AlinhadorFalso(texto_asr="A história com Mesa Raki."),
+        ),
+    )
+
+    status = await executor.executar(ate_etapa="P6_verificador")
+    assert status["P2b_alinhamento"] == "falhou"
+    assert "P6_verificador" not in status
+    assert not (projeto.pastas.plano / "plano_verificado.json").exists()
+
+
+@pytest.mark.anyio
 async def test_pipeline_exige_whisperx_para_concluir_alinhamento(tmp_path):
     projeto = Projeto.criar(
         nome="teste_sem_whisperx", roteiro=ROTEIRO_VALIDO, raiz_projetos=tmp_path
