@@ -1,0 +1,22 @@
+minimum_free_disk_gb: 200
+paths:
+  projects: E:/05_PROJETOS/forja/projetos
+  global_assets: E:/05_PROJETOS/forja/global
+  comfyui: C:/ComfyUI
+  benchmark_output: E:/05_PROJETOS/forja/benchmark_out
+services:
+  - name: ComfyUI
+    url: http://127.0.0.1:8188/system_stats
+    required: true
+  - name: Ollama
+    url: http://127.0.0.1:11434/api/tags
+    required: true
+  - name: 9Router
+    url: http://127.0.0.1:20128/api/health
+    required: true
+python_environments:
+  depthflow: envs/depthflow/Scripts/python.exe
+  whisperx: envs/align/Scripts/python.exe
+  realesrgan: envs/realesrgan/Scripts/python.exe
+  kokoro: D:/IA/audio_factory/.venv/Scripts/python.exe
+

@@ -1,0 +1,36 @@
+# segredos
+.env
+secrets/
+
+# Python
+.venv/
+envs/
+__pycache__/
+*.pyc
+.pytest_cache/
+.pytest_tmp/
+.ruff_cache/
+
+# Node / front-end
+node_modules/
+web/dist/
+src/docforja/web_dist/
+
+# saídas de teste e mídia (projetos e pasta global ficam fora do repositório, em D:\DocForja\)
+benchmark_out/
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.flac
+
+# modelos
+*.safetensors
+*.gguf
+*.ckpt
+*.pth
+*.onnx
+
+# sistema
+.DS_Store
+Thumbs.db

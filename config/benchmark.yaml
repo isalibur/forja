@@ -1,0 +1,19 @@
+schema_version: 1
+prompts_imagem:
+  - id: historico
+    texto: "Rua de uma cidade romana antiga, fotografia documental, sem texto"
+  - id: contemporaneo
+    texto: "Retrato documental natural de uma pessoa pesquisando em uma biblioteca, sem texto"
+  - id: paisagem
+    texto: "Paisagem vulcanica dramatica vista de longe, realista, sem texto"
+tts:
+  idiomas: [pt-BR, en, es]
+  duracao_alvo_segundos: 20
+alinhamento:
+  duracao_alvo_segundos: 60
+parallax:
+  duracao_segundos: 5
+render:
+  duracao_segundos: 10
+  resolucoes: [1080p, 1440p]
+

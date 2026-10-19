@@ -1,0 +1,49 @@
+[project]
+name = "docforja"
+version = "0.1.0"
+description = "Construtor local de planos e producoes audiovisuais"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "httpx>=0.27,<1",
+  "pydantic>=2.9,<3",
+  "pydantic-settings>=2.6,<3",
+  "python-dotenv>=1.0,<2",
+  "pyyaml>=6.0,<7",
+  "rich>=13.9,<15",
+  "typer>=0.15,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<8",
+  "pytest-httpx>=0.35,<1",
+  "ruff>=0.9,<1",
+]
+gpu = [
+  "jiwer>=3.1,<5",
+  "pillow>=11,<13",
+]
+
+[project.scripts]
+docforja = "docforja.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/docforja"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+addopts = "-ra --basetemp=.pytest_tmp"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+

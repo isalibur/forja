@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DocForja — protótipo de interface</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.5"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['Inter','system-ui','sans-serif'], mono: ['JetBrains Mono','ui-monospace','monospace'] },
+    colors: {
+      bg:'#0B0B0E', surf:'#141418', elev:'#1C1C22', line:'#2A2A33',
+      tx:'#EDEDEF', mut:'#A1A1AA', brasa:'#FF6A2B', info:'#38BDF8', ok:'#22C55E', warn:'#F59E0B', err:'#EF4444'
+    }
+  } }
+}
+</script>
+<style>
+  body{background:#0B0B0E}
+  .screen{display:none} .screen.active{display:block}
+  .navi.active{background:#1C1C22;color:#EDEDEF}
+  .navi.active svg{color:#FF6A2B}
+  ::-webkit-scrollbar{height:8px;width:8px} ::-webkit-scrollbar-thumb{background:#2A2A33;border-radius:8px}
+  .shot{transition:transform .15s ease, box-shadow .15s ease}
+  .shot:hover{transform:translateY(-2px)}
+  .shot.sel{box-shadow:0 0 0 2px #FF6A2B}
+  @keyframes pulse2{0%,100%{opacity:1}50%{opacity:.45}}
+  .live{animation:pulse2 1.6s ease-in-out infinite}
+  @keyframes bar{from{background-position:0 0}to{background-position:40px 0}}
+  .striped{background-image:linear-gradient(45deg,rgba(255,255,255,.12) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.12) 50%,rgba(255,255,255,.12) 75%,transparent 75%);background-size:40px 40px;animation:bar 1s linear infinite}
+</style>
+</head>
+<body class="font-sans text-tx antialiased">
+<div class="flex h-screen overflow-hidden">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="w-60 shrink-0 border-r border-line bg-surf flex flex-col">
+    <div class="h-14 flex items-center gap-2 px-5 border-b border-line">
+      <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-brasa to-orange-700 grid place-items-center">
+        <svg viewBox="0 0 24 24" class="w-4 h-4 text-white" fill="currentColor"><path d="M12 2c1 3-1 4.5-1 7 0 1.7 1.3 3 3 3s3-1.6 3-3.5C19 11 20 13 20 15a8 8 0 1 1-16 0c0-4 3-6 4-9 .6 1.7 1.6 2.6 2.5 3C10.3 6.7 11 4 12 2z"/></svg>
+      </div>
+      <span class="font-semibold tracking-tight">DocForja</span>
+      <span class="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-elev text-mut font-mono">v2</span>
+    </div>
+    <nav class="p-3 space-y-0.5 text-sm text-mut" id="nav">
+      <a class="navi active flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-elev" data-go="inicio">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Início</a>
+      <a class="navi flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-elev" data-go="criar">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Criar</a>
+      <div class="pt-4 pb-1 px-3 text-[11px] uppercase tracking-wider text-zinc-500">Projeto · Vesúvio</div>
+      <a class="navi flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-elev" data-go="plano">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10"/></svg>Plano</a>
+      <a class="navi flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-elev" data-go="busca">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Lista de busca
+        <span class="ml-auto text-[11px] font-semibold px-1.5 rounded bg-warn/15 text-warn">5</span></a>
+      <a class="navi flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-elev" data-go="producao">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>Produção</a>
+      <a class="navi flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-elev" data-go="resultado">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>Resultado</a>
+      <div class="pt-4 pb-1 px-3 text-[11px] uppercase tracking-wider text-zinc-500">Biblioteca</div>
+      <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500" title="Descrita no doc 14 §5.8">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/></svg>Shorts</a>
+      <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500" title="Descrita no doc 14 §5.9">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Música</a>
+      <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500" title="Descrita no doc 14 §5.10">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Pasta global</a>
+      <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-500" title="Descrita no doc 14 §5.11">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/></svg>Kits</a>
+    </nav>
+    <div class="mt-auto p-3 border-t border-line text-xs text-mut">
+      <div class="flex items-center gap-2 px-2"><span class="w-2 h-2 rounded-full bg-ok"></span>Sistema saudável</div>
+      <div class="px-2 mt-1 font-mono text-[11px] text-zinc-500">RTX 3060 · 7,9/12 GB</div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="flex-1 flex flex-col min-w-0">
+    <!-- top bar -->
+    <header class="h-14 shrink-0 border-b border-line bg-bg/80 backdrop-blur flex items-center gap-3 px-6">
+      <div class="flex items-center gap-2 bg-surf border border-line rounded-lg px-3 py-1.5 w-80 text-sm text-mut whitespace-nowrap overflow-hidden">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        Buscar projetos, ativos, ações…<span class="ml-auto font-mono text-[11px] border border-line rounded px-1">Ctrl K</span>
+      </div>
+      <div class="ml-auto flex items-center gap-2 text-xs">
+        <span class="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-info/10 whitespace-nowrap text-info border border-info/20"><span class="w-1.5 h-1.5 rounded-full bg-info live"></span>GPU · gerando imagens 12/48</span>
+        <span class="hidden lg:inline px-3 py-1.5 rounded-full bg-surf border border-line text-mut whitespace-nowrap">LLM <b class="text-tx">9Router</b> ●</span>
+        <button class="w-8 h-8 grid place-items-center rounded-lg hover:bg-surf relative"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brasa"></span></button>
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-zinc-600 to-zinc-800 grid place-items-center text-[11px] font-semibold">GC</div>
+      </div>
+    </header>
+
+    <div class="flex-1 overflow-y-auto">
+
+    <!-- ===================== INÍCIO ===================== -->
+    <section id="inicio" class="screen active p-8 max-w-[1400px] mx-auto">
+      <h1 class="text-2xl font-semibold tracking-tight">Boa tarde, Gabriel</h1>
+      <p class="text-mut mt-1">Você tem <b class="text-warn">1 projeto</b> esperando por você.</p>
+
+      <h2 class="mt-8 mb-3 text-sm font-semibold text-mut uppercase tracking-wider">Continuar de onde parou</h2>
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+        <!-- project card 1 -->
+        <div class="xl:col-span-2 rounded-2xl border border-line bg-surf overflow-hidden flex">
+          <div class="hidden md:block w-72 shrink-0 relative" style="background:linear-gradient(160deg,#3a2414 0%,#1a1110 45%,#0e0b0b 100%)">
+            <svg viewBox="0 0 320 200" class="absolute inset-0 w-full h-full"><path d="M0 170 L110 70 L160 40 L205 75 L320 160 L320 200 L0 200Z" fill="#141010"/><path d="M150 45 C140 20 175 10 165 -10 L185 -10 C190 15 170 25 172 45Z" fill="#3b3330" opacity=".9"/><circle cx="160" cy="40" r="10" fill="#FF6A2B" opacity=".55"/><rect x="0" y="175" width="320" height="25" fill="#0b0909"/></svg>
+            <span class="absolute top-3 left-3 text-[11px] px-2 py-0.5 rounded-full bg-black/50 backdrop-blur border border-white/10">Vídeo longo · 16:08</span>
+          </div>
+          <div class="p-6 flex-1 flex flex-col">
+            <div class="flex items-start justify-between">
+              <div>
+                <h3 class="text-lg font-semibold">O Vesúvio de Pompeia da forma que você nunca viu</h3>
+                <p class="text-sm text-mut mt-1">pt-BR · en · es · kit Cinza e Brasa · preset Padrão</p>
+              </div>
+              <span class="text-xs px-2 py-1 rounded-full bg-warn/15 text-warn border border-warn/25">Precisa de você</span>
+            </div>
+            <!-- stepper -->
+            <div class="mt-6 flex items-center gap-2 text-xs">
+              <span class="flex items-center gap-1.5 text-ok"><span class="w-5 h-5 rounded-full bg-ok/15 grid place-items-center">✓</span>Entrada</span>
+              <span class="flex-1 h-px bg-ok/40"></span>
+              <span class="flex items-center gap-1.5 text-ok"><span class="w-5 h-5 rounded-full bg-ok/15 grid place-items-center">✓</span>Planejamento</span>
+              <span class="flex-1 h-px bg-line"></span>
+              <span class="flex items-center gap-1.5 text-warn font-medium"><span class="w-5 h-5 rounded-full border-2 border-warn grid place-items-center">3</span>Revisão</span>
+              <span class="flex-1 h-px bg-line"></span>
+              <span class="flex items-center gap-1.5 text-zinc-500"><span class="w-5 h-5 rounded-full border border-line grid place-items-center">4</span>Produção</span>
+              <span class="flex-1 h-px bg-line"></span>
+              <span class="flex items-center gap-1.5 text-zinc-500"><span class="w-5 h-5 rounded-full border border-line grid place-items-center">5</span>Pronto</span>
+            </div>
+            <div class="mt-auto pt-6 flex items-center gap-3">
+              <button data-go="busca" class="whitespace-nowrap px-4 py-2 rounded-lg bg-brasa text-black font-semibold text-sm hover:brightness-110">Enviar 5 imagens</button>
+              <button data-go="plano" class="whitespace-nowrap px-4 py-2 rounded-lg border border-line text-sm hover:bg-elev">Revisar plano</button>
+              <span class="ml-auto text-xs text-mut">Imagens de IA sendo pré-geradas · 12/48</span>
+            </div>
+          </div>
+        </div>
+        <!-- quick create -->
+        <div class="rounded-2xl border border-line bg-surf p-5">
+          <h3 class="font-semibold">Criar</h3>
+          <div class="mt-4 space-y-2">
+            <button data-go="criar" class="w-full flex items-center gap-3 p-3 rounded-xl bg-elev hover:ring-1 hover:ring-brasa/50 text-left">
+              <span class="w-9 h-9 rounded-lg bg-brasa/15 text-brasa grid place-items-center"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/></svg></span>
+              <span><b class="text-sm block">Vídeo longo</b><span class="text-xs text-mut">Documentário a partir do roteiro</span></span></button>
+            <button data-go="criar" class="w-full flex items-center gap-3 p-3 rounded-xl bg-elev hover:ring-1 hover:ring-brasa/50 text-left">
+              <span class="w-9 h-9 rounded-lg bg-info/15 text-info grid place-items-center"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/></svg></span>
+              <span><b class="text-sm block">Short</b><span class="text-xs text-mut">Derivado ou avulso, Shorts e Reels</span></span></button>
+            <button data-go="criar" class="w-full flex items-center gap-3 p-3 rounded-xl bg-elev hover:ring-1 hover:ring-brasa/50 text-left">
+              <span class="w-9 h-9 rounded-lg bg-violet-500/15 text-violet-400 grid place-items-center"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+              <span><b class="text-sm block">Canal de música</b><span class="text-xs text-mut">Playlist com cena viva em loop</span></span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-5">
+        <div class="rounded-2xl border border-line bg-surf p-5">
+          <h3 class="font-semibold text-sm">Saúde do sistema</h3>
+          <ul class="mt-3 space-y-2 text-sm">
+            <li class="flex justify-between"><span class="text-mut">GPU RTX 3060</span><span class="text-ok">● 7,9/12 GB</span></li>
+            <li class="flex justify-between"><span class="text-mut">ComfyUI</span><span class="text-ok">● online</span></li>
+            <li class="flex justify-between"><span class="text-mut">Ollama</span><span class="text-ok">● online</span></li>
+            <li class="flex justify-between"><span class="text-mut">Disco D:</span><span class="text-ok">● 412 GB livres</span></li>
+            <li class="flex justify-between"><span class="text-mut">9Router (LLM)</span><span class="text-ok">● online · 41 pedidos hoje</span></li>
+          </ul>
+        </div>
+        <div class="rounded-2xl border border-line bg-surf p-5 lg:col-span-2">
+          <h3 class="font-semibold text-sm">Fila agora</h3>
+          <div class="mt-3 space-y-3 text-sm">
+            <div class="flex items-center gap-3"><span class="w-2 h-2 rounded-full bg-info live"></span><span class="flex-1">Vesúvio · gerar imagens de IA (pré-geração)</span><span class="font-mono text-xs text-mut">12/48 · ~38 min</span></div>
+            <div class="h-1.5 rounded-full bg-elev overflow-hidden"><div class="h-full w-1/4 bg-info striped"></div></div>
+            <div class="flex items-center gap-3 text-mut"><span class="w-2 h-2 rounded-full bg-zinc-600"></span><span class="flex-1">Vesúvio · narração en, es</span><span class="font-mono text-xs">na fila</span></div>
+            <div class="flex items-center gap-3 text-mut"><span class="w-2 h-2 rounded-full bg-zinc-600"></span><span class="flex-1">Campanha "Lançamento do curso" · 5 shorts</span><span class="font-mono text-xs">na fila</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CRIAR ===================== -->
+    <section id="criar" class="screen p-8 max-w-[1100px] mx-auto">
+      <div class="flex items-center gap-3 text-sm">
+        <span class="text-ok">✓ Tipo</span><span class="text-zinc-600">—</span>
+        <span class="text-ok">✓ Conteúdo</span><span class="text-zinc-600">—</span>
+        <span class="text-brasa font-semibold">3 Estilo e voz</span><span class="text-zinc-600">—</span>
+        <span class="text-zinc-500">4 Revisar</span>
+      </div>
+      <h1 class="text-2xl font-semibold mt-4">Como o vídeo vai parecer e soar</h1>
+      <p class="text-mut mt-1">Você pode mudar tudo depois, no plano.</p>
+
+      <h3 class="mt-8 mb-3 text-sm font-semibold">Kit visual</h3>
+      <div class="grid grid-cols-3 gap-4">
+        <label class="rounded-xl border-2 border-brasa bg-surf overflow-hidden cursor-pointer">
+          <div class="h-28 relative" style="background:linear-gradient(135deg,#2b1a10,#0e0e10)"><div class="absolute left-4 bottom-4 font-semibold tracking-[.2em] text-[#F4F0E8]" style="font-family:serif">VESÚVIO</div><div class="absolute left-4 bottom-2 w-16 h-1 bg-brasa"></div></div>
+          <div class="p-3 flex justify-between items-center"><span class="text-sm font-medium">Cinza e Brasa</span><span class="text-[11px] text-brasa">● selecionado</span></div></label>
+        <label class="rounded-xl border border-line bg-surf overflow-hidden cursor-pointer hover:border-zinc-500">
+          <div class="h-28 relative" style="background:linear-gradient(135deg,#0b2235,#0b0f14)"><div class="absolute left-4 bottom-4 font-bold text-sky-200">Explicado</div><div class="absolute left-4 bottom-2 w-16 h-1 bg-sky-400"></div></div>
+          <div class="p-3 text-sm font-medium">Azul Ciência</div></label>
+        <label class="rounded-xl border border-dashed border-line bg-surf grid place-items-center text-sm text-mut cursor-pointer hover:border-zinc-500">＋ Novo kit</label>
+      </div>
+
+      <h3 class="mt-8 mb-3 text-sm font-semibold">Voz (pt-BR)</h3>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="rounded-xl border-2 border-brasa bg-surf p-3 flex items-center gap-3">
+          <button class="w-9 h-9 rounded-full bg-brasa text-black grid place-items-center">▶</button>
+          <div><b class="text-sm block">Narrador grave</b><span class="text-xs text-mut">Chatterbox · pt-BR</span></div></div>
+        <div class="rounded-xl border border-line bg-surf p-3 flex items-center gap-3">
+          <button class="w-9 h-9 rounded-full bg-elev grid place-items-center">▶</button>
+          <div><b class="text-sm block">Alex</b><span class="text-xs text-mut">Kokoro · pt-BR</span></div></div>
+        <div class="rounded-xl border border-dashed border-line bg-surf p-3 flex items-center gap-3 text-sm text-mut">⬆ Vou enviar minha narração</div>
+      </div>
+      <p class="text-xs text-mut mt-2">▶ toca a primeira frase do <i>seu</i> roteiro com essa voz.</p>
+
+      <h3 class="mt-8 mb-3 text-sm font-semibold">Qualidade</h3>
+      <div class="grid grid-cols-3 gap-4">
+        <div class="rounded-xl border border-line bg-surf p-4"><b class="text-sm">Rápido</b><p class="text-xs text-mut mt-1">1080p · menos imagens geradas</p><p class="mt-3 font-mono text-sm">≈ 55 min</p></div>
+        <div class="rounded-xl border-2 border-brasa bg-surf p-4 relative"><span class="absolute -top-2.5 right-3 text-[10px] px-2 py-0.5 rounded-full bg-brasa text-black font-semibold">Recomendado</span><b class="text-sm">Padrão</b><p class="text-xs text-mut mt-1">1080p · equilíbrio</p><p class="mt-3 font-mono text-sm">≈ 1h44</p></div>
+        <div class="rounded-xl border border-line bg-surf p-4"><b class="text-sm">Caprichado</b><p class="text-xs text-mut mt-1">1440p · mais variações</p><p class="mt-3 font-mono text-sm">≈ 3h20</p></div>
+      </div>
+
+      <h3 class="mt-8 mb-2 text-sm font-semibold">Quantidade de motion graphics</h3>
+      <div class="rounded-xl border border-line bg-surf p-4">
+        <div class="flex justify-between text-xs text-mut"><span>Baixa</span><span class="text-tx font-medium">Média</span><span>Alta</span></div>
+        <div class="mt-2 h-2 rounded-full bg-elev relative"><div class="absolute inset-y-0 left-0 w-1/2 rounded-full bg-brasa"></div><div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white shadow"></div></div>
+        <p class="text-xs text-mut mt-3">Média: cerca de 1 gráfico, mapa ou texto de destaque a cada 15 s nos trechos intensos.</p>
+      </div>
+
+      <details class="mt-6 rounded-xl border border-line bg-surf p-4 text-sm"><summary class="cursor-pointer text-mut">Avançado</summary><p class="mt-3 text-mut">Pré-gerar imagens durante a revisão · Monetizado · Adaptadores específicos · Orçamento de tempo</p></details>
+
+      <div class="mt-8 flex justify-between">
+        <button class="whitespace-nowrap px-4 py-2 rounded-lg border border-line text-sm">Voltar</button>
+        <button data-go="plano" class="whitespace-nowrap px-5 py-2 rounded-lg bg-brasa text-black font-semibold text-sm">Continuar</button>
+      </div>
+    </section>
+
+    <!-- ===================== PLANO ===================== -->
+    <section id="plano" class="screen">
+      <!-- project header -->
+      <div class="px-8 pt-6 pb-4 border-b border-line bg-surf/40">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs text-mut">Vídeo longo · 16:08 · pt-BR, en, es</div>
+            <h1 class="text-xl font-semibold mt-0.5">O Vesúvio de Pompeia da forma que você nunca viu</h1>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-sm text-warn flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-warn"></span>5 imagens esperam você</span>
+            <button class="whitespace-nowrap px-3 py-2 rounded-lg border border-line text-sm hover:bg-elev">Versões ▾</button>
+            <button data-go="producao" class="whitespace-nowrap px-5 py-2 rounded-lg bg-brasa text-black font-semibold text-sm">Produzir ▸</button>
+          </div>
+        </div>
+        <div class="mt-4 flex gap-1 text-sm">
+          <span class="px-3 py-1.5 rounded-lg bg-elev">Storyboard</span>
+          <span class="px-3 py-1.5 rounded-lg text-mut hover:bg-elev cursor-pointer">Tabela</span>
+          <span class="px-3 py-1.5 rounded-lg text-mut hover:bg-elev cursor-pointer">Ativos</span>
+          <span class="px-3 py-1.5 rounded-lg text-mut hover:bg-elev cursor-pointer">Números na tela <span class="text-warn">3</span></span>
+          <span class="ml-auto flex gap-2">
+            <span class="px-2.5 py-1 rounded-full border border-warn/30 text-warn text-xs">Só o que precisa de mim</span>
+            <span class="px-2.5 py-1 rounded-full border border-line text-mut text-xs">Só IA</span>
+            <span class="px-2.5 py-1 rounded-full border border-line text-mut text-xs">Bloco B3</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="flex">
+        <div class="flex-1 min-w-0 p-6 space-y-5">
+          <div class="grid grid-cols-1 min-[1500px]:grid-cols-3 gap-5">
+            <!-- player -->
+            <div class="min-[1500px]:col-span-2 rounded-2xl border border-line bg-black overflow-hidden">
+              <div class="aspect-video relative" style="background:radial-gradient(ellipse at 50% 30%,#3d2516 0%,#120d0b 55%,#070606 100%)">
+                <svg viewBox="0 0 640 360" class="absolute inset-0 w-full h-full">
+                  <path d="M0 300 L200 150 L320 90 L430 160 L640 290 L640 360 L0 360Z" fill="#0f0c0b"/>
+                  <path d="M305 95 C270 40 360 20 330 -30 L380 -30 C390 30 340 50 345 95Z" fill="#2c2522"/>
+                  <circle cx="322" cy="92" r="14" fill="#FF6A2B" opacity=".6"/>
+                  <g fill="#bcb3a9" opacity=".5"><circle cx="120" cy="80" r="1.5"/><circle cx="500" cy="60" r="1.2"/><circle cx="420" cy="130" r="1"/><circle cx="200" cy="40" r="1.3"/></g>
+                </svg>
+                <div class="absolute top-4 left-5 font-mono text-[13px] leading-tight"><div class="text-zinc-400">DIA 1</div><div class="text-white text-lg">≈ 13:00</div><div class="text-brasa">POMPEIA</div><div class="w-28 h-0.5 bg-zinc-700 mt-1"><div class="w-1/5 h-full bg-brasa"></div></div></div>
+                <div class="absolute bottom-3 left-4 text-[10px] text-white/60 tracking-wider font-mono">RECONSTITUIÇÃO ARTÍSTICA</div>
+                <div class="absolute bottom-3 right-4 text-[10px] px-2 py-0.5 rounded bg-black/60 text-white/70">prévia · rascunho</div>
+              </div>
+              <div class="flex items-center gap-3 px-4 py-2.5 bg-surf text-sm border-t border-line">
+                <button class="w-8 h-8 rounded-full bg-white text-black grid place-items-center">▶</button>
+                <span class="font-mono text-xs text-mut">04:31 / 16:08</span>
+                <div class="flex-1 h-1 rounded-full bg-elev"><div class="h-full w-[28%] rounded-full bg-brasa"></div></div>
+                <span class="text-xs px-2 py-1 rounded bg-elev">pt-BR ▾</span><span class="text-xs px-2 py-1 rounded bg-elev">16:9 ▾</span>
+              </div>
+            </div>
+            <!-- health -->
+            <div class="grid grid-cols-1 md:grid-cols-3 min-[1500px]:grid-cols-1 gap-4 content-start">
+              <div class="rounded-2xl border border-line bg-surf p-4">
+                <div class="flex items-center justify-between"><h3 class="text-sm font-semibold">Saúde do plano</h3><span class="text-2xl font-semibold">92<span class="text-sm text-mut">/100</span></span></div>
+                <ul class="mt-3 space-y-1.5 text-sm">
+                  <li class="flex gap-2"><span class="text-ok">✓</span>Ritmo dentro da intensidade</li>
+                  <li class="flex gap-2"><span class="text-ok">✓</span>Respiros após revelações</li>
+                  <li class="flex gap-2"><span class="text-ok">✓</span>Imagens de IA: 29% (máx. 30%)</li>
+                  <li class="flex gap-2"><span class="text-warn">!</span>2 textos longos para o tempo</li>
+                </ul>
+              </div>
+              <div class="rounded-2xl border border-line bg-surf p-4">
+                <h3 class="text-sm font-semibold">Tempo de produção</h3>
+                <div class="mt-3 h-2.5 rounded-full bg-elev overflow-hidden"><div class="h-full w-[87%] bg-gradient-to-r from-ok to-warn"></div></div>
+                <p class="text-xs text-mut mt-2"><b class="text-tx font-mono">1h44</b> de 2h00 do orçamento · +1h10 por idioma extra</p>
+              </div>
+              <div class="rounded-2xl border border-line bg-surf p-4">
+                <h3 class="text-sm font-semibold">Ativos</h3>
+                <div class="mt-3 flex h-2.5 rounded-full overflow-hidden"><div class="bg-ok" style="width:50%"></div><div class="bg-brasa" style="width:31%"></div><div class="bg-violet-500" style="width:8%"></div><div class="bg-sky-400" style="width:7%"></div><div class="bg-warn" style="width:4%"></div></div>
+                <div class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-mut">
+                  <span><span class="text-ok">●</span> 62 pesquisadas</span><span><span class="text-brasa">●</span> 38 geradas</span>
+                  <span><span class="text-violet-400">●</span> 9 pasta global</span><span><span class="text-sky-400">●</span> 8 suas</span>
+                  <span><span class="text-warn">●</span> 5 esperam você</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- timeline -->
+          <div class="rounded-2xl border border-line bg-surf p-4">
+            <div class="flex items-center justify-between text-xs text-mut mb-1"><span>Curva de intensidade</span><span>clique num shot para editar</span></div>
+            <svg viewBox="0 0 1000 60" class="w-full h-14" preserveAspectRatio="none">
+              <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#FF6A2B" stop-opacity=".45"/><stop offset="1" stop-color="#FF6A2B" stop-opacity="0"/></linearGradient></defs>
+              <path d="M0 35 L40 25 L80 18 L120 42 L200 45 L260 38 L290 32 L330 20 L400 12 L460 8 L500 4 L540 3 L560 52 L640 42 L700 40 L720 30 L800 22 L860 24 L900 15 L960 20 L1000 55 L1000 60 L0 60Z" fill="url(#g)"/>
+              <path d="M0 35 L40 25 L80 18 L120 42 L200 45 L260 38 L290 32 L330 20 L400 12 L460 8 L500 4 L540 3 L560 52 L640 42 L700 40 L720 30 L800 22 L860 24 L900 15 L960 20 L1000 55" fill="none" stroke="#FF6A2B" stroke-width="2"/>
+            </svg>
+            <div id="blocks" class="flex gap-1 mt-1 text-[11px] font-mono text-mut"></div>
+            <div id="shots" class="mt-3 flex gap-1.5 overflow-x-auto pb-2"></div>
+            <div class="mt-2 flex gap-4 text-[11px] text-mut">
+              <span><span class="inline-block w-2.5 h-2.5 rounded-sm border-2 border-ok align-middle"></span> pronto</span>
+              <span><span class="inline-block w-2.5 h-2.5 rounded-sm border-2 border-warn align-middle"></span> precisa de você</span>
+              <span><span class="inline-block w-2.5 h-2.5 rounded-sm border-2 border-info align-middle"></span> gerando</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- shot inspector -->
+        <aside class="hidden xl:block w-[380px] shrink-0 border-l border-line bg-surf min-h-[calc(100vh-56px-117px)] p-5 space-y-5">
+          <div class="flex items-center justify-between">
+            <div><div class="text-xs text-mut font-mono">B3-08 · 05:02 · 3,6 s</div><h3 class="font-semibold">Plínio, o Jovem, em Miseno</h3></div>
+            <button class="text-mut hover:text-tx">✕</button>
+          </div>
+          <div class="rounded-xl bg-elev p-3 text-sm leading-relaxed">
+            <button class="float-right w-7 h-7 rounded-full bg-surf grid place-items-center text-xs">▶</button>
+            “Do outro lado da baía, a cerca de trinta quilômetros, na base naval de Miseno, um rapaz de dezessete anos olhou para o céu.”
+          </div>
+          <div>
+            <div class="text-xs text-mut mb-2">Template</div>
+            <div class="grid grid-cols-3 gap-2 text-[11px]">
+              <div class="rounded-lg border border-line p-2 text-center text-mut">Foto</div>
+              <div class="rounded-lg border-2 border-brasa p-2 text-center">Profundidade</div>
+              <div class="rounded-lg border border-line p-2 text-center text-mut">Recorte</div>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs text-mut mb-2">Imagem <span class="text-brasa">· gerada (rascunho)</span></div>
+            <div class="aspect-video rounded-xl overflow-hidden relative" style="background:linear-gradient(180deg,#5b4636 0%,#2a211b 60%,#16120f 100%)">
+              <svg viewBox="0 0 320 180" class="absolute inset-0 w-full h-full"><rect y="120" width="320" height="60" fill="#1b1612"/><path d="M190 120 L190 70 Q195 50 210 52 Q226 55 224 75 L226 120Z" fill="#0f0c0a"/><circle cx="210" cy="48" r="10" fill="#0f0c0a"/><path d="M40 60 C30 30 60 25 55 5 L70 5 C72 25 55 35 58 60Z" fill="#3a302a" opacity=".8"/></svg>
+            </div>
+            <div class="grid grid-cols-4 gap-2 mt-2 text-[11px]">
+              <button class="rounded-lg bg-elev py-2 hover:ring-1 hover:ring-line">Gerar outra</button>
+              <button class="rounded-lg bg-elev py-2 hover:ring-1 hover:ring-line">Candidatas</button>
+              <button class="rounded-lg bg-elev py-2 hover:ring-1 hover:ring-line">Global</button>
+              <button class="rounded-lg bg-elev py-2 hover:ring-1 hover:ring-line">Enviar</button>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs text-mut mb-2">Movimento</div>
+            <div class="flex gap-2 text-[11px]">
+              <span class="px-2.5 py-1.5 rounded-lg bg-elev">push-in</span><span class="px-2.5 py-1.5 rounded-lg bg-brasa/15 text-brasa ring-1 ring-brasa/40">dolly</span><span class="px-2.5 py-1.5 rounded-lg bg-elev">órbita</span><span class="px-2.5 py-1.5 rounded-lg bg-elev">pan</span>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs text-mut mb-2">Identificação na tela</div>
+            <div class="rounded-lg border border-line bg-bg px-3 py-2 text-sm font-mono">PLÍNIO, O JOVEM · 17 anos</div>
+            <p class="text-[11px] text-ok mt-1">✓ legível em 3,6 s</p>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div><div class="text-xs text-mut mb-1">Som</div><div class="rounded-lg bg-elev px-3 py-2">porto, gaivotas</div></div>
+            <div><div class="text-xs text-mut mb-1">Plano B</div><div class="rounded-lg bg-elev px-3 py-2">Foto · push-in</div></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ===================== LISTA DE BUSCA ===================== -->
+    <section id="busca" class="screen p-8 max-w-[1200px] mx-auto">
+      <div class="flex items-end justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold">Lista de busca</h1>
+          <p class="text-mut mt-1">Imagens reais que eu não consegui usar sozinho. Solte o arquivo no cartão — ou em qualquer lugar desta tela.</p>
+        </div>
+        <button class="whitespace-nowrap px-3 py-2 rounded-lg border border-line text-sm hover:bg-elev">Abrir pasta manual</button>
+      </div>
+      <div class="mt-5 rounded-xl border border-line bg-surf p-4 flex items-center gap-4">
+        <span class="text-sm"><b>9</b> de 14 entregues</span>
+        <div class="flex-1 h-2 rounded-full bg-elev overflow-hidden"><div class="h-full w-[64%] bg-ok"></div></div>
+        <span class="text-xs text-mut">Os 5 restantes têm plano B se você não trouxer</span>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-6">
+        <div class="rounded-2xl border border-warn/30 bg-surf p-5">
+          <div class="flex items-start justify-between">
+            <div><div class="font-mono text-xs text-mut">A-017 · usado em B1-05, B1-06</div><h3 class="font-semibold mt-0.5">Afresco “Baco e o Vesúvio”</h3></div>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-warn/15 text-warn">esperando</span>
+          </div>
+          <p class="text-sm text-mut mt-3"><b class="text-tx">Por quê:</b> as fotos encontradas são de bem cultural italiano (uso comercial exige autorização) ou têm 900 px.</p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <span class="text-xs px-2 py-1 rounded-md bg-elev font-mono">Bacco e Vesuvio affresco ⧉</span>
+            <span class="text-xs px-2 py-1 rounded-md bg-elev font-mono">Bacchus Vesuvius fresco ⧉</span>
+          </div>
+          <div class="mt-3 flex gap-3 text-xs text-info"><a>Wikimedia Commons ↗</a><a>MANN ↗</a></div>
+          <div class="mt-4 rounded-xl border-2 border-dashed border-line p-5 text-center text-sm text-mut hover:border-brasa/60">Solte aqui · mínimo 1600 px · <span class="font-mono">A-017.jpg</span></div>
+          <p class="text-[11px] text-mut mt-2">Plano B: imagem gerada no estilo de afresco, com rótulo de reconstituição.</p>
+        </div>
+
+        <div class="rounded-2xl border border-ok/30 bg-surf p-5">
+          <div class="flex items-start justify-between">
+            <div><div class="font-mono text-xs text-mut">A-031 · usado em B0-09, B7-03</div><h3 class="font-semibold mt-0.5">Molde da Casa do Bracelete de Ouro</h3></div>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-ok/15 text-ok">recebido</span>
+          </div>
+          <div class="mt-4 flex gap-4">
+            <div class="w-40 aspect-[4/3] rounded-lg" style="background:linear-gradient(135deg,#9a958f,#4b4844)"></div>
+            <div class="text-sm space-y-2 flex-1">
+              <div class="text-mut text-xs">Ficha de crédito</div>
+              <div class="rounded-lg bg-elev px-3 py-1.5">Fonte: banco de imagens licenciado</div>
+              <div class="rounded-lg bg-elev px-3 py-1.5">Licença: comprada ✓</div>
+              <div class="text-ok text-xs">✓ 3200 px · sem marca d'água · atribuído automaticamente</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-warn/30 bg-surf p-5">
+          <div class="flex items-start justify-between">
+            <div><div class="font-mono text-xs text-mut">A-014 · usado em B0-05, B7-17, B8-12</div><h3 class="font-semibold mt-0.5">Inscrição a carvão de 2018 (“XVI K NOV”)</h3></div>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-warn/15 text-warn">esperando</span>
+          </div>
+          <p class="text-sm text-mut mt-3"><b class="text-tx">Por quê:</b> só encontrei fotos do Parco Archeologico di Pompei, que exigem autorização.</p>
+          <div class="mt-4 rounded-xl border-2 border-dashed border-line p-5 text-center text-sm text-mut">Solte aqui · <span class="font-mono">A-014.jpg</span></div>
+          <p class="text-[11px] text-mut mt-2">Plano B: recriação tipográfica em carvão, rotulada “recriação gráfica”.</p>
+        </div>
+
+        <div class="rounded-2xl border border-line bg-surf p-5">
+          <h3 class="font-semibold">Arquivos sem identificação</h3>
+          <p class="text-sm text-mut mt-1">Recebi <span class="font-mono">foto3.jpg</span>. Parece servir para:</p>
+          <div class="mt-3 space-y-2 text-sm">
+            <div class="flex items-center gap-3 rounded-lg bg-elev px-3 py-2"><span class="text-ok font-mono text-xs">87%</span>A-022 · Fornici de Herculano<button class="ml-auto text-xs px-2 py-1 rounded bg-brasa text-black font-semibold">Usar</button></div>
+            <div class="flex items-center gap-3 rounded-lg bg-elev px-3 py-2 text-mut"><span class="font-mono text-xs">41%</span>A-024 · Herculano escavada hoje<button class="ml-auto text-xs px-2 py-1 rounded border border-line">Usar</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PRODUÇÃO ===================== -->
+    <section id="producao" class="screen p-8 max-w-[1100px] mx-auto">
+      <div class="rounded-2xl border border-line bg-surf p-8 flex items-center gap-10">
+        <svg viewBox="0 0 120 120" class="w-40 h-40 shrink-0 -rotate-90">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#1C1C22" stroke-width="10"/>
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#FF6A2B" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="137"/>
+        </svg>
+        <div>
+          <div class="text-sm text-info flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-info live"></span>Produzindo · pt-BR</div>
+          <div class="text-4xl font-semibold mt-1">58%</div>
+          <p class="text-mut mt-1">Faltam cerca de <b class="text-tx font-mono">44 min</b>. Pode fechar esta janela — avisamos quando terminar.</p>
+          <p class="text-sm mt-3">Agora: <b>animando fotos (parallax)</b> · 31 de 52</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-5">
+        <div class="rounded-2xl border border-line bg-surf p-5">
+          <h3 class="text-sm font-semibold mb-3">Etapas</h3>
+          <ol class="space-y-2.5 text-sm">
+            <li class="flex gap-2"><span class="text-ok">✓</span>Imagens geradas</li>
+            <li class="flex gap-2"><span class="text-ok">✓</span>Recortes e upscale</li>
+            <li class="flex gap-2 text-info"><span class="live">●</span>Parallax 31/52</li>
+            <li class="flex gap-2"><span class="text-ok">✓</span>Mapas</li>
+            <li class="flex gap-2"><span class="text-ok">✓</span>Trilha e SFX</li>
+            <li class="flex gap-2 text-zinc-500"><span>○</span>Montagem e mix</li>
+            <li class="flex gap-2 text-zinc-500"><span>○</span>Render 1080p</li>
+            <li class="flex gap-2 text-zinc-500"><span>○</span>Conferência de qualidade</li>
+            <li class="flex gap-2 text-zinc-500"><span>○</span>Legendas, títulos, thumbs</li>
+          </ol>
+        </div>
+        <div class="lg:col-span-2 rounded-2xl border border-line bg-surf p-5">
+          <h3 class="text-sm font-semibold mb-3">Ficando prontas</h3>
+          <div id="gallery" class="grid grid-cols-6 gap-2"></div>
+          <details class="mt-4 text-sm text-mut"><summary class="cursor-pointer">Detalhes técnicos</summary><pre class="mt-2 text-[11px] font-mono bg-bg rounded-lg p-3 overflow-x-auto">[21:42:10] R2_tratamento B3-29 depthflow dolly 0.4 → ok (18.2 s)
+[21:42:29] R2_tratamento B4-06 depthflow zoom 0.3 → ok (17.9 s)
+[21:42:47] R2_tratamento B5-03 depthflow dolly 0.3 → ok (19.1 s)</pre></details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== RESULTADO ===================== -->
+    <section id="resultado" class="screen p-8 max-w-[1400px] mx-auto">
+      <div class="flex items-end justify-between">
+        <div><div class="text-sm text-ok">✓ Pronto em 1h38</div><h1 class="text-2xl font-semibold mt-1">O Vesúvio de Pompeia da forma que você nunca viu</h1></div>
+        <div class="flex gap-2"><button class="whitespace-nowrap px-3 py-2 rounded-lg border border-line text-sm">Abrir pasta</button><button class="whitespace-nowrap px-3 py-2 rounded-lg border border-line text-sm">Baixar pacote</button></div>
+      </div>
+      <div class="grid grid-cols-1 xl:grid-cols-5 gap-5 mt-6">
+        <div class="xl:col-span-3 space-y-5">
+          <div class="rounded-2xl border border-line bg-black overflow-hidden">
+            <div class="flex gap-1 p-2 bg-surf border-b border-line text-xs"><span class="px-3 py-1 rounded bg-elev">pt-BR</span><span class="px-3 py-1 rounded text-mut">en</span><span class="px-3 py-1 rounded text-mut">es</span></div>
+            <div class="aspect-video relative" style="background:radial-gradient(ellipse at 40% 40%,#4a3420,#140f0c 60%,#080707)">
+              <div class="absolute inset-0 grid place-items-center"><button class="w-16 h-16 rounded-full bg-white/90 text-black text-xl grid place-items-center">▶</button></div>
+            </div>
+            <div class="p-3 bg-surf text-xs text-mut flex flex-wrap gap-x-4 gap-y-1 font-mono">
+              <a class="hover:text-tx cursor-pointer">00:00 A data errada</a><a class="hover:text-tx cursor-pointer">01:15 A montanha verde</a><a class="hover:text-tx cursor-pointer">04:25 Dia 1 — A coluna</a><a class="hover:text-tx cursor-pointer">09:20 Dia 2 — O fim</a><a class="hover:text-tx cursor-pointer">12:40 O que você nunca viu</a>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-line bg-surf p-5">
+            <h3 class="font-semibold">Shorts gerados</h3>
+            <div class="mt-4 flex gap-4">
+              <div class="w-32 aspect-[9/16] rounded-2xl border-4 border-zinc-800 relative overflow-hidden" style="background:linear-gradient(180deg,#14100e,#2b1d14)"><div class="absolute top-6 inset-x-2 text-center text-[11px] font-bold leading-tight">O cérebro dele virou VIDRO</div><div class="absolute bottom-6 inset-x-2 text-center text-[9px] text-brasa">vídeo completo no canal</div></div>
+              <div class="w-32 aspect-[9/16] rounded-2xl border-4 border-zinc-800 relative overflow-hidden" style="background:linear-gradient(180deg,#0e1418,#16222a)"><div class="absolute top-6 inset-x-2 text-center text-[11px] font-bold leading-tight">A IA leu um livro de 2.000 anos</div></div>
+              <div class="w-32 aspect-[9/16] rounded-2xl border-4 border-zinc-800 relative overflow-hidden" style="background:linear-gradient(180deg,#1a1310,#2a1c15)"><div class="absolute top-6 inset-x-2 text-center text-[11px] font-bold leading-tight">Pompeia NÃO morreu em agosto</div></div>
+              <div class="w-32 aspect-[9/16] rounded-2xl border-2 border-dashed border-line grid place-items-center text-xs text-mut text-center p-2">＋ escolher outro trecho</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="xl:col-span-2 space-y-5">
+          <div class="rounded-2xl border border-line bg-surf p-5">
+            <div class="flex items-center justify-between"><h3 class="font-semibold">Títulos</h3><span class="text-xs text-mut">★ = testar no A/B</span></div>
+            <ul class="mt-3 space-y-2 text-sm">
+              <li class="flex items-center gap-3 rounded-lg bg-elev px-3 py-2"><span class="text-brasa">★</span><span class="flex-1">Pompeia não morreu em agosto (e não foi a lava)</span><span class="font-mono text-xs text-ok">9.1</span><button class="text-mut text-xs">⧉</button></li>
+              <li class="flex items-center gap-3 rounded-lg bg-elev px-3 py-2"><span class="text-brasa">★</span><span class="flex-1">As últimas 19 horas de Pompeia, hora por hora</span><span class="font-mono text-xs text-ok">8.8</span><button class="text-mut text-xs">⧉</button></li>
+              <li class="flex items-center gap-3 rounded-lg bg-elev px-3 py-2"><span class="text-brasa">★</span><span class="flex-1">O Vesúvio de Pompeia como você nunca viu</span><span class="font-mono text-xs text-ok">8.5</span><button class="text-mut text-xs">⧉</button></li>
+              <li class="flex items-center gap-3 rounded-lg px-3 py-2 text-mut"><span>☆</span><span class="flex-1">O cérebro que virou vidro em Herculano</span><span class="font-mono text-xs">8.2</span></li>
+              <li class="flex items-center gap-3 rounded-lg px-3 py-2 text-mut"><span>☆</span><span class="flex-1">700 mil pessoas vivem onde Pompeia morreu</span><span class="font-mono text-xs">7.9</span></li>
+            </ul>
+          </div>
+          <div class="rounded-2xl border border-line bg-surf p-5">
+            <h3 class="font-semibold">Thumbnails</h3>
+            <div class="mt-3 grid grid-cols-3 gap-3">
+              <div><div class="aspect-video rounded-lg relative overflow-hidden" style="background:linear-gradient(120deg,#c08a3e 0 50%,#4a4642 50% 100%)"><span class="absolute bottom-1.5 left-2 font-extrabold text-sm text-brasa drop-shadow">19 HORAS</span></div><p class="text-[11px] text-mut mt-1">A · A cidade e o relógio</p></div>
+              <div><div class="aspect-video rounded-lg relative overflow-hidden" style="background:#d8ccb4"><span class="absolute inset-0 grid place-items-center font-extrabold text-sm text-red-700 line-through">24 AGO</span><span class="absolute bottom-1 left-2 font-extrabold text-xs text-black">ERRAMOS</span></div><p class="text-[11px] text-mut mt-1">B · Erramos a data</p></div>
+              <div><div class="aspect-video rounded-lg relative overflow-hidden" style="background:radial-gradient(circle at 50% 50%,#3a3a44,#0a0a0d)"><span class="absolute bottom-1 left-2 font-extrabold text-[10px] text-brasa">CÉREBRO DE VIDRO</span></div><p class="text-[11px] text-mut mt-1">C · Vidro</p></div>
+            </div>
+            <p class="text-xs text-mut mt-3">✓ texto legível em 120 px nas três opções</p>
+          </div>
+          <div class="rounded-2xl border border-line bg-surf p-5">
+            <div class="flex items-center justify-between"><h3 class="font-semibold">Descrição</h3><button class="text-xs px-2 py-1 rounded bg-elev">Copiar</button></div>
+            <p class="text-sm text-mut mt-2 leading-relaxed">Pompeia não foi destruída pela lava — e talvez não tenha morrido em 24 de agosto. Neste documentário, você vive as últimas horas da cidade, hora por hora…</p>
+          </div>
+          <div class="rounded-2xl border border-violet-500/30 bg-surf p-5">
+            <h3 class="font-semibold">Guardar na pasta global</h3>
+            <p class="text-sm text-mut mt-1">Sugiro guardar <b class="text-tx">41 itens</b>: 28 imagens, 2 personagens, 3 mapas, 6 trilhas, 2 glossários.</p>
+            <button class="mt-3 px-4 py-2 rounded-lg bg-violet-500 text-white text-sm font-semibold">Revisar e guardar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // navegação entre telas
+  const show = id => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+    document.querySelectorAll('.navi').forEach(n => n.classList.toggle('active', n.dataset.go === id));
+    document.querySelector('main > div').scrollTop = 0;
+  };
+  document.querySelectorAll('[data-go]').forEach(el => el.addEventListener('click', () => show(el.dataset.go)));
+
+  // linha do tempo do plano
+  const blocks = [['B0',13,'#3b2a20'],['B1',17,'#4d3a1f'],['B2',9,'#3a3226'],['B3',34,'#3b241a'],['B4',19,'#1c2430'],['B5',18,'#2a2a2e'],['B6',10,'#3a3128'],['B7',19,'#16303a'],['B8',16,'#24282e']];
+  const total = blocks.reduce((a,b)=>a+b[1],0);
+  const bEl = document.getElementById('blocks'), sEl = document.getElementById('shots');
+  let n = 0;
+  const icons = ['▣','◫','◉','T','#','⌖','▤'];
+  blocks.forEach(([id,count,col]) => {
+    const d = document.createElement('div');
+    d.style.flex = count; d.className = 'border-t-2 pt-1 ' + (id==='B3' ? 'border-brasa text-tx' : 'border-line');
+    d.textContent = id; bEl.appendChild(d);
+    for (let i = 0; i < Math.min(count, 8); i++) {
+      n++;
+      const st = (n % 11 === 0) ? 'warn' : (n % 7 === 0 ? 'info' : 'ok');
+      const s = document.createElement('div');
+      const isSel = id==='B3' && i===4;
+      s.className = 'shot shrink-0 w-24 rounded-lg overflow-hidden cursor-pointer border-2 ' + (st==='warn'?'border-warn':st==='info'?'border-info':'border-ok/50') + (isSel?' sel':'');
+      s.innerHTML = `<div class="aspect-video relative" style="background:linear-gradient(${120+i*25}deg, ${col}, #0c0c0e)">
+        <span class="absolute top-1 left-1 text-[9px] font-mono bg-black/50 px-1 rounded">${id}-${String(i+1).padStart(2,'0')}</span>
+        <span class="absolute bottom-1 right-1 text-[10px] text-white/70">${icons[(n*3)%icons.length]}</span>
+        ${st==='warn'?'<span class="absolute inset-0 grid place-items-center text-warn text-lg">!</span>':''}</div>`;
+      sEl.appendChild(s);
+    }
+  });
+
+  // galeria da produção
+  const g = document.getElementById('gallery');
+  for (let i = 0; i < 18; i++) {
+    const t = document.createElement('div');
+    const done = i < 13;
+    t.className = 'aspect-video rounded-md ' + (done ? '' : 'bg-elev live');
+    if (done) t.style.background = `linear-gradient(${30+i*20}deg, ${['#3b241a','#1c2430','#4d3a1f','#24282e','#16303a'][i%5]}, #0d0d10)`;
+    g.appendChild(t);
+  }
+</script>
+</body>
+</html>

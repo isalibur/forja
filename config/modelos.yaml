@@ -1,0 +1,27 @@
+imagem:
+  candidatos:
+    - id: chroma1-hd
+      adaptador: comfyui
+    - id: qwen-image-gguf
+      adaptador: comfyui
+    - id: flux1-schnell
+      adaptador: comfyui
+tts:
+  candidatos:
+    - id: chatterbox-multilingual
+      adaptador: chatterbox
+    - id: kokoro-82m
+      adaptador: kokoro
+alinhamento:
+  candidatos:
+    - id: whisperx-large-v3
+      adaptador: whisperx
+visao:
+  candidatos:
+    - id: qwen2.5vl-7b
+      adaptador: ollama
+llm:
+  candidatos:
+    - id: qwen3-8b
+      adaptador: ollama
+

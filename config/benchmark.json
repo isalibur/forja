@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-19T01:13:36.163657Z",
+  "results": [
+    {
+      "id": "imagem_chroma1-hd",
+      "category": "imagem",
+      "candidate": "chroma1-hd",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "ComfyUI: adicione o workflow API e o arquivo .bindings.yaml em workflows/ para habilitar esta medição"
+    },
+    {
+      "id": "imagem_qwen-image-gguf",
+      "category": "imagem",
+      "candidate": "qwen-image-gguf",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "ComfyUI: adicione o workflow API e o arquivo .bindings.yaml em workflows/ para habilitar esta medição"
+    },
+    {
+      "id": "imagem_flux1-schnell",
+      "category": "imagem",
+      "candidate": "flux1-schnell",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "ComfyUI: adicione o workflow API e o arquivo .bindings.yaml em workflows/ para habilitar esta medição"
+    },
+    {
+      "id": "tts_chatterbox-multilingual",
+      "category": "tts",
+      "candidate": "chatterbox-multilingual",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência ausente"
+    },
+    {
+      "id": "tts_kokoro-82m",
+      "category": "tts",
+      "candidate": "kokoro-82m",
+      "status": "warning",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência disponível; adaptador de medição requer os modelos locais"
+    },
+    {
+      "id": "alinhamento_whisperx",
+      "category": "alinhamento",
+      "candidate": "whisperx",
+      "status": "warning",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência disponível; adaptador de medição requer os modelos locais"
+    },
+    {
+      "id": "parallax_depthflow",
+      "category": "parallax",
+      "candidate": "depthflow",
+      "status": "warning",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência disponível; adaptador de medição requer os modelos locais"
+    },
+    {
+      "id": "recorte_birefnet",
+      "category": "recorte",
+      "candidate": "birefnet",
+      "status": "warning",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência disponível; adaptador de medição requer os modelos locais"
+    },
+    {
+      "id": "upscale_real-esrgan",
+      "category": "upscale",
+      "candidate": "real-esrgan",
+      "status": "warning",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência disponível; adaptador de medição requer os modelos locais"
+    },
+    {
+      "id": "render_1080p",
+      "category": "render",
+      "candidate": "nvenc-1080p",
+      "status": "ok",
+      "duration_seconds": 0.995,
+      "peak_vram_mb": null,
+      "outputs": [
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\render-1080p.mp4"
+      ],
+      "message": "render de referência concluído"
+    },
+    {
+      "id": "render_1440p",
+      "category": "render",
+      "candidate": "nvenc-1440p",
+      "status": "ok",
+      "duration_seconds": 1.452,
+      "peak_vram_mb": null,
+      "outputs": [
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\render-1440p.mp4"
+      ],
+      "message": "render de referência concluído"
+    }
+  ]
+}

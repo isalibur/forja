@@ -1,0 +1,52 @@
+schema_version: 1
+gerado_em: 2026-10-18
+ferramentas:
+  python:
+    versao: 3.11.17
+  uv:
+    versao: 0.13.1
+  node:
+    versao: 24.19.0
+  npm:
+    versao: 12.1.0
+  ffmpeg:
+    versao: 8.1.1-full_build-www.gyan.dev
+    nvenc: true
+  nvidia:
+    gpu: NVIDIA GeForce RTX 3060
+    vram_mb: 12288
+    driver: "616.56"
+  comfyui:
+    versao: 0.36.0
+    python: 3.12.11
+    torch: 2.10.0+cu130
+  ollama:
+    versao: 0.40.3
+    armazenamento_modelos: E:/05_PROJETOS/forja/ollama/models
+  9router:
+    versao: 0.5.104
+  depthflow:
+    versao: 1.0.1
+    torch: 2.8.0+cu128
+  whisperx:
+    versao: 3.8.6
+    torch: 2.8.0+cu128
+  realesrgan:
+    versao: 0.3.0
+    commit: a4abfb2979a7bbff3f69f58f58ae324608821e27
+    torch: 2.8.0+cu128
+  rembg:
+    versao: 2.0.81
+  kokoro:
+    versao: 0.9.4
+    ambiente_reutilizado: D:/IA/audio_factory/.venv
+    cache_modelos: D:/IA/audio_factory/models/tts
+modelos_instalados:
+  ollama:
+    - qwen3:8b
+    - qwen2.5vl:7b
+  kokoro:
+    - Kokoro-82M
+    - pm_alex
+modelos_aprovados: {}
+
