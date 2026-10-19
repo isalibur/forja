@@ -1,0 +1,32 @@
+{
+  "name": "@docforja/kit-cinza-e-brasa",
+  "version": "1.0.0",
+  "description": "Kit visual Cinza e Brasa com templates T00-T14 e sobreposicoes O1-O4 para DocForja",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion bundle",
+    "render": "remotion render",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.536",
+    "@remotion/google-fonts": "4.0.536",
+    "@remotion/media-utils": "4.0.536",
+    "@remotion/paths": "4.0.536",
+    "@remotion/shapes": "4.0.536",
+    "@remotion/transitions": "4.0.536",
+    "d3": "^7.9.0",
+    "d3-geo": "^3.1.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.536",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/d3": "^7.4.3",
+    "@types/d3-geo": "^3.1.0",
+    "@types/react": "19.2.7",
+    "typescript": "^5.7.0"
+  }
+}

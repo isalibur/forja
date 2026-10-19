@@ -1,0 +1,32 @@
+nome: cinza-e-brasa
+versao: 1.0.0
+descricao: Kit visual Cinza e Brasa para documentarios historicos e investigativos do DocForja
+autor: DocForja
+proporcoes_suportadas:
+  - "16:9"
+  - "9:16"
+fps: 24
+fontes:
+  - nome: Cinzel
+    licenca: SIL Open Font License 1.1
+    origem: Google Fonts
+    uso: Titulos e capitulos
+  - nome: Cormorant Garamond
+    licenca: SIL Open Font License 1.1
+    origem: Google Fonts
+    uso: Citacoes e documentos latinos
+  - nome: Inter
+    licenca: SIL Open Font License 1.1
+    origem: Google Fonts
+    uso: Corpo de texto e legendas
+  - nome: IBM Plex Mono
+    licenca: SIL Open Font License 1.1
+    origem: Google Fonts
+    uso: Dados, HUD, rotulos e creditos
+licencas:
+  - componente: "@docforja/kit-cinza-e-brasa"
+    tipo: MIT
+  - componente: "fontes"
+    tipo: OFL-1.1
+  - componente: "dados-geograficos-natural-earth"
+    tipo: Public Domain
