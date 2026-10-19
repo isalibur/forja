@@ -41,9 +41,7 @@ class AdaptadorChatterbox(AdaptadorTTS):
             "--output",
             str(saida_wav.resolve()),
         ]
-        res = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=120
-        )
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
         if res.returncode != 0:
             # Fallback para Kokoro em caso de erro no Chatterbox
             return self._fallback.gerar(texto, saida_wav, voz, idioma, velocidade)

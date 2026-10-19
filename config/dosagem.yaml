@@ -1,0 +1,161 @@
+schema_version: 1
+
+# Presets de produção e limites de orçamento em minutos (docs/construtor/01 §4)
+presets:
+  rapido:
+    orcamento_minutos: 60
+    resolucao: "1080p"
+    max_prop_gerar: 0.15
+    max_prop_parallax: 0.15
+    variacoes_imagem: 1
+    takes_narracao: 1
+  padrao:
+    orcamento_minutos: 120
+    resolucao: "1080p"
+    max_prop_gerar: 0.30
+    max_prop_parallax: 0.30
+    variacoes_imagem: 2
+    takes_narracao: 1
+  caprichado:
+    orcamento_minutos: 240
+    resolucao: "1440p"
+    max_prop_gerar: 0.40
+    max_prop_parallax: 0.40
+    variacoes_imagem: 3
+    takes_narracao: 2
+
+# Fatores multiplicadores de densidade visual (02 §5)
+# Densidade baixa multiplica os limites de texto/gráfico por 0,6; alta por 1,4.
+fatores_densidade:
+  baixa: 0.6
+  media: 1.0
+  alta: 1.4
+
+# Regras D1 a D17
+regras:
+  D1_duracao_intensidade:
+    descricao: "Duração do shot por intensidade"
+    faixas:
+      "1-3":
+        min_s: 4.0
+        max_s: 8.0
+      "4-6":
+        min_s: 3.0
+        max_s: 6.0
+      "7-8":
+        min_s: 2.0
+        max_s: 4.0
+      "9-10":
+        min_s: 1.5
+        max_s: 3.0
+
+  D2_movimento_max_estatico:
+    descricao: "Nenhum shot sem movimento por mais de 4 s (exceto T00 ou intencional)"
+    max_segundos: 4.0
+    movimento_correcao: "push_in"
+    amplitude_correcao: 0.02
+
+  D3_sequencia_mesmo_template:
+    descricao: "Máximo de templates idênticos em sequência"
+    max_geral: 3
+    max_por_template:
+      T01: 4
+    alternativas_correcao:
+      - "T02"
+      - "T03"
+      - "T04"
+
+  D4_templates_informacao:
+    descricao: "Templates de informação (T06-T11): espaçamento e nunca consecutivos"
+    templates:
+      - "T06"
+      - "T07"
+      - "T08"
+      - "T09"
+      - "T10"
+      - "T11"
+    espacamento_por_intensidade:
+      "1-4": 25.0
+      "5-7": 15.0
+      "8-10": 12.0
+    permitir_consecutivos: false
+
+  D5_texto_na_tela:
+    descricao: "Texto na tela: máx 7 palavras por item; duração mínima de leitura"
+    max_palavras_por_item: 7
+    duracao_base_s: 1.0
+    duracao_por_palavra_s: 0.3
+
+  D6_sobreposicoes_simultaneas:
+    descricao: "Máximo de 2 sobreposições simultâneas (fora O2 automático)"
+    max_sobreposicoes: 2
+    ignorar:
+      - "O2"
+    prioridade_descarte:
+      - "O4"
+      - "O3"
+      - "O1"
+
+  D7_identificacao_o1:
+    descricao: "Identificação O1 só na primeira aparição de cada pessoa/lugar; duração >= 2.5 s"
+    apenas_primeira_aparicao: true
+    min_duracao_s: 2.5
+
+  D8_respiro_revelacao:
+    descricao: "Depois de batida revelação: >= 1 s sem texto novo (respiro visual)"
+    min_respiro_s: 1.0
+
+  D9_proporcao_geradas:
+    descricao: "Proporção máxima de imagens geradas (IA) e proibições éticas"
+    max_proporcao_padrao: 0.30
+    proibido_contemporaneo: true
+    proibido_vitimas: true
+
+  D10_ancora_real_por_bloco:
+    descricao: "Pelo menos 1 ativo real por bloco em temas históricos"
+    min_ativos_reais: 1
+    origens_reais:
+      - "biblioteca"
+      - "pesquisar"
+      - "pedir_ao_usuario"
+
+  D11_reuso_mesmo_ativo:
+    descricao: "Máximo de 3 usos do mesmo ativo (exceto callbacks intencionais)"
+    max_usos: 3
+
+  D12_transicoes:
+    descricao: "Dissolve máx 15% dos cortes; fade_preto só entre blocos"
+    max_prop_dissolve: 0.15
+    fade_preto_apenas_entre_blocos: true
+    transicao_padrao: "corte"
+
+  D13_numeros_datas_roteiro:
+    descricao: "Números e datas na tela devem constar no texto do roteiro"
+    exigir_no_roteiro: true
+
+  D14_cobertura_100:
+    descricao: "100% da narração coberta, sem buracos e sem sobreposição de shots"
+    tolerancia_gap_s: 0.05
+
+  D15_orcamento_tempo:
+    descricao: "Tempo total estimado de produção deve respeitar o orçamento do preset"
+    acoes_reducao:
+      - "reduzir_variacoes_imagem"
+      - "trocar_gerar_por_pesquisar_ou_biblioteca"
+      - "trocar_t02_por_t01"
+
+  D16_capitulos:
+    descricao: "T12 Capítulo no início de cada bloco se >= 4 blocos"
+    min_blocos_para_exigir: 4
+
+  D17_vitimas_reais:
+    descricao: "Tratamento ético para vítimas reais (moldes, esqueletos, corpos)"
+    templates_permitidos:
+      - "T01"
+      - "T02"
+    t01_movimentos_permitidos:
+      - "estático"
+      - "push_in"
+    t01_max_amplitude: 0.02
+    t02_max_intensidade: 0.15
+    proibir_sfx_impacto: true
