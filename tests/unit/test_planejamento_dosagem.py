@@ -87,6 +87,29 @@ def test_d2_movimento_max_estatico():
     assert shot.params["amplitude"] == 0.02
 
 
+def test_d2_limite_e_correcao_veem_do_yaml(tmp_path):
+    config = tmp_path / "dosagem.yaml"
+    config.write_text(
+        "regras:\n"
+        "  D2_movimento_max_estatico:\n"
+        "    max_segundos: 3.0\n"
+        "    movimento_correcao: zoom_in\n"
+        "    amplitude_correcao: 0.07\n",
+        encoding="utf-8",
+    )
+    verificador = VerificadorDosagem(caminho_config=config)
+    plano = criar_plano_base()
+    shot = plano.blocos[0].shots[0]
+    shot.params = {"movimento": "estático"}
+    shot.textos = []
+
+    resultado = verificador.verificar_e_corrigir(plano, autocorrige=True)
+
+    assert any(v.regra == "D2" for v in resultado.violacoes)
+    assert shot.params["movimento"] == "zoom_in"
+    assert shot.params["amplitude"] == 0.07
+
+
 def test_d3_sequencia_mesmo_template():
     """Valida D3: Mais de 4 shots T01 consecutivos são detectados e corrigidos."""
     verificador = VerificadorDosagem()

@@ -52,6 +52,8 @@ regras:
   D2_movimento_max_estatico:
     descricao: "Nenhum shot sem movimento por mais de 4 s (exceto T00 ou intencional)"
     max_segundos: 4.0
+    templates_excecao:
+      - "T00"
     movimento_correcao: "push_in"
     amplitude_correcao: 0.02
 
@@ -153,9 +155,20 @@ regras:
     templates_permitidos:
       - "T01"
       - "T02"
+    indicadores_vitima:
+      - "molde"
+      - "esqueleto"
+      - "vítima"
+      - "vitima"
+      - "corpo"
     t01_movimentos_permitidos:
       - "estático"
       - "push_in"
     t01_max_amplitude: 0.02
     t02_max_intensidade: 0.15
     proibir_sfx_impacto: true
+    sfx_impacto_terms:
+      - "impacto"
+      - "hit"
+      - "boom"
+      - "explosao"

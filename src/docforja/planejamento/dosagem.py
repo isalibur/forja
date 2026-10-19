@@ -57,6 +57,9 @@ class VerificadorDosagem:
                 return yaml.safe_load(f) or {}
         return {}
 
+    def _regra(self, nome: str) -> dict[str, Any]:
+        return self.config.get("regras", {}).get(nome, {})
+
     def verificar_e_corrigir(
         self,
         plano: Plano,
@@ -105,7 +108,8 @@ class VerificadorDosagem:
                 violacoes.append(v)
 
         # D16: Capítulos no início de cada bloco se >= 4 blocos
-        if len(plano.blocos) >= 4:
+        minimo_blocos = self._regra("D16_capitulos").get("min_blocos_para_exigir", 4)
+        if len(plano.blocos) >= minimo_blocos:
             for b in plano.blocos:
                 if b.id == "B0":
                     continue
@@ -155,13 +159,19 @@ class VerificadorDosagem:
                 if shot.segmentos and shot.segmentos[0] in segmentos_map:
                     intensidade = int(segmentos_map[shot.segmentos[0]].intensidade or 5)
 
-                min_s, max_s = (3.0, 6.0)
-                if intensidade <= 3:
-                    min_s, max_s = (4.0, 8.0)
-                elif intensidade >= 9:
-                    min_s, max_s = (1.5, 3.0)
-                elif intensidade >= 7:
-                    min_s, max_s = (2.0, 4.0)
+                faixas_d1 = self._regra("D1_duracao_intensidade").get("faixas", {})
+                faixa_d1 = next(
+                    (
+                        faixa_cfg
+                        for intervalo, faixa_cfg in faixas_d1.items()
+                        if int(intervalo.split("-")[0])
+                        <= intensidade
+                        <= int(intervalo.split("-")[1])
+                    ),
+                    faixas_d1.get("4-6", {"min_s": 3.0, "max_s": 6.0}),
+                )
+                min_s = float(faixa_d1["min_s"])
+                max_s = float(faixa_d1["max_s"])
 
                 # D1 só avalia shots vinculados à fala (ignora encerramento T14 ou capítulo)
                 if shot.segmentos and (shot.duracao_s < min_s or shot.duracao_s > max_s):
@@ -184,33 +194,48 @@ class VerificadorDosagem:
                         ajustes.append(v.acao_correcao)
                     violacoes.append(v)
 
-                # D2: Shot estático > 4s
+                # D2: Shot estático acima do limite configurado.
                 movimento = shot.params.get("movimento")
+                regra_d2 = self._regra("D2_movimento_max_estatico")
+                max_estatico_s = float(regra_d2.get("max_segundos", 4.0))
+                excecoes_d2 = regra_d2.get("templates_excecao", ["T00"])
                 if (
-                    shot.duracao_s > 4.0
+                    shot.duracao_s > max_estatico_s
                     and movimento == "estático"
-                    and shot.template != "T00"
+                    and shot.template not in excecoes_d2
                     and not shot.params.get("intencional", False)
                 ):
                     v = Violacao(
                         regra="D2",
-                        descricao="Shot estático por mais de 4 s",
+                        descricao=f"Shot estático por mais de {max_estatico_s:g} s",
                         bloco_id=b.id,
                         shot_id=shot.id,
                         detalhes=f"Shot {shot.id} estático por {shot.duracao_s:.1f}s",
                     )
                     if autocorrige:
-                        shot.params["movimento"] = "push_in"
-                        shot.params["amplitude"] = 0.02
+                        movimento_correcao = regra_d2.get("movimento_correcao", "push_in")
+                        amplitude_correcao = float(regra_d2.get("amplitude_correcao", 0.02))
+                        shot.params["movimento"] = movimento_correcao
+                        shot.params["amplitude"] = amplitude_correcao
                         v.corrigida = True
-                        v.acao_correcao = f"Adicionado push_in 2% a {shot.id}"
+                        v.acao_correcao = (
+                            f"Adicionado {movimento_correcao} com amplitude "
+                            f"{amplitude_correcao:.1%} a {shot.id}"
+                        )
                         ajustes.append(v.acao_correcao)
                     violacoes.append(v)
 
-                # D5: Texto na tela (palavras <= 7 e tempo de leitura)
+                # D5: Texto na tela e tempo mínimo de leitura
+                regra_d5 = self._regra("D5_texto_na_tela")
+                max_palavras = max(
+                    1,
+                    round(
+                        int(regra_d5.get("max_palavras_por_item", 7)) * self.fator_densidade
+                    ),
+                )
                 for txt_idx, texto_item in enumerate(shot.textos):
                     palavras = texto_item.split()
-                    if len(palavras) > 7:
+                    if len(palavras) > max_palavras:
                         v = Violacao(
                             regra="D5",
                             descricao="Texto na tela excede 7 palavras",
@@ -219,13 +244,17 @@ class VerificadorDosagem:
                             detalhes=f"Texto '{texto_item}' tem {len(palavras)} palavras",
                         )
                         if autocorrige:
-                            shot.textos[txt_idx] = " ".join(palavras[:7])
+                            shot.textos[txt_idx] = " ".join(palavras[:max_palavras])
                             v.corrigida = True
-                            v.acao_correcao = f"Texto de {shot.id} encurtado para 7 palavras"
+                            v.acao_correcao = (
+                                f"Texto de {shot.id} encurtado para {max_palavras} palavras"
+                            )
                             ajustes.append(v.acao_correcao)
                         violacoes.append(v)
 
-                    dur_necessaria = 1.0 + (0.3 * len(palavras))
+                    dur_necessaria = float(regra_d5.get("duracao_base_s", 1.0)) + (
+                        float(regra_d5.get("duracao_por_palavra_s", 0.3)) * len(palavras)
+                    )
                     if shot.duracao_s < dur_necessaria:
                         v = Violacao(
                             regra="D5",
@@ -246,30 +275,64 @@ class VerificadorDosagem:
                             ajustes.append(v.acao_correcao)
                         violacoes.append(v)
 
-                # D6: Sobreposições simultâneas (máx 2 fora O2)
-                sobres_reais = [o for o in shot.sobreposicoes if o.get("tipo") != "O2"]
-                if len(sobres_reais) > 2:
+                # D6: Sobreposições simultâneas, exceto tipos automáticos.
+                regra_d6 = self._regra("D6_sobreposicoes_simultaneas")
+                ignorar_d6 = set(regra_d6.get("ignorar", ["O2"]))
+                max_sobreposicoes = max(
+                    1,
+                    round(
+                        int(regra_d6.get("max_sobreposicoes", 2)) * self.fator_densidade
+                    ),
+                )
+                sobres_reais = [
+                    o for o in shot.sobreposicoes if o.get("tipo") not in ignorar_d6
+                ]
+                if len(sobres_reais) > max_sobreposicoes:
                     v = Violacao(
                         regra="D6",
                         descricao="Excesso de sobreposições simultâneas (> 2)",
                         bloco_id=b.id,
                         shot_id=shot.id,
-                        detalhes=f"Shot {shot.id} possui {len(sobres_reais)} sobreposições",
+                        detalhes=(
+                            f"Shot {shot.id} possui {len(sobres_reais)} sobreposições "
+                            f"(máx: {max_sobreposicoes})"
+                        ),
                     )
                     if autocorrige:
-                        # Mantém as 2 primeiras (maior prioridade) e preserva O2 se houver
-                        o2_lista = [o for o in shot.sobreposicoes if o.get("tipo") == "O2"]
-                        shot.sobreposicoes = sobres_reais[:2] + o2_lista
+                        # Descarta seguindo a prioridade declarada no YAML.
+                        mantidas = list(sobres_reais)
+                        prioridade_descarte = regra_d6.get(
+                            "prioridade_descarte", ["O4", "O3", "O1"]
+                        )
+                        for tipo in prioridade_descarte:
+                            while len(mantidas) > max_sobreposicoes:
+                                candidato = next(
+                                    (o for o in mantidas if o.get("tipo") == tipo), None
+                                )
+                                if candidato is None:
+                                    break
+                                mantidas.remove(candidato)
+                        if len(mantidas) > max_sobreposicoes:
+                            mantidas = mantidas[:max_sobreposicoes]
+                        ignoradas = [
+                            o for o in shot.sobreposicoes if o.get("tipo") in ignorar_d6
+                        ]
+                        shot.sobreposicoes = mantidas + ignoradas
                         v.corrigida = True
                         v.acao_correcao = f"Sobreposições de {shot.id} limitadas a 2"
                         ajustes.append(v.acao_correcao)
                     violacoes.append(v)
 
-                # D7: Identificação O1 (só primeira aparição e >= 2.5s)
+                # D7: Identificação O1 conforme política configurada.
+                regra_d7 = self._regra("D7_identificacao_o1")
+                min_duracao_o1 = float(regra_d7.get("min_duracao_s", 2.5))
                 for o in list(shot.sobreposicoes):
                     if o.get("tipo") == "O1":
                         texto_entidade = o.get("texto", "").upper().strip()
-                        if texto_entidade in entidades_o1_vistas:
+                        if (
+                            regra_d7.get("apenas_primeira_aparicao", True)
+                            and texto_entidade in entidades_o1_vistas
+                        ):
                             v = Violacao(
                                 regra="D7",
                                 descricao="Identificação O1 repetida para a mesma entidade",
@@ -287,7 +350,7 @@ class VerificadorDosagem:
                             violacoes.append(v)
                         else:
                             entidades_o1_vistas.add(texto_entidade)
-                            if shot.duracao_s < 2.5:
+                            if shot.duracao_s < min_duracao_o1:
                                 v = Violacao(
                                     regra="D7",
                                     descricao="Shot com identificação O1 inferior a 2.5s",
@@ -296,7 +359,7 @@ class VerificadorDosagem:
                                     detalhes=f"Shot {shot.id} dura {shot.duracao_s:.1f}s",
                                 )
                                 if autocorrige:
-                                    shot.duracao_s = 2.5
+                                    shot.duracao_s = min_duracao_o1
                                     v.corrigida = True
                                     v.acao_correcao = (
                                         f"Duração de {shot.id} ampliada para 2.5s para O1"
@@ -329,7 +392,11 @@ class VerificadorDosagem:
                         ultimo_era_revelacao = True
 
                 # D12: Transição fade_preto apenas no primeiro shot do bloco
-                if shot.transicao == "fade_preto" and idx > 0:
+                if (
+                    self._regra("D12_transicoes").get("fade_preto_apenas_entre_blocos", True)
+                    and shot.transicao == "fade_preto"
+                    and idx > 0
+                ):
                     v = Violacao(
                         regra="D12",
                         descricao="Transição fade_preto usada no meio de um bloco",
@@ -338,7 +405,9 @@ class VerificadorDosagem:
                         detalhes=f"Shot {shot.id} com fade_preto na posição {idx}",
                     )
                     if autocorrige:
-                        shot.transicao = "corte"
+                        shot.transicao = self._regra("D12_transicoes").get(
+                            "transicao_padrao", "corte"
+                        )
                         v.corrigida = True
                         v.acao_correcao = (
                             f"Transição de {shot.id} alterada de fade_preto para corte"
@@ -347,7 +416,11 @@ class VerificadorDosagem:
                     violacoes.append(v)
 
                 # D13: Números na tela presentes no roteiro
-                for txt in shot.textos:
+                for txt in (
+                    shot.textos
+                    if self._regra("D13_numeros_datas_roteiro").get("exigir_no_roteiro", True)
+                    else []
+                ):
                     nums_no_texto = re.findall(r"\b\d+[\.,]?\d*\b", txt)
                     for n in nums_no_texto:
                         if n not in roteiro_completo_texto:
@@ -370,16 +443,27 @@ class VerificadorDosagem:
                             break
 
                 # D17: Vítimas reais (respeito ético)
+                regra_d17 = self._regra("D17_vitimas_reais")
+                lista_templates_vitimas = regra_d17.get("templates_permitidos", ["T01", "T02"])
+                templates_vitimas = set(lista_templates_vitimas)
+                movimentos_t01 = list(
+                    regra_d17.get("t01_movimentos_permitidos", ["estático", "push_in"])
+                )
+                amplitude_t01 = float(regra_d17.get("t01_max_amplitude", 0.02))
+                intensidade_t02 = float(regra_d17.get("t02_max_intensidade", 0.15))
+                indicadores_vitima = regra_d17.get(
+                    "indicadores_vitima", ["molde", "esqueleto", "vítima", "vitima", "corpo"]
+                )
                 for aid in shot.ativos:
                     ativo_obj = plano.ativos.get(aid)
                     if ativo_obj:
                         desc_lower = ativo_obj.descricao.lower()
                         if any(
                             k in desc_lower
-                            for k in ["molde", "esqueleto", "vítima", "vitima", "corpo"]
+                            for k in indicadores_vitima
                         ):
                             # Deve ser T01 estático/push <= 2% ou T02 intensidade <= 0.15
-                            if shot.template not in {"T01", "T02"}:
+                            if shot.template not in templates_vitimas:
                                 v = Violacao(
                                     regra="D17",
                                     descricao="Vítima real exibida com template não permitido",
@@ -388,8 +472,16 @@ class VerificadorDosagem:
                                     detalhes=f"Shot {shot.id} usa {shot.template} para vítima",
                                 )
                                 if autocorrige:
-                                    shot.template = "T01"
-                                    shot.params = {"movimento": "push_in", "amplitude": 0.02}
+                                    template_seguro = (
+                                        "T01"
+                                        if "T01" in templates_vitimas
+                                        else next(iter(lista_templates_vitimas), "T01")
+                                    )
+                                    shot.template = template_seguro
+                                    shot.params = {
+                                        "movimento": "push_in",
+                                        "amplitude": amplitude_t01,
+                                    }
                                     v.corrigida = True
                                     v.acao_correcao = (
                                         f"Ajustado shot {shot.id} de vítima para T01 suave"
@@ -397,21 +489,60 @@ class VerificadorDosagem:
                                     ajustes.append(v.acao_correcao)
                                 violacoes.append(v)
                             elif (
-                                shot.template == "T01" and shot.params.get("amplitude", 0.0) > 0.02
+                                shot.template == "T01"
+                                and (
+                                    shot.params.get("movimento", "estático") not in movimentos_t01
+                                    or shot.params.get("amplitude", 0.0) > amplitude_t01
+                                )
                             ):
-                                shot.params["amplitude"] = 0.02
+                                v = Violacao(
+                                    regra="D17",
+                                    descricao="Movimento T01 acima do limite para vítima real",
+                                    bloco_id=b.id,
+                                    shot_id=shot.id,
+                                    detalhes=(
+                                        f"Movimento {shot.params.get('movimento')} / amplitude "
+                                        f"{shot.params.get('amplitude', 0.0)}"
+                                    ),
+                                )
+                                if autocorrige:
+                                    shot.params["movimento"] = next(
+                                        iter(movimentos_t01), "estático"
+                                    )
+                                    shot.params["amplitude"] = amplitude_t01
+                                    v.corrigida = True
+                                    v.acao_correcao = f"Movimento de {shot.id} limitado por D17"
+                                    ajustes.append(v.acao_correcao)
+                                violacoes.append(v)
                             elif (
                                 shot.template == "T02"
-                                and shot.params.get("intensidade", 0.0) > 0.15
+                                and shot.params.get("intensidade", 0.0) > intensidade_t02
                             ):
-                                shot.params["intensidade"] = 0.15
+                                v = Violacao(
+                                    regra="D17",
+                                    descricao="Intensidade T02 acima do limite para vítima real",
+                                    bloco_id=b.id,
+                                    shot_id=shot.id,
+                                    detalhes=f"Intensidade {shot.params.get('intensidade')}",
+                                )
+                                if autocorrige:
+                                    shot.params["intensidade"] = intensidade_t02
+                                    v.corrigida = True
+                                    v.acao_correcao = f"Intensidade de {shot.id} limitada por D17"
+                                    ajustes.append(v.acao_correcao)
+                                violacoes.append(v)
 
                             # Sem SFX de impacto
                             sfx_agressivo = [
                                 s
                                 for s in shot.sfx
-                                if any(
-                                    x in s.lower() for x in ["impacto", "hit", "boom", "explosao"]
+                                if regra_d17.get("proibir_sfx_impacto", True)
+                                and any(
+                                    x in s.lower()
+                                    for x in regra_d17.get(
+                                        "sfx_impacto_terms",
+                                        ["impacto", "hit", "boom", "explosao"],
+                                    )
                                 )
                             ]
                             if sfx_agressivo:
@@ -430,13 +561,17 @@ class VerificadorDosagem:
                                 violacoes.append(v)
 
         # D3: Sequência do mesmo template
+        regra_d3 = self._regra("D3_sequencia_mesmo_template")
+        max_sequencia_d3 = int(regra_d3.get("max_geral", 3))
+        limites_template_d3 = regra_d3.get("max_por_template", {})
+        alternativas_d3 = regra_d3.get("alternativas_correcao", ["T02", "T03", "T04"])
         for b in plano.blocos:
             seq_count = 1
             seq_template = None
             for shot in b.shots:
                 if shot.template == seq_template:
                     seq_count += 1
-                    limite = 4 if seq_template == "T01" else 3
+                    limite = int(limites_template_d3.get(seq_template, max_sequencia_d3))
                     if seq_count > limite:
                         v = Violacao(
                             regra="D3",
@@ -446,8 +581,8 @@ class VerificadorDosagem:
                             detalhes=f"{seq_count} shots consecutivos de {seq_template}",
                         )
                         if autocorrige:
-                            # Troca o atual por T02 ou T01
-                            shot.template = "T02" if seq_template == "T01" else "T01"
+                            # Escolhe alternativa declarada na configuração.
+                            shot.template = next(iter(alternativas_d3), "T01")
                             shot.params = {"movimento": "push_in", "amplitude": 0.03}
                             v.corrigida = True
                             v.acao_correcao = (
@@ -462,36 +597,72 @@ class VerificadorDosagem:
                     seq_count = 1
 
         # D4: Templates de informação (T06-T11): nunca dois consecutivos
-        info_templates = {"T06", "T07", "T08", "T09", "T10", "T11"}
+        info_templates = set(
+            self._regra("D4_templates_informacao").get(
+                "templates", ["T06", "T07", "T08", "T09", "T10", "T11"]
+            )
+        )
+        regra_d4 = self._regra("D4_templates_informacao")
+        permitir_consecutivos_d4 = regra_d4.get(
+            "permitir_consecutivos", False
+        )
         for b in plano.blocos:
-            ultimo_info_idx = -999
-            for idx, shot in enumerate(b.shots):
+            tempo_bloco = 0.0
+            ultima_info_s: float | None = None
+            for shot in b.shots:
+                intensidade = 5
+                if shot.segmentos and shot.segmentos[0] in segmentos_map:
+                    intensidade = int(segmentos_map[shot.segmentos[0]].intensidade or 5)
+                espaçamentos = regra_d4.get("espacamento_por_intensidade", {})
+                intervalo_d4 = next(
+                    (
+                        float(segundos)
+                        for faixa, segundos in espaçamentos.items()
+                        if int(faixa.split("-")[0])
+                        <= intensidade
+                        <= int(faixa.split("-")[1])
+                    ),
+                    0.0,
+                )
                 if shot.template in info_templates:
-                    if idx == ultimo_info_idx + 1:
-                        v = Violacao(
-                            regra="D4",
-                            descricao="Dois templates de informação consecutivos",
-                            bloco_id=b.id,
-                            shot_id=shot.id,
-                            detalhes=f"Shot {shot.id} ({shot.template}) após outro template info",
-                        )
-                        if autocorrige:
-                            shot.template = "T01"
-                            shot.params = {"movimento": "push_in", "amplitude": 0.03}
-                            shot.sobreposicoes.append({"tipo": "O4", "texto": "Destaque"})
-                            v.corrigida = True
-                            v.acao_correcao = f"Shot {shot.id} convertido para T01 com O4 Destaque"
-                            ajustes.append(v.acao_correcao)
-                        violacoes.append(v)
-                    ultimo_info_idx = idx
+                    if ultima_info_s is not None:
+                        intervalo_real = tempo_bloco - ultima_info_s
+                        if intervalo_real < intervalo_d4 or (
+                            not permitir_consecutivos_d4 and intervalo_real == 0
+                        ):
+                            v = Violacao(
+                                regra="D4",
+                                descricao="Templates de informação com espaçamento insuficiente",
+                                bloco_id=b.id,
+                                shot_id=shot.id,
+                                detalhes=(
+                                    f"Shot {shot.id} ({shot.template}) separado por "
+                                    f"{intervalo_real:.1f}s; mínimo configurado: "
+                                    f"{intervalo_d4:.1f}s"
+                                ),
+                            )
+                            if autocorrige:
+                                shot.template = "T01"
+                                shot.params = {"movimento": "push_in", "amplitude": 0.03}
+                                shot.sobreposicoes.append({"tipo": "O4", "texto": "Destaque"})
+                                v.corrigida = True
+                                v.acao_correcao = (
+                                    f"Shot {shot.id} convertido para T01 com O4 Destaque"
+                                )
+                                ajustes.append(v.acao_correcao)
+                            violacoes.append(v)
+                    ultima_info_s = tempo_bloco
+                tempo_bloco += shot.duracao_s
 
         # D9: Proporção de imagens geradas
         total_shots = sum(len(b.shots) for b in plano.blocos)
-        max_prop_gerar = 0.30
-        if plano.preset == "rapido":
-            max_prop_gerar = 0.15
-        elif plano.preset == "caprichado":
-            max_prop_gerar = 0.40
+        preset_d9 = self.config.get("presets", {}).get(plano.preset, {})
+        max_prop_gerar = float(
+            preset_d9.get(
+                "max_prop_gerar",
+                self._regra("D9_proporcao_geradas").get("max_proporcao_padrao", 0.30),
+            )
+        )
 
         shots_gerar = [
             s
@@ -527,23 +698,22 @@ class VerificadorDosagem:
             violacoes.append(v)
 
         # D10: Âncora real por bloco em temas históricos
-        for b in plano.blocos:
-            origens_bloco = [
-                plano.ativos[aid].origem for s in b.shots for aid in s.ativos if aid in plano.ativos
-            ]
-            tem_real = any(
-                orig
-                in {
-                    OrigemAtivo.BIBLIOTECA,
-                    OrigemAtivo.PESQUISAR,
-                    OrigemAtivo.PEDIR_AO_USUARIO,
-                    "biblioteca",
-                    "pesquisar",
-                    "pedir_ao_usuario",
-                }
-                for orig in origens_bloco
+        regra_d10 = self._regra("D10_ancora_real_por_bloco")
+        origens_reais_config = set(
+            regra_d10.get(
+                "origens_reais", ["biblioteca", "pesquisar", "pedir_ao_usuario"]
             )
-            if not tem_real and b.shots:
+        )
+        minimo_ativos_reais = int(regra_d10.get("min_ativos_reais", 1))
+        for b in plano.blocos:
+            ativos_reais_bloco = {
+                aid
+                for s in b.shots
+                for aid in s.ativos
+                if aid in plano.ativos and str(plano.ativos[aid].origem) in origens_reais_config
+            }
+            tem_ativos_reais = len(ativos_reais_bloco) >= minimo_ativos_reais
+            if not tem_ativos_reais and b.shots:
                 v = Violacao(
                     regra="D10",
                     descricao="Bloco histórico sem nenhuma âncora visual real",
@@ -584,7 +754,8 @@ class VerificadorDosagem:
                     contagem_usos.setdefault(aid, []).append(s.id)
 
         for aid, usos in contagem_usos.items():
-            if len(usos) > 3:
+            max_usos = int(self._regra("D11_reuso_mesmo_ativo").get("max_usos", 3))
+            if len(usos) > max_usos:
                 v = Violacao(
                     regra="D11",
                     descricao="Ativo reutilizado mais de 3 vezes sem marcação de callback",
@@ -592,7 +763,7 @@ class VerificadorDosagem:
                 )
                 if autocorrige:
                     # Cria ativo alternativo para os usos excedentes
-                    for extra_shot_id in usos[3:]:
+                    for extra_shot_id in usos[max_usos:]:
                         novo_aid = f"{aid}_b"
                         if aid in plano.ativos:
                             plano.ativos[novo_aid] = plano.ativos[aid].model_copy(
@@ -608,20 +779,28 @@ class VerificadorDosagem:
                 violacoes.append(v)
 
         # D12: Proporção de dissolve (máx 15%)
+        limite_dissolve = float(
+            self._regra("D12_transicoes").get("max_prop_dissolve", 0.15)
+        )
         if todos_cortes_total > 0:
             prop_dissolve = dissolves_total / todos_cortes_total
-            if prop_dissolve > 0.15:
+            if prop_dissolve > limite_dissolve:
                 v = Violacao(
                     regra="D12",
-                    descricao="Proporção de dissolves excede 15% dos cortes",
-                    detalhes=f"{prop_dissolve * 100:.1f}% de cortes são dissolve (máx: 15%)",
+                    descricao="Proporção de dissolves excede o limite configurado",
+                    detalhes=(
+                        f"{prop_dissolve * 100:.1f}% de cortes são dissolve "
+                        f"(máx: {limite_dissolve * 100:.1f}%)"
+                    ),
                 )
                 if autocorrige:
                     # Converte metade dos dissolves em corte
                     for b in plano.blocos:
                         for s in b.shots:
-                            if s.transicao == "dissolve" and prop_dissolve > 0.15:
-                                s.transicao = "corte"
+                            if s.transicao == "dissolve" and prop_dissolve > limite_dissolve:
+                                s.transicao = self._regra("D12_transicoes").get(
+                                    "transicao_padrao", "corte"
+                                )
                                 dissolves_total -= 1
                                 prop_dissolve = dissolves_total / todos_cortes_total
                     v.corrigida = True
