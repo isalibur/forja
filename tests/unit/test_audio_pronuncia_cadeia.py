@@ -47,6 +47,14 @@ def test_calculo_wer():
     assert pytest.approx(wer_ins, 0.01) == 0.5
 
 
+def test_wer_portugues_iguala_apenas_grafias_numericas():
+    referencia = "Dezesseis dias antes de vinte e quatro de agosto."
+    hipotese = "16 dias antes de 24 de agosto."
+    assert calcular_wer(referencia, hipotese) > 0
+    assert calcular_wer(referencia, hipotese, idioma="pt-BR") == 0.0
+    assert calcular_wer("Uma anotação banal", "Uma notação banal", idioma="pt-BR") > 0
+
+
 def test_duracoes_pausas_padrao():
     """Valida constantes de tempo das pausas do roteiro."""
     assert DURACOES_PAUSAS_S["PAUSA-C"] == 0.4

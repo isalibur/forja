@@ -166,6 +166,31 @@ async def test_pipeline_registra_wer_reprovado_sem_concluir_alinhamento(tmp_path
 
 
 @pytest.mark.anyio
+async def test_pipeline_aceita_numero_equivalente_no_asr(tmp_path):
+    roteiro = "## B1 — Abertura\n\n**B1-S01**\nDezesseis dias antes de novembro.\n"
+    projeto = Projeto.criar(
+        nome="teste_numero_asr", roteiro=roteiro, raiz_projetos=tmp_path
+    )
+    executor = ExecutorPipeline(projeto)
+    registrar_handlers_disponiveis(
+        executor,
+        orquestrador=OrquestradorNarracao(
+            adaptador_tts=TTSFalso(),
+            alinhador=AlinhadorFalso(texto_asr="16 dias antes de novembro."),
+        ),
+    )
+
+    status = await executor.executar(ate_etapa="P2b_alinhamento")
+
+    assert status["P2b_alinhamento"] == "concluida"
+    qualidade = json.loads(
+        (projeto.pastas.audio / "pt-BR" / "qualidade.json").read_text(encoding="utf-8")
+    )
+    assert qualidade["wer"] == 0.0
+    assert qualidade["wer_bruto_primeira_passagem"] > 0
+
+
+@pytest.mark.anyio
 async def test_pipeline_exige_whisperx_para_concluir_alinhamento(tmp_path):
     projeto = Projeto.criar(
         nome="teste_sem_whisperx", roteiro=ROTEIRO_VALIDO, raiz_projetos=tmp_path

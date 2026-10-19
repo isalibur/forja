@@ -138,7 +138,8 @@ def registrar_handlers_disponiveis(
 
         referencia = " ".join(item.texto_limpo for item in segmentos)
         hipotese = " ".join(item.get("texto", "") for item in transcricao)
-        wer = calcular_wer(referencia, hipotese)
+        wer_bruto_primeira_passagem = calcular_wer(referencia, hipotese)
+        wer = calcular_wer(referencia, hipotese, idioma=idioma)
         limite_wer = 0.02
         resultados = [
             ResultadoSegmentoAudio(
@@ -149,7 +150,9 @@ def registrar_handlers_disponiveis(
             )
             for item in segmentos_info
         ]
-        motor._atualizar_wer_segmentos(resultados, segmentos_info, transcricao)
+        motor._atualizar_wer_segmentos(
+            resultados, segmentos_info, transcricao, idioma=idioma
+        )
         segmentos_reprovados = any(
             item.wer is not None and item.wer > limite_wer for item in resultados
         )
@@ -180,6 +183,7 @@ def registrar_handlers_disponiveis(
                     "origem": "whisperx",
                     "status": "reprovado",
                     "wer": wer,
+                    "wer_bruto_primeira_passagem": wer_bruto_primeira_passagem,
                     "limite_wer": limite_wer,
                     "transcricao_primeira_passagem": hipotese,
                 },
@@ -194,7 +198,13 @@ def registrar_handlers_disponiveis(
             raise RuntimeError("WhisperX não alinhou palavras de todos os segmentos.")
         atomic_write_json(
             qualidade_json,
-            {"origem": "whisperx", "status": "aprovado", "wer": wer, "limite_wer": limite_wer},
+            {
+                "origem": "whisperx",
+                "status": "aprovado",
+                "wer": wer,
+                "wer_bruto_primeira_passagem": wer_bruto_primeira_passagem,
+                "limite_wer": limite_wer,
+            },
         )
 
     async def alinhar_narracao(ctx: ContextoEtapa) -> None:

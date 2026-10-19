@@ -174,8 +174,10 @@ class OrquestradorNarracao:
 
                 referencia = " ".join(s.texto_limpo for s in segmentos)
                 hipotese = " ".join(item.get("texto", "") for item in transcricao)
-                wer_medio = calcular_wer(referencia, hipotese)
-                self._atualizar_wer_segmentos(resultados_segs, segmentos_info, transcricao)
+                wer_medio = calcular_wer(referencia, hipotese, idioma=idioma)
+                self._atualizar_wer_segmentos(
+                    resultados_segs, segmentos_info, transcricao, idioma=idioma
+                )
 
                 reprovados = [
                     r for r in resultados_segs if r.wer is not None and r.wer > limite_wer
@@ -268,6 +270,7 @@ class OrquestradorNarracao:
         resultados: list[ResultadoSegmentoAudio],
         segmentos_info: list[dict[str, str | float]],
         transcricao: list[dict],
+        idioma: str | None = None,
     ) -> None:
         hipoteses = {resultado.id: [] for resultado in resultados}
         for item in transcricao:
@@ -288,7 +291,7 @@ class OrquestradorNarracao:
 
         for resultado in resultados:
             resultado.wer = calcular_wer(
-                resultado.texto, " ".join(hipoteses.get(resultado.id, []))
+                resultado.texto, " ".join(hipoteses.get(resultado.id, [])), idioma=idioma
             )
 
     @staticmethod

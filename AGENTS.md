@@ -5,7 +5,8 @@ DocForja transforma roteiro e tema em um Plano de Vídeo revisável e depois pro
 ## Onde consultar
 
 - `docs/construtor/` é a fonte de verdade do software; `docs/pipeline/` define linguagem visual, som e ética. Em conflito, prevalece `docs/construtor/`.
-- Localize o marco em `docs/construtor/08-marcos-de-construcao.md` e leia apenas as seções citadas por ele e os arquivos afetados. Para o estado atual do M0, consulte `docs/contexto/M0.md`.
+- Antes de continuar trabalho em andamento, leia `docs/contexto/ESTADO_ATUAL.md` e confirme branch, último commit e alterações locais no Git. Os demais arquivos de `docs/contexto/` são registros históricos por marco.
+- Localize o marco em `docs/construtor/08-marcos-de-construcao.md` e leia apenas as seções citadas por ele e os arquivos afetados.
 - Plano e schemas: `docs/construtor/02-plano-de-video.md`; integrações: `07-arquitetura-e-integracoes.md`; instalação: `09-instalacao.md`; interface: `14-interface-ui.md`; saídas e pasta global: `13-saidas-pasta-global-e-metadados.md`.
 - Código Remotion: use a skill pertinente de `.agents/skills/`; `remotion-best-practices` é o roteador. Consulte referências de mapas, legendas ou render somente quando a tarefa envolver essas áreas.
 - Se faltar uma decisão que altere o produto ou o escopo, apresente a opção concreta ao usuário.
