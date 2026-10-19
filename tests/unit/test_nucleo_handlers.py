@@ -20,15 +20,57 @@ async def test_handlers_integrados_validam_entrada_e_salvam_leitura(tmp_path):
     )
     executor = criar_executor_projeto(projeto)
 
-    status = await executor.executar()
+    status = await executor.executar(ate_etapa="P3_estrategia")
 
     assert status["E00_entrada"] == "concluida"
     assert status["P1_leitura"] == "concluida"
-    assert status["P3_estrategia"] == "falhou"
+    assert status["P3_estrategia"] == "concluida"
+    assert "P4_shots" not in status
     assert "P2_narracao" not in status
     leitura = json.loads((projeto.pastas.plano / "leitura.json").read_text(encoding="utf-8"))
     assert leitura["total_segmentos"] == 1
     assert leitura["blocos"][0]["segmentos"][0]["texto_limpo"] == "A história começa aqui."
+    estrategia = json.loads(
+        (projeto.pastas.plano / "estrategia.json").read_text(encoding="utf-8")
+    )
+    assert estrategia["blocos"][0]["bloco_id"] == "B1"
+    assert estrategia["blocos"][0]["modo_visual"] == "reconstituição"
+
+    status_ate_p4 = await executor.executar(ate_etapa="P4_shots")
+    assert status_ate_p4["P4_shots"] == "falhou"
+
+
+@pytest.mark.anyio
+async def test_handler_p3_recria_estrategia_ausente_na_retomada(tmp_path):
+    projeto = Projeto.criar(
+        nome="teste_retomada_p3", roteiro=ROTEIRO_VALIDO, raiz_projetos=tmp_path
+    )
+    executor = criar_executor_projeto(projeto)
+    status = await executor.executar(ate_etapa="P3_estrategia")
+    assert status["P3_estrategia"] == "concluida"
+
+    caminho = projeto.pastas.plano / "estrategia.json"
+    caminho.unlink()
+    status = await executor.executar(ate_etapa="P3_estrategia")
+    assert status["P3_estrategia"] == "concluida"
+    assert caminho.is_file()
+
+
+@pytest.mark.anyio
+async def test_handler_p3_rejeita_leitura_alterada(tmp_path):
+    projeto = Projeto.criar(
+        nome="teste_leitura_alterada", roteiro=ROTEIRO_VALIDO, raiz_projetos=tmp_path
+    )
+    executor = criar_executor_projeto(projeto)
+    await executor.executar(ate_etapa="P1_leitura")
+    caminho = projeto.pastas.plano / "leitura.json"
+    leitura = json.loads(caminho.read_text(encoding="utf-8"))
+    leitura["blocos"][0]["segmentos"][0]["texto_limpo"] = "Outro texto."
+    caminho.write_text(json.dumps(leitura, ensure_ascii=False), encoding="utf-8")
+
+    status = await executor.executar(ate_etapa="P3_estrategia")
+    assert status["P3_estrategia"] == "falhou"
+    assert not (projeto.pastas.plano / "estrategia.json").exists()
 
 
 @pytest.mark.anyio

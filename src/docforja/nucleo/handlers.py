@@ -15,6 +15,7 @@ from docforja.io import atomic_write_json
 from docforja.nucleo.executor import ContextoEtapa, ExecutorPipeline
 from docforja.nucleo.projeto import Projeto
 from docforja.planejamento.entidades import SegmentoProcessado
+from docforja.planejamento.estrategia import planejar_estrategias
 from docforja.planejamento.leitura import ler_roteiro_formatado
 from docforja.settings import load_settings
 
@@ -70,6 +71,20 @@ def registrar_handlers_disponiveis(
                 "blocos": [asdict(bloco) for bloco in blocos],
                 "total_segmentos": total_segmentos,
             },
+        )
+
+    def planejar_estrategia(ctx: ContextoEtapa) -> None:
+        leitura_path = ctx.projeto.pastas.plano / "leitura.json"
+        if not leitura_path.is_file():
+            raise FileNotFoundError("Leitura do roteiro ausente para a estratégia.")
+        leitura = json.loads(leitura_path.read_text(encoding="utf-8"))
+        blocos = ler_roteiro_formatado(ctx.projeto.obter_roteiro())
+        if not blocos or leitura.get("blocos") != [asdict(bloco) for bloco in blocos]:
+            raise ValueError("A leitura salva não corresponde aos blocos do roteiro atual.")
+        estrategias = planejar_estrategias(blocos)
+        atomic_write_json(
+            ctx.projeto.pastas.plano / "estrategia.json",
+            {"versao": 1, "blocos": [asdict(item) for item in estrategias]},
         )
 
     def obter_orquestrador() -> OrquestradorNarracao:
@@ -216,6 +231,15 @@ def registrar_handlers_disponiveis(
             "total_segmentos", 0
         ) > 0
 
+    def estrategia_valida(ctx: ContextoEtapa) -> bool:
+        caminho = ctx.projeto.pastas.plano / "estrategia.json"
+        if not caminho.is_file():
+            return False
+        dados = json.loads(caminho.read_text(encoding="utf-8"))
+        ids = [item.get("bloco_id") for item in dados.get("blocos", [])]
+        esperados = [bloco.id for bloco in ler_roteiro_formatado(ctx.projeto.obter_roteiro())]
+        return dados.get("versao") == 1 and bool(ids) and ids == esperados
+
     def narracao_valida(ctx: ContextoEtapa) -> bool:
         _, pasta = _audio_idioma(ctx.projeto)
         wav = pasta / "narracao_completa.wav"
@@ -249,6 +273,7 @@ def registrar_handlers_disponiveis(
 
     executor.registrar_handler("E00_entrada", validar_entrada)
     executor.registrar_handler("P1_leitura", ler_roteiro, validador=leitura_valida)
+    executor.registrar_handler("P3_estrategia", planejar_estrategia, validador=estrategia_valida)
     executor.registrar_handler("P2_narracao", gerar_narracao, validador=narracao_valida)
     executor.registrar_handler("P2b_alinhamento", alinhar_narracao, validador=alinhamento_valido)
     return executor
