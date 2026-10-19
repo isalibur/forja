@@ -197,21 +197,25 @@ def executar(
     slug_ou_caminho: Annotated[str, typer.Argument(help="Slug ou pasta do projeto")],
     aprovar_gate: Annotated[str | None, typer.Option(help="Aprova um gate como REVISAO")] = None,
     concorrencia: Annotated[int, typer.Option(help="Máximo de tarefas em paralelo")] = 4,
+    ate: Annotated[str | None, typer.Option(help="Executa até a etapa indicada")] = None,
 ) -> None:
     """Executa o pipeline do projeto até o próximo gate ou conclusão."""
     import asyncio
 
-    from docforja.nucleo.executor import ExecutorPipeline
+    from docforja.nucleo.handlers import criar_executor_projeto
     from docforja.nucleo.projeto import Projeto
 
     projeto = Projeto.carregar(slug_ou_caminho)
-    executor = ExecutorPipeline(projeto)
+    executor = criar_executor_projeto(projeto)
+    if ate is not None and ate not in executor.grafo.etapas:
+        console.print(f"[bold red]Etapa desconhecida: {ate}[/bold red]")
+        raise typer.Exit(code=2)
     if aprovar_gate:
         executor.aprovar_gate(aprovar_gate)
         console.print(f"[green][OK] Gate {aprovar_gate} aprovado com sucesso.[/green]")
 
     console.print(f"Iniciando pipeline para [bold]{projeto.slug}[/bold]...")
-    resultados = asyncio.run(executor.executar(max_concorrencia=concorrencia))
+    resultados = asyncio.run(executor.executar(max_concorrencia=concorrencia, ate_etapa=ate))
     for etapa, st in resultados.items():
         console.print(f" - {etapa}: {st}")
     falhadas = [etapa for etapa, st in resultados.items() if st == "falhou"]

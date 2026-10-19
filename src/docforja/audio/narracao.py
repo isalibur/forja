@@ -61,6 +61,7 @@ class OrquestradorNarracao:
         pasta_destino.mkdir(parents=True, exist_ok=True)
         saida_bruta = pasta_destino / f"{segmento.id}_raw.wav"
         saida_processada = pasta_destino / f"{segmento.id}.wav"
+        saida_bruta.unlink(missing_ok=True)
 
         # 1. Aplica dicionario de pronuncia
         texto_fonetico = aplicar_pronuncia(segmento.texto_limpo, idioma=idioma)
@@ -126,6 +127,7 @@ class OrquestradorNarracao:
         voz: str | None = None,
         velocidade: float = 1.0,
         executar_alinhamento: bool = True,
+        gerar_timestamps_estimados: bool = True,
         limite_wer: float = 0.02,
         max_refacoes_qualidade: int = 1,
     ) -> RelatorioNarracao:
@@ -209,27 +211,28 @@ class OrquestradorNarracao:
             with open(segmentos_json, "w", encoding="utf-8") as f:
                 json.dump(segmentos_info, f, ensure_ascii=False, indent=2)
 
-            palavras_estimadas = []
-            for s in segmentos_info:
-                palavras = s["texto"].split()
-                if not palavras:
-                    continue
-                dt_p = (s["fim_s"] - s["inicio_s"]) / len(palavras)
-                t_p = s["inicio_s"]
-                for p in palavras:
-                    palavras_estimadas.append(
-                        {
-                            "palavra": p,
-                            "inicio_s": round(t_p, 3),
-                            "fim_s": round(t_p + dt_p, 3),
-                            "score": 1.0,
-                            "segmento_id": s["id"],
-                        }
-                    )
-                    t_p += dt_p
+            if gerar_timestamps_estimados:
+                palavras_estimadas = []
+                for s in segmentos_info:
+                    palavras = s["texto"].split()
+                    if not palavras:
+                        continue
+                    dt_p = (s["fim_s"] - s["inicio_s"]) / len(palavras)
+                    t_p = s["inicio_s"]
+                    for p in palavras:
+                        palavras_estimadas.append(
+                            {
+                                "palavra": p,
+                                "inicio_s": round(t_p, 3),
+                                "fim_s": round(t_p + dt_p, 3),
+                                "score": 1.0,
+                                "segmento_id": s["id"],
+                            }
+                        )
+                        t_p += dt_p
 
-            with open(palavras_json, "w", encoding="utf-8") as f:
-                json.dump(palavras_estimadas, f, ensure_ascii=False, indent=2)
+                with open(palavras_json, "w", encoding="utf-8") as f:
+                    json.dump(palavras_estimadas, f, ensure_ascii=False, indent=2)
 
         return RelatorioNarracao(
             idioma=idioma,

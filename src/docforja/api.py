@@ -16,8 +16,8 @@ from pydantic import BaseModel, Field
 from docforja.nucleo.banco import BancoProjeto
 from docforja.nucleo.cotas import gerenciador_cotas
 from docforja.nucleo.eventos import barramento_global
-from docforja.nucleo.executor import ExecutorPipeline
 from docforja.nucleo.gpu import semaforo_gpu
+from docforja.nucleo.handlers import criar_executor_projeto
 from docforja.nucleo.projeto import Projeto
 from docforja.settings import load_settings
 
@@ -157,16 +157,20 @@ def obter_projeto(slug: str) -> dict[str, Any]:
 
 
 @app.post("/api/projetos/{slug}/executar")
-def acionar_execucao(slug: str, background_tasks: BackgroundTasks) -> dict[str, Any]:
+def acionar_execucao(
+    slug: str, background_tasks: BackgroundTasks, ate: str | None = None
+) -> dict[str, Any]:
     try:
         projeto = Projeto.carregar(slug)
     except FileNotFoundError as err:
         raise HTTPException(status_code=404, detail="Projeto não encontrado") from err
 
-    executor = ExecutorPipeline(projeto)
+    executor = criar_executor_projeto(projeto)
+    if ate is not None and ate not in executor.grafo.etapas:
+        raise HTTPException(status_code=400, detail=f"Etapa desconhecida: {ate}")
 
     async def _rodar():
-        await executor.executar()
+        await executor.executar(ate_etapa=ate)
 
     background_tasks.add_task(asyncio.run, _rodar())
     return {"status": "iniciado", "slug": slug}
@@ -181,7 +185,7 @@ def aprovar_gate(
     except FileNotFoundError as err:
         raise HTTPException(status_code=404, detail="Projeto não encontrado") from err
 
-    executor = ExecutorPipeline(projeto)
+    executor = criar_executor_projeto(projeto)
     executor.aprovar_gate(payload.gate)
 
     async def _rodar():

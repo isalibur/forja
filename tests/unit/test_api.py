@@ -74,6 +74,9 @@ def test_api_projetos_fluxo(tmp_path, monkeypatch):
     assert proj_detalhe["roteiro"] == "Roteiro da API"
     assert any(e["id"] == "P1_leitura" for e in proj_detalhe["etapas"])
 
+    resp_etapa_invalida = client.post(f"/api/projetos/{slug}/executar?ate=etapa_inexistente")
+    assert resp_etapa_invalida.status_code == 400
+
 
 def test_api_servir_web_dist():
     client = TestClient(app)

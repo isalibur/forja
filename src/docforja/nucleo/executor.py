@@ -48,6 +48,7 @@ class ExecutorPipeline:
         self.semaforo = semaforo or semaforo_gpu
         self.barramento = barramento or barramento_global
         self._handlers: dict[str, HandlerEtapa] = {}
+        self._validadores: dict[str, Callable[[ContextoEtapa], bool]] = {}
 
         # Carrega o grafo de acordo com o tipo de projeto
         opcoes = projeto.obter_opcoes()
@@ -63,8 +64,15 @@ class ExecutorPipeline:
                     erro="Interrompido por encerramento do processo",
                 )
 
-    def registrar_handler(self, etapa_id: str, handler: HandlerEtapa) -> None:
+    def registrar_handler(
+        self,
+        etapa_id: str,
+        handler: HandlerEtapa,
+        validador: Callable[[ContextoEtapa], bool] | None = None,
+    ) -> None:
         self._handlers[etapa_id] = handler
+        if validador is not None:
+            self._validadores[etapa_id] = validador
 
     def aprovar_gate(self, etapa_id: str) -> None:
         """Libera um gate (como REVISAO) para prosseguir para a produção."""
@@ -100,8 +108,7 @@ class ExecutorPipeline:
         dados = {
             "id": def_etapa.id,
             "needs": def_etapa.needs,
-            "preset": opcoes.get("preset"),
-            "kit": opcoes.get("kit"),
+            "opcoes": opcoes,
             "roteiro_hash": calcular_hash_dados(self.projeto.obter_roteiro()),
         }
         return calcular_hash_dados(dados)
@@ -205,26 +212,63 @@ class ExecutorPipeline:
         if asyncio.iscoroutine(res):
             await res
 
-    async def executar(self, max_concorrencia: int = 4) -> dict[str, str]:
-        """Loop de execução contínua até que não haja mais etapas prontas ou atinja um gate."""
+    async def executar(
+        self, max_concorrencia: int = 4, ate_etapa: str | None = None
+    ) -> dict[str, str]:
+        """Executa o grafo completo ou só as dependências de uma etapa alvo."""
+        permitidas = set(self.grafo.etapas)
+        if ate_etapa is not None:
+            if ate_etapa not in self.grafo.etapas:
+                raise ValueError(f"Etapa não encontrada no pipeline: {ate_etapa}")
+            permitidas = set()
+
+            def incluir_dependencias(etapa_id: str) -> None:
+                if etapa_id in permitidas:
+                    return
+                permitidas.add(etapa_id)
+                for dependencia in self.grafo.etapas[etapa_id].needs:
+                    if dependencia in self.grafo.etapas:
+                        incluir_dependencias(dependencia)
+
+            incluir_dependencias(ate_etapa)
+
         executando: set[str] = set()
         background_tasks: set[asyncio.Task[None]] = set()
 
-        # Bancos de versões anteriores podem conter etapas concluídas pelo handler
-        # placeholder. Rebaixa esses resultados para falha até que haja processador real.
+        # Uma nova solicitação de execução tenta novamente as etapas que
+        # falharam anteriormente, preservando as etapas independentes válidas.
+        for registro in self.banco.listar_etapas():
+            if registro["id"] in permitidas and registro["status"] == "falhou":
+                self.invalidar(registro["id"])
+
+        # Resultados antigos são reutilizados somente com entrada e artefatos válidos.
         for etapa in self.grafo.etapas.values():
+            if etapa.id not in permitidas:
+                continue
             registro = self.banco.obter_etapa(etapa.id)
-            if (
-                registro
-                and registro["status"] == "concluida"
-                and not etapa.gate
-                and etapa.id not in self._handlers
-            ):
+            if not registro or registro["status"] != "concluida" or etapa.gate:
+                continue
+            if etapa.id not in self._handlers:
                 self.banco.salvar_etapa(
                     etapa.id,
                     status="falhou",
                     erro=f"A etapa {etapa.id} não possui um processador registrado.",
                 )
+                continue
+            validador = self._validadores.get(etapa.id)
+            artefatos_validos = True
+            if validador is not None:
+                try:
+                    artefatos_validos = validador(
+                        ContextoEtapa(projeto=self.projeto, etapa=etapa, banco=self.banco)
+                    )
+                except Exception:
+                    artefatos_validos = False
+            if (
+                registro["hash_entrada"] != self._calcular_hash_etapa(etapa)
+                or not artefatos_validos
+            ):
+                self.invalidar(etapa.id)
 
         def _coletar_tarefa(task: asyncio.Task[None]) -> None:
             background_tasks.discard(task)
@@ -235,7 +279,11 @@ class ExecutorPipeline:
 
         while True:
             # Atualiza status das etapas no banco
-            todas = {r["id"]: r["status"] for r in self.banco.listar_etapas()}
+            todas = {
+                r["id"]: r["status"]
+                for r in self.banco.listar_etapas()
+                if r["id"] in permitidas
+            }
             concluidas = {k for k, v in todas.items() if v == "concluida"}
             falhadas = {k for k, v in todas.items() if v == "falhou"}
             pausadas = {k for k, v in todas.items() if v == "pausada_revisao"}
@@ -244,9 +292,25 @@ class ExecutorPipeline:
                 # Interrompe se houve falha crítica em alguma etapa
                 break
 
-            prontas = self.grafo.obter_prontas(concluidas=concluidas, executando=executando)
+            prontas = [
+                etapa
+                for etapa in self.grafo.obter_prontas(concluidas=concluidas, executando=executando)
+                if etapa.id in permitidas
+            ]
             # Filtra etapas pausadas em gate
             prontas = [e for e in prontas if e.id not in pausadas]
+
+            # Evita iniciar trabalhos caros em paralelo quando já se sabe que
+            # outra etapa pronta ainda não tem implementação.
+            sem_handler = [e for e in prontas if not e.gate and e.id not in self._handlers]
+            if sem_handler:
+                for etapa in sem_handler:
+                    self.banco.salvar_etapa(
+                        etapa.id,
+                        status="falhou",
+                        erro=f"A etapa {etapa.id} não possui um processador registrado.",
+                    )
+                break
 
             if not prontas and not executando:
                 # Não há mais trabalho a ser feito
@@ -282,4 +346,10 @@ class ExecutorPipeline:
 
             await asyncio.sleep(0.02)
 
-        return {r["id"]: r["status"] for r in self.banco.listar_etapas()}
+        if background_tasks:
+            await asyncio.gather(*background_tasks, return_exceptions=True)
+        return {
+            r["id"]: r["status"]
+            for r in self.banco.listar_etapas()
+            if r["id"] in permitidas
+        }
