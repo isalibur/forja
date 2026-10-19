@@ -1,60 +1,32 @@
-# AGENTS.md — Regras do repositório DocForja (v2)
+# AGENTS.md — DocForja
 
-> Lido por OpenCode e Antigravity. Copie para a **raiz** do repositório `docforja/`.
+DocForja transforma roteiro e tema em um Plano de Vídeo revisável e depois produz documentários, shorts e vídeos de música localmente. O trabalho segue o marco pedido; não implemente fases futuras por antecipação.
 
-## O que é
+## Onde consultar
 
-DocForja transforma **tema + roteiro** (escrito pelo usuário fora do sistema) num **Plano de Vídeo** completo e depois executa esse plano: narração (TTS ou pronta), fotos reais pesquisadas, imagens geradas, imagens do usuário, animação de imagens (Ken Burns, parallax, recorte), templates de texto/número/gráfico/mapa/linha do tempo, trilha, SFX, mix, render, legendas e pacote — em vários idiomas. Roda local (Windows 11, Ryzen 5 5500, RTX 3060 12 GB, 24 GB RAM). Sem vídeo gerado por IA.
+- `docs/construtor/` é a fonte de verdade do software; `docs/pipeline/` define linguagem visual, som e ética. Em conflito, prevalece `docs/construtor/`.
+- Localize o marco em `docs/construtor/08-marcos-de-construcao.md` e leia apenas as seções citadas por ele e os arquivos afetados. Para o estado atual do M0, consulte `docs/contexto/M0.md`.
+- Plano e schemas: `docs/construtor/02-plano-de-video.md`; integrações: `07-arquitetura-e-integracoes.md`; instalação: `09-instalacao.md`; interface: `14-interface-ui.md`; saídas e pasta global: `13-saidas-pasta-global-e-metadados.md`.
+- Código Remotion: use a skill pertinente de `.agents/skills/`; `remotion-best-practices` é o roteador. Consulte referências de mapas, legendas ou render somente quando a tarefa envolver essas áreas.
+- Se faltar uma decisão que altere o produto ou o escopo, apresente a opção concreta ao usuário.
 
-Quatro tipos de projeto com o mesmo motor: `longo`, `short_derivado`, `short_avulso` (inclusive em lote) e `musica` (`docs/construtor/11`, `12`). Toda saída segue `docs/construtor/13 §2` e traz metadados estratégicos (`13 §4`). O que é reaproveitável vai para a **pasta global** (`13 §3`) e passa a ser referenciado por ID.
+## Regras permanentes
 
-## Especificação
+- Python 3.11, type hints, Pydantic v2 nos dados entre módulos e `pathlib.Path`. Testes unitários sem rede nem GPU; prompts em `prompts/*.md.j2`; logs sem segredos.
+- O planejador escolhe apenas templates do catálogo. Regras de dosagem ficam em `config/dosagem.yaml`; modelos e adaptadores em `config/modelos.yaml` e `config/adaptadores.yaml`, sem nomes fixos no código.
+- Ferramentas externas usam adaptadores. AGPL/GPL (como DepthFlow e ComfyUI) rodam em processo ou serviço separado. Cargas de GPU, inclusive Ollama, usam o semáforo de `nucleo/gpu.py` quando ele existir.
+- Escritas atômicas, versões sem sobrescrita, cache por hash e timeout/retry em chamadas externas.
+- Interface: React, TypeScript, Tailwind e shadcn/ui; tokens do kit, textos em `i18n/<idioma>.json`, autoajuste e tarefas longas sem bloquear a tela. Siga o protótipo e a especificação da interface quando trabalhar nela.
 
-- `docs/construtor/` — fonte de verdade do software. Comece por `02-plano-de-video.md`: o plano é o centro.
-- `docs/pipeline/` — linguagem visual, sonora e ética. Em conflito, vale `docs/construtor/`.
-- Ambíguo? **Pare e pergunte.**
+## Proteções do produto
 
-## Skills disponíveis
+- Preserve o texto e os IDs dos segmentos do roteiro; apenas segmente e anote. Mantenha a revisão humana, o código de confirmação para produzir, o rótulo "RECONSTITUIÇÃO ARTÍSTICA", as fichas e checagens de licença, as regras éticas para vítimas e o controle de GPU.
+- Em projetos monetizados, bloqueie mídia NC/ND, adaptadores `comercial: false` e pesos sem licença aprovada. Não promova ativos à pasta global sem licença e ficha.
+- Não altere nem remova arquivos do usuário em `02_midias/manual/`, `00_entrada/` ou itens da pasta global sem confirmação. Não implemente upload, envio de mensagens em nome do usuário ou exclusão sem confirmação explícita.
+- Para shorts de vendas, não invente depoimentos, resultados, avaliações ou urgência. Para música, exija ficha de direitos. Título e thumbnail devem cumprir a promessa do vídeo; ativos de terceiros não entram em pacote de revenda. Não queime links de afiliados no vídeo nem omita avisos de publicidade.
+- Não publique `.env`, chaves, modelos ou mídia. Antes de commit/push, confira o conjunto de arquivos incluídos. Trabalhe apenas no marco solicitado.
+- As fases futuras A–D de `docs/construtor/15-roadmap-negocios.md` exigem pedido explícito.
 
-- `.agents/skills/` contém as **Remotion Agent Skills** (`remotion-best-practices` e relacionadas). Use-as em todo código Remotion.
+## Verificação
 
-## Comandos
-
-```powershell
-uv run pytest tests/unit
-uv run pytest -m gpu tests/integration
-uv run ruff check src tests ; uv run ruff format src tests
-uv run docforja doctor
-cd kits/cinza-e-brasa/templates ; npx tsc --noEmit ; npx remotion studio
-```
-
-## Convenções
-
-- Python 3.11, type hints, Pydantic v2 em todo dado entre módulos, `pathlib.Path`.
-- O planejador só escolhe templates do **catálogo** (`02 §3`); nada de componentes inventados por LLM. Novo template = nova versão do kit, com schema, teste e regras de uso.
-- Regras de dosagem ficam em `config/dosagem.yaml`, nunca fixas no código.
-- Templates leem só tokens do kit; textos vêm de `i18n/<idioma>.json`; todo texto com auto-ajuste.
-- Ferramentas externas só por **adaptadores** (`07 §2`). AGPL/GPL (DepthFlow, VoiceStudio, ComfyUI) só como processo/serviço separado.
-- Nenhum nome de modelo no código: use `config/modelos.yaml` e `config/adaptadores.yaml`.
-- Toda carga de GPU (inclui Ollama) pelo semáforo de `nucleo/gpu.py`.
-- Escrita atômica; versões nunca sobrescritas; cache por hash; timeouts e retry em chamadas externas.
-- Interface (`web/`): React + TypeScript + Tailwind + shadcn/ui; siga `docs/construtor/14-interface-ui.md` e o protótipo `docs/construtor/mockups/docforja-ui.html`; cores de status fixas; textos em português simples; nenhuma tela bloqueia durante tarefas longas; tipos gerados do OpenAPI.
-- Testes unitários sem rede e sem GPU; prompts em `prompts/*.md.j2`; logs sem segredos.
-
-## Você NÃO pode
-
-- Reescrever o texto do roteiro do usuário (só segmentar e anotar) nem mudar IDs de segmentos.
-- Remover o ponto de revisão, o código de confirmação para produzir via CLI/API/Hermes, o rótulo "RECONSTITUIÇÃO ARTÍSTICA", a checagem de licenças, a ficha de crédito, as regras de ética com vítimas (D9, D17) ou o semáforo de GPU.
-- Usar mídia NC/ND ou adaptadores `comercial: false` em projeto monetizado.
-- Mover, alterar ou apagar arquivos do usuário (`02_midias/manual/`, `00_entrada/`) ou itens da pasta global sem confirmação.
-- Promover para a pasta global algo sem licença/ficha registrada.
-- Gerar depoimentos, números de resultado, avaliações ou urgências falsas em shorts de vendas (`11 §4.3`); aceitar faixa de música sem ficha de direito (`12 §6`).
-- Títulos/thumbnails que prometem algo que o vídeo não entrega (regra M2 de `13 §5`).
-- Implementar qualquer fase futura de `docs/construtor/15-roadmap-negocios.md` (A–D) sem pedido explícito.
-- Colocar ativos de terceiros (acervo, pasta manual sem licença própria) em pacote de banco de imagens ou de revenda; queimar link de afiliado no vídeo ou omitir o aviso de publicidade.
-- Implementar upload, envio de mensagens em nome do usuário ou exclusão sem confirmação explícita.
-- Commitar `.env`, chaves, modelos ou mídia; mudar algo fora do escopo do marco.
-
-## Fluxo
-
-Ler pedido e seções citadas → plano curto (arquivos, funções, testes) → testes → implementação → `pytest`/`ruff`/`tsc` verdes → resumo do que mudou e divergências encontradas.
+Planeje brevemente os arquivos e testes relevantes. Rode `uv run pytest tests/unit` e `uv run ruff check src tests` para mudanças Python; para Remotion, use as verificações do kit afetado. Registre no resumo o que mudou, o que passou e o que ainda falta.

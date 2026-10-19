@@ -6,16 +6,85 @@ imagem:
       adaptador: comfyui
     - id: flux1-schnell
       adaptador: comfyui
+      benchmark:
+        workflow: workflows/flux-schnell.json
+        bindings: workflows/flux-schnell.bindings.yaml
+        seed: 42000
+        timeout_seconds: 900
+        parameters:
+          unet: flux1-schnell-Q4_K_S.gguf
+          encoder1: clip_l.safetensors
+          encoder2: t5-v1_1-xxl-encoder-Q4_K_M.gguf
+          vae: ae.safetensors
+          width: 1024
+          height: 576
+          steps: 4
 tts:
   candidatos:
     - id: chatterbox-multilingual
       adaptador: chatterbox
     - id: kokoro-82m
       adaptador: kokoro
+      benchmark:
+        model_files:
+          repo_id: hexgrad/Kokoro-82M
+          config: D:/IA/audio_factory/models/tts/hub/models--hexgrad--Kokoro-82M/snapshots/f3ff3571791e39611d31c381e3a41a3af07b4987/config.json
+          weights: D:/IA/audio_factory/models/tts/hub/models--hexgrad--Kokoro-82M/snapshots/f3ff3571791e39611d31c381e3a41a3af07b4987/kokoro-v1_0.pth
+        voices:
+          - id: pm_alex
+            language: pt-BR
+            lang_code: p
+            path: D:/IA/audio_factory/models/tts/hub/models--hexgrad--Kokoro-82M/snapshots/f3ff3571791e39611d31c381e3a41a3af07b4987/voices/pm_alex.pt
+          - id: af_sarah
+            language: en
+            lang_code: a
+            path: D:/IA/audio_factory/models/tts/hub/models--hexgrad--Kokoro-82M/snapshots/f3ff3571791e39611d31c381e3a41a3af07b4987/voices/af_sarah.pt
+          - id: pf_dora
+            language: pt-BR
+            lang_code: p
+            path: E:/05_PROJETOS/forja/modelos/kokoro/pf_dora.pt
+          - id: ef_dora
+            language: es
+            lang_code: e
+            path: E:/05_PROJETOS/forja/modelos/kokoro/ef_dora.pt
 alinhamento:
   candidatos:
     - id: whisperx-large-v3
       adaptador: whisperx
+    - id: whisperx-en-base
+      adaptador: whisperx
+      benchmark:
+        source_result_id: tts_kokoro-82m_af_sarah_en
+        language: en
+        model: WAV2VEC2_ASR_BASE_960H
+        repetitions: 3
+parallax:
+  candidatos:
+    - id: depthflow-small
+      adaptador: depthflow
+      benchmark:
+        source_result_id: imagem_flux1-schnell_paisagem
+        model: small
+        fps: 24
+        width: 1024
+        height: 576
+recorte:
+  candidatos:
+    - id: rembg-u2net
+      adaptador: rembg
+      benchmark:
+        source_result_id: imagem_flux1-schnell_contemporaneo
+        model: u2net
+        model_home: E:/05_PROJETOS/forja/modelos/rembg
+upscale:
+  candidatos:
+    - id: realesrgan-x4plus
+      adaptador: realesrgan
+      benchmark:
+        source_result_id: imagem_flux1-schnell_contemporaneo
+        weights: E:/05_PROJETOS/forja/modelos/realesrgan/RealESRGAN_x4plus.pth
+        scale: 4
+        tile: 256
 visao:
   candidatos:
     - id: qwen2.5vl-7b
@@ -24,4 +93,25 @@ llm:
   candidatos:
     - id: qwen3-8b
       adaptador: ollama
+render:
+  candidatos:
+    - id: remotion-1080p
+      adaptador: remotion
+      benchmark:
+        composition: benchmark-1080p
+        resolution: 1080p
+        width: 1920
+        height: 1080
+        fps: 30
+        duration_seconds: 10
+    - id: remotion-1440p
+      adaptador: remotion
+      benchmark:
+        composition: benchmark-1440p
+        resolution: 1440p
+        width: 2560
+        height: 1440
+        fps: 30
+        duration_seconds: 10
+
 

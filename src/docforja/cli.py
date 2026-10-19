@@ -49,13 +49,27 @@ def benchmark(
     config: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = Path(
         "config/adaptadores.yaml"
     ),
+    real: Annotated[bool, typer.Option(help="Executa ensaios reais do M0.")] = False,
+    category: Annotated[
+        list[str] | None,
+        typer.Option(
+            help="Categoria: imagem, tts, alinhamento, parallax, recorte, upscale ou render."
+        ),
+    ] = None,
 ) -> None:
     """Mede os adaptadores disponíveis e registra ausências sem abortar a bateria inteira."""
     settings = load_settings(config)
-    report = BenchmarkRunner(
-        output_dir=settings.paths.benchmark_output,
-        python_environments=settings.python_environments,
-    ).run()
+    if real:
+        from docforja.real_benchmark import RealBenchmarkRunner
+
+        runner = RealBenchmarkRunner(settings, config.parent)
+        report = runner.run(category or ["imagem", "tts"])
+        console.print(f"Execução preservada: {runner.output}")
+    else:
+        report = BenchmarkRunner(
+            output_dir=settings.paths.benchmark_output,
+            python_environments=settings.python_environments,
+        ).run()
     table = Table(title="DocForja benchmark")
     table.add_column("Estado", justify="center")
     table.add_column("Categoria")
@@ -73,3 +87,5 @@ def benchmark(
     console.print(table)
     console.print("Resultados: [bold]config/benchmark.json[/bold]")
     console.print(f"Arquivos para avaliação: [bold]{settings.paths.benchmark_output}[/bold]")
+    if any(item.status == CheckStatus.ERROR for item in report.results):
+        raise typer.Exit(code=1)

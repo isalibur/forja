@@ -1,0 +1,10 @@
+unet: 1.unet_name
+encoder1: 2.clip_name1
+encoder2: 2.clip_name2
+vae: 3.vae_name
+prompt: 4.text
+width: 6.width
+height: 6.height
+seed: 7.seed
+steps: 7.steps
+output_prefix: 9.filename_prefix

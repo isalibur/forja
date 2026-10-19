@@ -19,4 +19,5 @@ python_environments:
   whisperx: envs/align/Scripts/python.exe
   realesrgan: envs/realesrgan/Scripts/python.exe
   kokoro: D:/IA/audio_factory/.venv/Scripts/python.exe
+  rembg: D:/INSTALACOES/python/python.exe
 

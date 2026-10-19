@@ -1,14 +1,18 @@
 schema_version: 1
 prompts_imagem:
   - id: historico
-    texto: "Rua de uma cidade romana antiga, fotografia documental, sem texto"
+    texto: "Archaeological reconstruction of a street in Pompeii in the year 79 AD, ancient Roman Empire. Low one-storey plastered stone houses with terracotta tiled roofs, stone paving with large stepping stones, clay amphorae outside a shop, two pedestrians wearing simple Roman tunics and leather sandals. Historically grounded architecture, natural morning light, realistic documentary still, full-frame composition. No cars, no electric wires, no street lights, no modern buildings, no typography, no borders."
   - id: contemporaneo
-    texto: "Retrato documental natural de uma pessoa pesquisando em uma biblioteca, sem texto"
+    texto: "Natural documentary photograph of an adult researcher reading an open book in a public library, bookshelves behind her, soft window light, realistic hands and face, medium shot, candid posture, horizontal full-frame composition, no typography, no borders."
   - id: paisagem
-    texto: "Paisagem vulcanica dramatica vista de longe, realista, sem texto"
+    texto: "Wide documentary landscape photograph of a solitary conical active volcano seen from a distant ridge. A clear volcanic summit crater releases a thin plume of white steam, dark lava slopes, dry scrub in the foreground, dramatic cloudy sky, realistic geology, horizontal full-frame composition, no typography, no borders."
 tts:
   idiomas: [pt-BR, en, es]
   duracao_alvo_segundos: 20
+  textos:
+    pt-BR: "Durante séculos, a montanha parecia tranquila. Ao amanhecer, a cidade retomava sua rotina: comerciantes abriam as portas e famílias atravessavam as ruas. Sob o solo, porém, a pressão aumentava. O que aconteceu depois transformou a paisagem e deixou sinais que os pesquisadores ainda procuram compreender."
+    en: "For centuries, the mountain had seemed peaceful. At dawn, the city returned to its familiar routine: merchants opened their doors and families walked through the streets. Beneath the ground, however, the pressure was rising. What happened next transformed the landscape and left traces that researchers are still trying to understand."
+    es: "Durante siglos, la montaña parecía tranquila. Al amanecer, la ciudad retomaba su rutina: los comerciantes abrían sus puertas y las familias recorrían las calles. Bajo el suelo, sin embargo, la presión aumentaba. Lo que ocurrió después transformó el paisaje y dejó señales que los investigadores todavía intentan comprender."
 alinhamento:
   duracao_alvo_segundos: 60
 parallax:

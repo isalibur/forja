@@ -41,6 +41,7 @@ class BenchmarkResult(BaseModel):
     peak_vram_mb: int | None = None
     outputs: list[Path] = Field(default_factory=list)
     message: str = ""
+    metrics: dict[str, str | int | float | bool | None] = Field(default_factory=dict)
 
 
 class BenchmarkReport(BaseModel):

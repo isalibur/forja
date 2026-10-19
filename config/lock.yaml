@@ -9,6 +9,8 @@ ferramentas:
     versao: 24.19.0
   npm:
     versao: 12.1.0
+  remotion:
+    versao: 4.0.536
   ffmpeg:
     versao: 8.1.1-full_build-www.gyan.dev
     nvenc: true
@@ -48,5 +50,26 @@ modelos_instalados:
   kokoro:
     - Kokoro-82M
     - pm_alex
+    - af_sarah
+    - pf_dora
+    - ef_dora
+artefatos_em_avaliacao:
+  kokoro:
+    repositorio: https://huggingface.co/hexgrad/Kokoro-82M
+    revisao: f3ff3571791e39611d31c381e3a41a3af07b4987
+    ficha_modelo: https://huggingface.co/hexgrad/Kokoro-82M/blob/f3ff3571791e39611d31c381e3a41a3af07b4987/README.md
+    licenca_declarada_modelo: Apache-2.0
+    aprovado_producao: false
+    pendencias: avaliação auditiva e ficha completa de vozes e dependências de idioma
+    sha256:
+      kokoro-v1_0.pth: 496dba118d1a58f5f3db2efc88dbdc216e0483fc89fe6e47ee1f2c53f18ad1e4
+      pm_alex.pt: cf0ba8c573c2480fc54123683a35cf1e2ae130428e441eb91f9149bdb188a526
+      af_sarah.pt: 49bd364ea3be9eb3e9685e8f9a15448c4883112a7c0ff7ab139fa4088b08cef9
+      pf_dora.pt: 07e4ff987c5d5a8c3995efd15cc4f0db7c4c15e881b198d8ab7f67ecf51f5eb7
+      ef_dora.pt: d9d69b0f8a2b87a345f269d89639f89dfbd1a6c9da0c498ae36dd34afcf35530
+  flux_schnell_gguf:
+    arquivo: C:/ComfyUI/models/unet/flux1-schnell-Q4_K_S.gguf
+    aprovado_producao: false
+    pendencias: origem e hash da conversão GGUF, encoders, VAE, nós e revisão visual
 modelos_aprovados: {}
 

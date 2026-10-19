@@ -1,7 +1,102 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-19T01:13:36.163657Z",
+  "generated_at": "2026-10-19T13:59:58.950055Z",
   "results": [
+    {
+      "id": "tts_chatterbox-multilingual",
+      "category": "tts",
+      "candidate": "chatterbox-multilingual",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "ensaio real ainda não configurado",
+      "metrics": {}
+    },
+    {
+      "id": "tts_kokoro-82m_pm_alex_pt-BR",
+      "category": "tts",
+      "candidate": "kokoro-82m",
+      "status": "ok",
+      "duration_seconds": 20.247,
+      "peak_vram_mb": 2127,
+      "outputs": [
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T114056Z-eac6d9\\tts_kokoro-82m_pm_alex_pt-BR.wav"
+      ],
+      "message": "voz gerada; tempo inclui carga do processo/modelo",
+      "metrics": {
+        "audio_seconds": 17.725,
+        "inference_seconds": 2.618,
+        "torch_peak_allocated_mb": 882,
+        "sample_rate": 24000,
+        "voice": "pm_alex",
+        "language": "pt-BR",
+        "vram_scope": "GPU inteira; amostragem 0,5 s"
+      }
+    },
+    {
+      "id": "tts_kokoro-82m_af_sarah_en",
+      "category": "tts",
+      "candidate": "kokoro-82m",
+      "status": "ok",
+      "duration_seconds": 12.729,
+      "peak_vram_mb": 2185,
+      "outputs": [
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T114056Z-eac6d9\\tts_kokoro-82m_af_sarah_en.wav"
+      ],
+      "message": "voz gerada; tempo inclui carga do processo/modelo",
+      "metrics": {
+        "audio_seconds": 19.75,
+        "inference_seconds": 1.23,
+        "torch_peak_allocated_mb": 914,
+        "sample_rate": 24000,
+        "voice": "af_sarah",
+        "language": "en",
+        "vram_scope": "GPU inteira; amostragem 0,5 s"
+      }
+    },
+    {
+      "id": "tts_kokoro-82m_pf_dora_pt-BR",
+      "category": "tts",
+      "candidate": "kokoro-82m",
+      "status": "ok",
+      "duration_seconds": 11.891,
+      "peak_vram_mb": 2127,
+      "outputs": [
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T114056Z-eac6d9\\tts_kokoro-82m_pf_dora_pt-BR.wav"
+      ],
+      "message": "voz gerada; tempo inclui carga do processo/modelo",
+      "metrics": {
+        "audio_seconds": 17.65,
+        "inference_seconds": 1.209,
+        "torch_peak_allocated_mb": 882,
+        "sample_rate": 24000,
+        "voice": "pf_dora",
+        "language": "pt-BR",
+        "vram_scope": "GPU inteira; amostragem 0,5 s"
+      }
+    },
+    {
+      "id": "tts_kokoro-82m_ef_dora_es",
+      "category": "tts",
+      "candidate": "kokoro-82m",
+      "status": "ok",
+      "duration_seconds": 11.772,
+      "peak_vram_mb": 2157,
+      "outputs": [
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T114056Z-eac6d9\\tts_kokoro-82m_ef_dora_es.wav"
+      ],
+      "message": "voz gerada; tempo inclui carga do processo/modelo",
+      "metrics": {
+        "audio_seconds": 18.875,
+        "inference_seconds": 1.195,
+        "torch_peak_allocated_mb": 900,
+        "sample_rate": 24000,
+        "voice": "ef_dora",
+        "language": "es",
+        "vram_scope": "GPU inteira; amostragem 0,5 s"
+      }
+    },
     {
       "id": "imagem_chroma1-hd",
       "category": "imagem",
@@ -10,7 +105,8 @@
       "duration_seconds": 0.0,
       "peak_vram_mb": null,
       "outputs": [],
-      "message": "ComfyUI: adicione o workflow API e o arquivo .bindings.yaml em workflows/ para habilitar esta medição"
+      "message": "ensaio real ainda não configurado",
+      "metrics": {}
     },
     {
       "id": "imagem_qwen-image-gguf",
@@ -20,101 +116,227 @@
       "duration_seconds": 0.0,
       "peak_vram_mb": null,
       "outputs": [],
-      "message": "ComfyUI: adicione o workflow API e o arquivo .bindings.yaml em workflows/ para habilitar esta medição"
+      "message": "ensaio real ainda não configurado",
+      "metrics": {}
     },
     {
-      "id": "imagem_flux1-schnell",
+      "id": "imagem_flux1-schnell_historico",
       "category": "imagem",
       "candidate": "flux1-schnell",
-      "status": "skipped",
-      "duration_seconds": 0.0,
-      "peak_vram_mb": null,
-      "outputs": [],
-      "message": "ComfyUI: adicione o workflow API e o arquivo .bindings.yaml em workflows/ para habilitar esta medição"
+      "status": "ok",
+      "duration_seconds": 39.651,
+      "peak_vram_mb": 10176,
+      "outputs": [
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T114217Z-28c12a\\imagem_flux1-schnell_historico-0.png"
+      ],
+      "message": "imagem gerada",
+      "metrics": {
+        "seed": 42000,
+        "width": 1024,
+        "height": 576,
+        "vram_scope": "GPU inteira; amostragem 0,5 s",
+        "includes_model_load": true
+      }
     },
     {
-      "id": "tts_chatterbox-multilingual",
-      "category": "tts",
-      "candidate": "chatterbox-multilingual",
-      "status": "skipped",
-      "duration_seconds": 0.0,
-      "peak_vram_mb": null,
-      "outputs": [],
-      "message": "dependência ausente"
+      "id": "imagem_flux1-schnell_contemporaneo",
+      "category": "imagem",
+      "candidate": "flux1-schnell",
+      "status": "ok",
+      "duration_seconds": 13.307,
+      "peak_vram_mb": 11552,
+      "outputs": [
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T114217Z-28c12a\\imagem_flux1-schnell_contemporaneo-0.png"
+      ],
+      "message": "imagem gerada",
+      "metrics": {
+        "seed": 42001,
+        "width": 1024,
+        "height": 576,
+        "vram_scope": "GPU inteira; amostragem 0,5 s",
+        "includes_model_load": false
+      }
     },
     {
-      "id": "tts_kokoro-82m",
-      "category": "tts",
-      "candidate": "kokoro-82m",
-      "status": "warning",
-      "duration_seconds": 0.0,
-      "peak_vram_mb": null,
-      "outputs": [],
-      "message": "dependência disponível; adaptador de medição requer os modelos locais"
+      "id": "imagem_flux1-schnell_paisagem",
+      "category": "imagem",
+      "candidate": "flux1-schnell",
+      "status": "ok",
+      "duration_seconds": 13.285,
+      "peak_vram_mb": 11168,
+      "outputs": [
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T114217Z-28c12a\\imagem_flux1-schnell_paisagem-0.png"
+      ],
+      "message": "imagem gerada",
+      "metrics": {
+        "seed": 42002,
+        "width": 1024,
+        "height": 576,
+        "vram_scope": "GPU inteira; amostragem 0,5 s",
+        "includes_model_load": false
+      }
     },
     {
-      "id": "alinhamento_whisperx",
+      "id": "alinhamento_whisperx-large-v3",
       "category": "alinhamento",
-      "candidate": "whisperx",
-      "status": "warning",
+      "candidate": "whisperx-large-v3",
+      "status": "skipped",
       "duration_seconds": 0.0,
       "peak_vram_mb": null,
       "outputs": [],
-      "message": "dependência disponível; adaptador de medição requer os modelos locais"
+      "message": "ensaio real ainda não configurado",
+      "metrics": {
+        "run_id": "20261019T115351Z-294760",
+        "measured_at": "2026-10-19T11:54:29.090735+00:00"
+      }
     },
     {
-      "id": "parallax_depthflow",
-      "category": "parallax",
-      "candidate": "depthflow",
-      "status": "warning",
-      "duration_seconds": 0.0,
-      "peak_vram_mb": null,
-      "outputs": [],
-      "message": "dependência disponível; adaptador de medição requer os modelos locais"
+      "id": "alinhamento_whisperx-en-base",
+      "category": "alinhamento",
+      "candidate": "whisperx-en-base",
+      "status": "ok",
+      "duration_seconds": 37.828,
+      "peak_vram_mb": 1951,
+      "outputs": [
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T115351Z-294760\\alinhamento_whisperx-en-base.wav",
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T115351Z-294760\\alinhamento_whisperx-en-base.words.json"
+      ],
+      "message": "60 s alinhados a texto conhecido",
+      "metrics": {
+        "audio_seconds": 60.0,
+        "spoken_seconds": 59.25,
+        "alignment_seconds": 34.103,
+        "word_count": 150,
+        "valid_word_count": 150,
+        "language": "en",
+        "alignment_model": "WAV2VEC2_ASR_BASE_960H",
+        "torch_peak_allocated_mb": 683,
+        "vram_scope": "GPU inteira; amostragem 0,5 s",
+        "run_id": "20261019T115351Z-294760",
+        "measured_at": "2026-10-19T11:54:29.090735+00:00"
+      }
     },
     {
-      "id": "recorte_birefnet",
+      "id": "recorte_rembg-u2net",
       "category": "recorte",
-      "candidate": "birefnet",
-      "status": "warning",
-      "duration_seconds": 0.0,
-      "peak_vram_mb": null,
-      "outputs": [],
-      "message": "dependência disponível; adaptador de medição requer os modelos locais"
+      "candidate": "rembg-u2net",
+      "status": "ok",
+      "duration_seconds": 7.283,
+      "peak_vram_mb": 1069,
+      "outputs": [
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T115817Z-2921a3\\recorte_rembg-u2net.png"
+      ],
+      "message": "recorte PNG gerado",
+      "metrics": {
+        "width": 1024,
+        "height": 576,
+        "alpha_coverage": 0.3475,
+        "processing_seconds": 5.36,
+        "model": "u2net",
+        "source": "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T114217Z-28c12a\\imagem_flux1-schnell_contemporaneo-0.png",
+        "vram_scope": "GPU inteira; amostragem 0,5 s",
+        "run_id": "20261019T115817Z-2921a3",
+        "measured_at": "2026-10-19T11:58:24.678475+00:00"
+      }
     },
     {
-      "id": "upscale_real-esrgan",
+      "id": "upscale_realesrgan-x4plus",
       "category": "upscale",
-      "candidate": "real-esrgan",
-      "status": "warning",
-      "duration_seconds": 0.0,
-      "peak_vram_mb": null,
-      "outputs": [],
-      "message": "dependência disponível; adaptador de medição requer os modelos locais"
+      "candidate": "realesrgan-x4plus",
+      "status": "ok",
+      "duration_seconds": 10.634,
+      "peak_vram_mb": 2850,
+      "outputs": [
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T115911Z-0672f6\\upscale_realesrgan-x4plus.png"
+      ],
+      "message": "PNG ampliado",
+      "metrics": {
+        "input_width": 1024,
+        "input_height": 576,
+        "width": 4096,
+        "height": 2304,
+        "scale": 4,
+        "processing_seconds": 4.378,
+        "torch_peak_allocated_mb": 738,
+        "source": "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T114217Z-28c12a\\imagem_flux1-schnell_contemporaneo-0.png",
+        "vram_scope": "GPU inteira; amostragem 0,5 s",
+        "run_id": "20261019T115911Z-0672f6",
+        "measured_at": "2026-10-19T11:59:21.916130+00:00"
+      }
     },
     {
       "id": "render_1080p",
       "category": "render",
-      "candidate": "nvenc-1080p",
+      "candidate": "remotion-1080p",
       "status": "ok",
-      "duration_seconds": 0.995,
-      "peak_vram_mb": null,
+      "duration_seconds": 15.849,
+      "peak_vram_mb": 1219,
       "outputs": [
-        "E:\\05_PROJETOS\\forja\\benchmark_out\\render-1080p.mp4"
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T132708Z-ff17f4\\render_1080p.mp4"
       ],
-      "message": "render de referência concluído"
+      "message": "render Remotion 1080p concluído",
+      "metrics": {
+        "resolution": "1080p",
+        "width": 1920,
+        "height": 1080,
+        "fps": 30,
+        "duration_seconds": 10,
+        "vram_scope": "GPU inteira; amostragem 0,5 s",
+        "actual_width": 1920,
+        "actual_height": 1080,
+        "frames": 300,
+        "video_seconds": 10.0,
+        "run_id": "20261019T132708Z-ff17f4",
+        "measured_at": "2026-10-19T13:27:44.561789+00:00"
+      }
     },
     {
       "id": "render_1440p",
       "category": "render",
-      "candidate": "nvenc-1440p",
+      "candidate": "remotion-1440p",
       "status": "ok",
-      "duration_seconds": 1.452,
-      "peak_vram_mb": null,
+      "duration_seconds": 19.606,
+      "peak_vram_mb": 1219,
       "outputs": [
-        "E:\\05_PROJETOS\\forja\\benchmark_out\\render-1440p.mp4"
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T132708Z-ff17f4\\render_1440p.mp4"
       ],
-      "message": "render de referência concluído"
+      "message": "render Remotion 1440p concluído",
+      "metrics": {
+        "resolution": "1440p",
+        "width": 2560,
+        "height": 1440,
+        "fps": 30,
+        "duration_seconds": 10,
+        "vram_scope": "GPU inteira; amostragem 0,5 s",
+        "actual_width": 2560,
+        "actual_height": 1440,
+        "frames": 300,
+        "video_seconds": 10.0,
+        "run_id": "20261019T132708Z-ff17f4",
+        "measured_at": "2026-10-19T13:27:44.561789+00:00"
+      }
+    },
+    {
+      "id": "parallax_depthflow-small",
+      "category": "parallax",
+      "candidate": "depthflow-small",
+      "status": "ok",
+      "duration_seconds": 2.894,
+      "peak_vram_mb": 1350,
+      "outputs": [
+        "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T135955Z-fd5d36\\parallax_depthflow-small.mp4"
+      ],
+      "message": "vídeo de 5 s gerado",
+      "metrics": {
+        "source": "E:\\05_PROJETOS\\forja\\benchmark_out\\20261019T114217Z-28c12a\\imagem_flux1-schnell_paisagem-0.png",
+        "vram_scope": "GPU inteira; amostragem 0,5 s",
+        "width": 1024,
+        "height": 576,
+        "frames": 120,
+        "video_seconds": 5.0,
+        "run_id": "20261019T135955Z-fd5d36",
+        "measured_at": "2026-10-19T13:59:58.859800+00:00"
+      }
     }
   ]
 }

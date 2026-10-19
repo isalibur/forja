@@ -2,7 +2,7 @@
 
 **Ideia central:** o sistema transforma o roteiro num **Plano de Vídeo completo** (cada segundo decidido: imagem, movimento, texto na tela, gráfico, mapa, som) **antes** de produzir qualquer coisa. Você revisa o plano, completa as imagens que faltam, e a produção vira apenas a **execução do plano**: automática, previsível, em 1–2 horas.
 
-> **Para a IA que vai programar (OpenCode / Antigravity):** leia `AGENTS.md`, depois `08-marcos-de-construcao.md`. A pasta `docs/pipeline` (`../pipeline/01` a `../pipeline/10`) continua sendo referência de linguagem visual, som e ética.
+> **Para a IA que vai programar (OpenCode / Antigravity):** siga `AGENTS.md` e consulte a seção do marco atual em `08-marcos-de-construcao.md`. Leia em `docs/pipeline` apenas os temas necessários à tarefa.
 
 ---
 

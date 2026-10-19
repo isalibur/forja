@@ -10,6 +10,7 @@ __pycache__/
 .pytest_cache/
 .pytest_tmp/
 .ruff_cache/
+.benchmark-gpu.lock
 
 # Node / front-end
 node_modules/
