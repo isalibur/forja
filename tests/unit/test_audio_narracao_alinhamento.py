@@ -65,6 +65,8 @@ def test_orquestrador_narracao_com_mock(tmp_path: Path):
     )
 
     assert relatorio.duracao_total_s > 0
+    assert relatorio.wer_medio is None
+    assert all(segmento.wer is None for segmento in relatorio.segmentos)
     assert relatorio.arquivo_completo_wav.exists()
     assert relatorio.arquivo_palavras_json.exists()
     assert relatorio.arquivo_segmentos_json.exists()

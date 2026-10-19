@@ -22,7 +22,7 @@ class ResultadoSegmentoAudio:
     texto: str
     arquivo_wav: Path
     duracao_s: float
-    wer: float = 0.0
+    wer: float | None = None
     takes: int = 1
 
 
@@ -34,7 +34,7 @@ class RelatorioNarracao:
     arquivo_segmentos_json: Path
     duracao_total_s: float
     segmentos: list[ResultadoSegmentoAudio]
-    wer_medio: float
+    wer_medio: float | None
 
 
 class OrquestradorNarracao:
@@ -111,7 +111,9 @@ class OrquestradorNarracao:
             texto=segmento.texto_limpo,
             arquivo_wav=saida_processada,
             duracao_s=duracao,
-            wer=0.0,
+            # WER exige transcrição ASR independente; alinhamento forçado não
+            # mede se o áudio corresponde ao roteiro.
+            wer=None,
             takes=tentativas,
         )
 
@@ -200,7 +202,7 @@ class OrquestradorNarracao:
             arquivo_segmentos_json=segmentos_json,
             duracao_total_s=duracao_total,
             segmentos=resultados_segs,
-            wer_medio=0.0,
+            wer_medio=None,
         )
 
     def _medir_duracao_wav(self, wav_path: Path) -> float:
