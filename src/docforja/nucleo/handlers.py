@@ -13,6 +13,7 @@ from docforja.audio.metricas import calcular_wer
 from docforja.audio.narracao import OrquestradorNarracao, ResultadoSegmentoAudio
 from docforja.esquemas import Ativo, Bloco, Plano, Shot
 from docforja.io import atomic_write_json, atomic_write_text
+from docforja.llm.roteador import RoteadorLLM
 from docforja.nucleo.etapas import calcular_hash_dados
 from docforja.nucleo.executor import ContextoEtapa, ExecutorPipeline
 from docforja.nucleo.projeto import Projeto
@@ -28,14 +29,20 @@ from docforja.planejamento.relatorios import (
     gerar_plano_md,
     gerar_verificacao_md,
 )
-from docforja.planejamento.shots import TEMPLATES_CATALOGO, gerar_shots_bloco
+from docforja.planejamento.shots import (
+    TEMPLATES_CATALOGO,
+    gerar_shots_bloco,
+    reparar_shots_bloco_via_llm,
+)
 from docforja.settings import load_settings
 
 
-def _criar_orquestrador() -> OrquestradorNarracao:
+def _criar_orquestrador(modelo_whisper: str = "base") -> OrquestradorNarracao:
     ambientes = load_settings().python_environments
     kokoro = AdaptadorKokoro(python_path=ambientes.get("kokoro"))
-    whisperx = AlinhadorWhisperX(python_path=ambientes.get("whisperx"))
+    whisperx = AlinhadorWhisperX(
+        python_path=ambientes.get("whisperx"), modelo=modelo_whisper
+    )
     return OrquestradorNarracao(adaptador_tts=kokoro, alinhador=whisperx)
 
 
@@ -55,6 +62,7 @@ def _audio_idioma(projeto: Projeto) -> tuple[str, Path]:
 def registrar_handlers_disponiveis(
     executor: ExecutorPipeline,
     orquestrador: OrquestradorNarracao | None = None,
+    roteador_llm: RoteadorLLM | None = None,
 ) -> ExecutorPipeline:
     """Registra as etapas implementadas e compartilhadas por CLI e API.
 
@@ -108,12 +116,33 @@ def registrar_handlers_disponiveis(
         estrategias = [EstrategiaBloco(**item) for item in dados.get("blocos", [])]
         if [item.bloco_id for item in estrategias] != [bloco.id for bloco in blocos]:
             raise ValueError("Estratégia não corresponde aos blocos do roteiro atual.")
+
+        _, pasta_audio = _audio_idioma(ctx.projeto)
+        segmentos_audio_path = pasta_audio / "segmentos.json"
+        tempos_reais = None
+        modo_tempos = "estimados"
+        if segmentos_audio_path.is_file():
+            try:
+                segs_audio = json.loads(segmentos_audio_path.read_text(encoding="utf-8"))
+                ids_audio = {item["id"] for item in segs_audio}
+                ids_roteiro = {s.id for b in blocos for s in b.segmentos}
+                if ids_audio == ids_roteiro:
+                    tempos_reais = {
+                        item["id"]: round(float(item["fim_s"]) - float(item["inicio_s"]), 3)
+                        for item in segs_audio
+                    }
+                    modo_tempos = "reais"
+            except Exception:
+                tempos_reais = None
+                modo_tempos = "estimados"
+
         ativo_counter = [1]
         saidas = []
         for bloco, estrategia in zip(blocos, estrategias, strict=True):
             shots = gerar_shots_bloco(
                 bloco,
                 estrategia,
+                tempos_reais=tempos_reais,
                 total_blocos=len(blocos),
                 ativo_counter=ativo_counter,
             )
@@ -124,7 +153,7 @@ def registrar_handlers_disponiveis(
             saidas.append({"bloco_id": bloco.id, "shots": [shot.model_dump() for shot in shots]})
         atomic_write_json(
             ctx.projeto.pastas.plano / "shots.json",
-            {"versao": 1, "tempos": "estimados", "blocos": saidas},
+            {"versao": 1, "tempos": modo_tempos, "blocos": saidas},
         )
 
     def blocos_com_shots(ctx: ContextoEtapa) -> list[Bloco]:
@@ -158,8 +187,15 @@ def registrar_handlers_disponiveis(
     def verificar_dosagem(ctx: ContextoEtapa) -> None:
         if not alinhamento_valido(ctx):
             raise ValueError("Alinhamento aprovado ausente para verificar a dosagem.")
-        if not estrategia_valida(ctx) or not ativos_validos(ctx):
-            raise ValueError("Estratégia, shots ou ativos ausentes/inválidos para verificação.")
+        if not estrategia_valida(ctx):
+            raise ValueError("Estratégia ausente ou inválida para verificação.")
+
+        # Se os shots foram gerados com tempos estimados mas o áudio já tem tempos reais, recalcula
+        if not shots_validos(ctx):
+            gerar_shots(ctx)
+            consolidar_ativos(ctx)
+        if not shots_validos(ctx) or not ativos_validos(ctx):
+            raise ValueError("Shots ou ativos ausentes/inválidos para verificação.")
 
         pasta = ctx.projeto.pastas.plano
         estrategias = json.loads((pasta / "estrategia.json").read_text(encoding="utf-8"))["blocos"]
@@ -190,9 +226,55 @@ def registrar_handlers_disponiveis(
             ativos=ativos,
             musica=[{"bloco": b.id, "clima": b.clima_musical, "faixa": None} for b in blocos],
         )
+        blocos_processados = ler_roteiro_formatado(ctx.projeto.obter_roteiro())
         resultado = verificador.verificar_e_corrigir(
-            plano, blocos_processados=ler_roteiro_formatado(ctx.projeto.obter_roteiro())
+            plano, blocos_processados=blocos_processados, autocorrige=True
         )
+
+        # Loop de reenvio ao LLM só dos blocos reprovados (máx. 3 voltas)
+        loop_llm = 3
+        voltas = 0
+        while not resultado.aprovado and voltas < loop_llm:
+            voltas += 1
+            blocos_violados = {
+                v.bloco_id for v in resultado.violacoes if not v.corrigida and v.bloco_id
+            }
+            if not blocos_violados:
+                break
+
+            roteador = obter_roteador()
+            if roteador is None:
+                break
+
+            blocos_por_id = {b.id: b for b in plano.blocos}
+            blocos_proc_por_id = {b.id: b for b in blocos_processados}
+            reparou_algum = False
+
+            for bid in sorted(blocos_violados):
+                if bid not in blocos_por_id or bid not in blocos_proc_por_id:
+                    continue
+                violacoes_bloco = [
+                    v for v in resultado.violacoes if not v.corrigida and v.bloco_id == bid
+                ]
+                novos_shots = reparar_shots_bloco_via_llm(
+                    bloco=blocos_por_id[bid],
+                    bloco_proc=blocos_proc_por_id[bid],
+                    estrategia=estrategias_por_id.get(bid, {}),
+                    violacoes=violacoes_bloco,
+                    roteador=roteador,
+                )
+                if novos_shots:
+                    blocos_por_id[bid].shots = novos_shots
+                    reparou_algum = True
+
+            if not reparou_algum:
+                break
+
+            plano.ativos = consolidar_ativos_plano(plano.blocos, preset=preset)
+            resultado = verificador.verificar_e_corrigir(
+                plano, blocos_processados=blocos_processados, autocorrige=True
+            )
+
         plano.verificacao["fase"] = "pre_resolucao_ativos"
         plano_dados = plano.model_dump(mode="json")
         relatorio_dados = asdict(resultado)
@@ -228,6 +310,15 @@ def registrar_handlers_disponiveis(
             orquestrador = _criar_orquestrador()
         return orquestrador
 
+    def obter_roteador() -> RoteadorLLM | None:
+        nonlocal roteador_llm
+        if roteador_llm is None:
+            try:
+                roteador_llm = RoteadorLLM()
+            except Exception:
+                roteador_llm = None
+        return roteador_llm
+
     async def gerar_narracao(ctx: ContextoEtapa) -> None:
         opcoes = ctx.projeto.obter_opcoes()
         if opcoes.get("narracao_pronta"):
@@ -252,6 +343,10 @@ def registrar_handlers_disponiveis(
             raise RuntimeError("A narração não produziu um WAV válido.")
         if not relatorio.arquivo_segmentos_json.is_file():
             raise RuntimeError("A narração não produziu os tempos dos segmentos.")
+        if (ctx.projeto.pastas.plano / "shots.json").is_file() and estrategia_valida(ctx):
+            gerar_shots(ctx)
+            if (ctx.projeto.pastas.plano / "ativos.json").is_file():
+                consolidar_ativos(ctx)
 
     def alinhar_narracao_sync(ctx: ContextoEtapa) -> None:
         motor = obter_orquestrador()
@@ -389,6 +484,15 @@ def registrar_handlers_disponiveis(
         saidas = dados.get("blocos", [])
         if dados.get("versao") != 1 or len(saidas) != len(blocos):
             return False
+
+        _, pasta_audio = _audio_idioma(ctx.projeto)
+        if (
+            (pasta_audio / "segmentos.json").is_file()
+            and narracao_valida(ctx)
+            and dados.get("tempos") != "reais"
+        ):
+            return False
+
         ids_shots: set[str] = set()
         for bloco, saida in zip(blocos, saidas, strict=True):
             if saida.get("bloco_id") != bloco.id:

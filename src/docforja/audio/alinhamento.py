@@ -8,9 +8,10 @@ from pathlib import Path
 class AlinhadorWhisperX:
     """Orquestrador do alinhamento fonetico palavra a palavra via WhisperX."""
 
-    def __init__(self, python_path: Path | None = None) -> None:
+    def __init__(self, python_path: Path | None = None, modelo: str = "base") -> None:
         self.python_path = python_path or Path("envs/align/Scripts/python.exe")
         self.worker_path = Path("src/docforja/workers/whisperx_worker.py")
+        self.modelo = modelo
 
     def disponivel(self) -> bool:
         return self.python_path.exists() and self.worker_path.exists()
@@ -23,6 +24,7 @@ class AlinhadorWhisperX:
         segmentos_info: list[dict] | None = None,
         idioma: str = "pt",
         device: str | None = None,
+        modelo: str | None = None,
         timeout: float = 300,
     ) -> tuple[Path, Path]:
         if not self.disponivel():
@@ -30,6 +32,7 @@ class AlinhadorWhisperX:
                 f"WhisperX não disponível: python={self.python_path} worker={self.worker_path}"
             )
 
+        modelo_efetivo = modelo or self.modelo
         cmd = [
             str(self.python_path),
             str(self.worker_path),
@@ -42,6 +45,9 @@ class AlinhadorWhisperX:
             "--lang",
             idioma,
         ]
+
+        if modelo_efetivo:
+            cmd.extend(["--model", modelo_efetivo])
 
         if device:
             cmd.extend(["--device", device])

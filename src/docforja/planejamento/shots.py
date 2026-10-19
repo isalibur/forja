@@ -6,10 +6,13 @@ e sobreposições O1-O4, garantindo 100% de cobertura da narração.
 
 from __future__ import annotations
 
+import json
 import re
 from typing import Any
 
-from docforja.esquemas import BatidaSegmento, Shot
+from pydantic import BaseModel
+
+from docforja.esquemas import BatidaSegmento, Bloco, Shot
 from docforja.planejamento.entidades import BlocoProcessado, SegmentoProcessado
 from docforja.planejamento.estrategia import EstrategiaBloco
 
@@ -262,3 +265,68 @@ def gerar_shots_bloco(
         )
 
     return shots
+
+
+class ReparoShotsBloco(BaseModel):
+    """Estrutura de resposta da LLM para reparo de shots de um bloco."""
+
+    bloco_id: str
+    shots: list[Shot]
+
+
+def reparar_shots_bloco_via_llm(
+    bloco: Bloco,
+    bloco_proc: BlocoProcessado,
+    estrategia: EstrategiaBloco | dict[str, Any],
+    violacoes: list[Any],
+    roteador: Any = None,
+) -> list[Shot] | None:
+    """Tenta reparar os shots de um bloco reprovado consultando a LLM estruturada."""
+    if roteador is None:
+        return None
+
+    desc_violacoes = "\n".join(
+        f"- [{getattr(v, 'regra', '')}] {getattr(v, 'descricao', '')}: {getattr(v, 'detalhes', '')}"
+        for v in violacoes
+    )
+    segmentos_desc = "\n".join(
+        f"- ID: {s.id} | Batida: {s.batida} | Texto: \"{s.texto_limpo}\""
+        for s in bloco_proc.segmentos
+    )
+    shots_atuais_json = json.dumps([s.model_dump() for s in bloco.shots], ensure_ascii=False)
+    modo_visual = (
+        estrategia.modo_visual
+        if hasattr(estrategia, "modo_visual")
+        else estrategia.get("modo_visual", "misto")
+    )
+
+    prompt = (
+        "Você é o especialista audiovisual do DocForja responsável pela decupagem em shots.\n"
+        f"O bloco {bloco.id} ('{bloco.titulo}') foi reprovado na verificação de dosagem "
+        f"com as seguintes violações:\n"
+        f"{desc_violacoes}\n\n"
+        f"Segmentos do roteiro que DEVEM ser 100% cobertos em ordem:\n"
+        f"{segmentos_desc}\n\n"
+        f"Modo visual: {modo_visual}\n"
+        f"Shots atuais reprovados:\n{shots_atuais_json}\n\n"
+        f"Catálogo fechado de templates permitidos: T00 a T14.\n"
+        f"Regras cruciais:\n"
+        f"- Cada segmento deve aparecer em exatamente um shot (cobertura 100%).\n"
+        f"- Corrija as violações apontadas ajustando templates, movimentos, durações e "
+        f"sobreposições.\n"
+        f"- Retorne o JSON com o bloco_id e a nova lista de shots."
+    )
+
+    try:
+        resp = roteador.completar_estruturado(
+            prompt=prompt,
+            schema=ReparoShotsBloco,
+            sistema="Especialista em decupagem e dosagem audiovisual de documentários.",
+        )
+        ids_esperados = [s.id for s in bloco_proc.segmentos]
+        ids_gerados = [sid for s in resp.shots for sid in s.segmentos]
+        if ids_gerados == ids_esperados:
+            return resp.shots
+    except Exception:
+        pass
+    return None

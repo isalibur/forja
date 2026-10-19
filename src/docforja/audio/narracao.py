@@ -57,10 +57,11 @@ class OrquestradorNarracao:
         voz: str | None = None,
         velocidade: float = 1.0,
         max_tentativas: int = 2,
+        sufixo: str = "",
     ) -> ResultadoSegmentoAudio:
         pasta_destino.mkdir(parents=True, exist_ok=True)
-        saida_bruta = pasta_destino / f"{segmento.id}_raw.wav"
-        saida_processada = pasta_destino / f"{segmento.id}.wav"
+        saida_bruta = pasta_destino / f"{segmento.id}{sufixo}_raw.wav"
+        saida_processada = pasta_destino / f"{segmento.id}{sufixo}.wav"
         saida_bruta.unlink(missing_ok=True)
 
         # 1. Aplica dicionario de pronuncia
@@ -92,12 +93,12 @@ class OrquestradorNarracao:
         # 4. Se houver silêncio ou pausas após o segmento, anexa room tone
         arquivos_para_juntar = [saida_processada]
         if segmento.silencio_apos_s > 0:
-            silencio_wav = pasta_destino / f"{segmento.id}_silence.wav"
+            silencio_wav = pasta_destino / f"{segmento.id}{sufixo}_silence.wav"
             gerar_silencio_ou_room_tone(segmento.silencio_apos_s, silencio_wav)
             arquivos_para_juntar.append(silencio_wav)
 
         if len(arquivos_para_juntar) > 1:
-            saida_final = pasta_destino / f"{segmento.id}_final.wav"
+            saida_final = pasta_destino / f"{segmento.id}{sufixo}_final.wav"
             concatenar_audios(arquivos_para_juntar, saida_final)
             saida_processada = saida_final
 
@@ -194,20 +195,71 @@ class OrquestradorNarracao:
                     break
 
                 segmentos_por_id = {s.id: s for s in segmentos}
+                candidatos_segs = list(resultados_segs)
+                tomadas_anteriores: dict[str, ResultadoSegmentoAudio] = {}
+
                 for resultado in reprovados:
-                    anterior = resultado.takes
+                    tomadas_anteriores[resultado.id] = resultado
                     novo = self.processar_segmento(
                         segmentos_por_id[resultado.id],
                         pasta_segs,
                         idioma=idioma,
                         voz=voz,
                         velocidade=max(0.8, velocidade * 0.9),
+                        sufixo=f"_take{resultado.takes + 1}",
                     )
-                    novo.takes += anterior
-                    resultados_segs[resultados_segs.index(resultado)] = novo
+                    novo.takes = resultado.takes + 1
+                    candidatos_segs[candidatos_segs.index(resultado)] = novo
 
+                segmentos_info_cand = self._montar_segmentos_info(segmentos, candidatos_segs)
+                self._montar_narracao(candidatos_segs, narracao_completa_wav)
+
+                # Mede qualidade dos candidatos com ASR independente
+                self.alinhador.alinhar(
+                    audio_wav=narracao_completa_wav,
+                    saida_palavras=palavras_asr,
+                    saida_segmentos=segmentos_asr,
+                    idioma=lang_code,
+                )
+                try:
+                    transcricao_cand = json.loads(segmentos_asr.read_text(encoding="utf-8"))
+                finally:
+                    palavras_asr.unlink(missing_ok=True)
+                    segmentos_asr.unlink(missing_ok=True)
+
+                hipotese_cand = " ".join(item.get("texto", "") for item in transcricao_cand)
+                novo_wer_medio = calcular_wer(referencia, hipotese_cand, idioma=idioma)
+                self._atualizar_wer_segmentos(
+                    candidatos_segs, segmentos_info_cand, transcricao_cand, idioma=idioma
+                )
+
+                # Compara cada segmento refeito com a tomada anterior
+                houve_reversao = False
+                for seg_cand in candidatos_segs:
+                    if seg_cand.id in tomadas_anteriores:
+                        anterior_seg = tomadas_anteriores[seg_cand.id]
+                        if (
+                            seg_cand.wer is not None
+                            and anterior_seg.wer is not None
+                            and seg_cand.wer > anterior_seg.wer
+                        ):
+                            # Nova tomada piorou: reverte para a anterior
+                            seg_cand.arquivo_wav.unlink(missing_ok=True)
+                            anterior_seg.takes = seg_cand.takes
+                            candidatos_segs[candidatos_segs.index(seg_cand)] = anterior_seg
+                            houve_reversao = True
+                        else:
+                            # Nova tomada melhorou ou empatou: limpa anterior
+                            if anterior_seg.arquivo_wav != seg_cand.arquivo_wav:
+                                anterior_seg.arquivo_wav.unlink(missing_ok=True)
+
+                resultados_segs = candidatos_segs
                 segmentos_info = self._montar_segmentos_info(segmentos, resultados_segs)
-                self._montar_narracao(resultados_segs, narracao_completa_wav)
+                if houve_reversao:
+                    self._montar_narracao(resultados_segs, narracao_completa_wav)
+                else:
+                    wer_medio = novo_wer_medio
+                break
 
             self.alinhador.alinhar(
                 audio_wav=narracao_completa_wav,

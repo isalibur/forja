@@ -193,3 +193,33 @@ def test_chatterbox_indisponivel_nao_se_disfarca_de_kokoro(tmp_path: Path):
     assert adaptador.disponivel() is False
     with pytest.raises(RuntimeError, match="Chatterbox não disponível"):
         adaptador.gerar("teste", tmp_path / "saida.wav")
+
+
+def test_wer_descarta_nova_tomada_se_piorar_qualidade(tmp_path: Path):
+    texto = "Numa parede de Pompeia alguém escreveu uma data."
+    tts = MockTTS()
+    # Tomada 1 erra 1 palavra (~14% WER); tomada 2 erra 2 palavras (~28% WER, pior!)
+    alinhador = MockAlinhador(
+        [
+            "Numa parede de Pompeia alguém escreveu uma coisa.",
+            "Numa parede de Pompeia outra pessoa escreveu uma coisa.",
+        ]
+    )
+    orquestrador = OrquestradorNarracao(adaptador_tts=tts, alinhador=alinhador)
+    segmento = SegmentoProcessado(id="B0-S01", texto_original=texto, texto_limpo=texto)
+
+    relatorio = orquestrador.processar_projeto_completo(
+        segmentos=[segmento], pasta_audio=tmp_path / "03_audio", executar_alinhamento=True
+    )
+
+    assert relatorio.segmentos[0].takes == 2
+    assert relatorio.segmentos[0].wer is not None and relatorio.segmentos[0].wer < 0.20
+    assert relatorio.segmentos[0].arquivo_wav.name == "B0-S01.wav"
+    assert not (tmp_path / "03_audio" / "pt-BR" / "segmentos" / "B0-S01_take2.wav").exists()
+
+
+def test_alinhador_whisperx_passa_modelo_configurado():
+    from docforja.audio.alinhamento import AlinhadorWhisperX
+
+    alinhador = AlinhadorWhisperX(python_path=Path("python"), modelo="large-v3")
+    assert alinhador.modelo == "large-v3"

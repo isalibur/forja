@@ -499,3 +499,107 @@ async def test_pipeline_exige_whisperx_para_concluir_alinhamento(tmp_path):
     status_retomado = await executor.executar(ate_etapa="P2b_alinhamento")
     assert status_retomado["P2b_alinhamento"] == "concluida"
     assert (pasta_audio / "qualidade.json").is_file()
+
+
+@pytest.mark.anyio
+async def test_pipeline_p4_adota_tempos_reais_quando_p2_conclui(tmp_path):
+    projeto = Projeto.criar(
+        nome="teste_p4_tempos_reais", roteiro=ROTEIRO_VALIDO, raiz_projetos=tmp_path
+    )
+    executor = ExecutorPipeline(projeto)
+    registrar_handlers_disponiveis(
+        executor,
+        orquestrador=OrquestradorNarracao(
+            adaptador_tts=TTSFalso(), alinhador=AlinhadorFalso()
+        ),
+    )
+
+    status_p4 = await executor.executar(ate_etapa="P4_shots")
+    assert status_p4["P4_shots"] == "concluida"
+    caminho_shots = projeto.pastas.plano / "shots.json"
+    dados_shots_estimados = json.loads(caminho_shots.read_text(encoding="utf-8"))
+    assert dados_shots_estimados["tempos"] == "estimados"
+
+    status_p2 = await executor.executar(ate_etapa="P2_narracao")
+    assert status_p2["P2_narracao"] == "concluida"
+    dados_shots_reais = json.loads(caminho_shots.read_text(encoding="utf-8"))
+    assert dados_shots_reais["tempos"] == "reais"
+    duracao_real_audio = dados_shots_reais["blocos"][0]["shots"][0]["duracao_s"]
+    assert duracao_real_audio == 0.5
+
+
+@pytest.mark.anyio
+async def test_pipeline_p6_reenvia_ao_llm_bloco_reprovado(tmp_path, monkeypatch):
+    from docforja.esquemas import Shot
+    from docforja.planejamento.dosagem import ResultadoVerificacao, VerificadorDosagem, Violacao
+    from docforja.planejamento.shots import ReparoShotsBloco
+
+    class RoteadorMock:
+        def __init__(self):
+            self.chamadas = 0
+
+        def completar_estruturado(self, prompt, schema, sistema="", **kwargs):
+            self.chamadas += 1
+            return ReparoShotsBloco(
+                bloco_id="B1",
+                shots=[
+                    Shot(
+                        id="B1-01",
+                        segmentos=["B1-S01"],
+                        duracao_s=4.0,
+                        template="T01",
+                        params={"movimento": "push_in", "amplitude": 0.02},
+                        sobreposicoes=[],
+                        ativos=["A-001"],
+                        textos=[],
+                        sfx=[],
+                        transicao="corte",
+                    )
+                ],
+            )
+
+    chamadas_verif = 0
+    orig_verificar = VerificadorDosagem.verificar_e_corrigir
+
+    def mock_verificar(self, plano, blocos_processados=None, autocorrige=True):
+        nonlocal chamadas_verif
+        chamadas_verif += 1
+        if chamadas_verif == 1:
+            return ResultadoVerificacao(
+                aprovado=False,
+                total_violacoes=1,
+                violacoes_corrigidas=0,
+                violacoes=[
+                    Violacao(
+                        regra="D3",
+                        descricao="Excesso de templates consecutivos iguais",
+                        bloco_id="B1",
+                        detalhes="Violação que exige intervenção do LLM",
+                        corrigida=False,
+                    )
+                ],
+                ajustes=[],
+            )
+        return orig_verificar(
+            self, plano, blocos_processados=blocos_processados, autocorrige=autocorrige
+        )
+
+    monkeypatch.setattr(VerificadorDosagem, "verificar_e_corrigir", mock_verificar)
+
+    projeto = Projeto.criar(
+        nome="teste_p6_loop_llm", roteiro=ROTEIRO_VALIDO, raiz_projetos=tmp_path
+    )
+    roteador_mock = RoteadorMock()
+    executor = ExecutorPipeline(projeto)
+    registrar_handlers_disponiveis(
+        executor,
+        orquestrador=OrquestradorNarracao(
+            adaptador_tts=TTSFalso(), alinhador=AlinhadorFalso()
+        ),
+        roteador_llm=roteador_mock,
+    )
+
+    status = await executor.executar(ate_etapa="P6_verificador")
+    assert status["P6_verificador"] == "concluida"
+    assert roteador_mock.chamadas == 1
+    assert chamadas_verif >= 2

@@ -17,6 +17,7 @@ def processar_alinhamento(
     saida_segmentos: Path,
     idioma: str = "pt",
     device: str | None = None,
+    model_name: str = "base",
 ) -> None:
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -34,7 +35,7 @@ def processar_alinhamento(
         # Modo transcricao completa + alinhamento
         compute_type = "float16" if device == "cuda" else "int8"
         model = whisperx.load_model(
-            "base", device=device, compute_type=compute_type, language=idioma
+            model_name, device=device, compute_type=compute_type, language=idioma
         )
         result = model.transcribe(audio, batch_size=16)
         segments = result.get("segments", [])
@@ -87,6 +88,9 @@ def main() -> None:
     parser.add_argument("--saida-segmentos", required=True, help="Caminho para segmentos.json")
     parser.add_argument("--lang", default="pt", help="Código do idioma")
     parser.add_argument("--device", default=None, help="Dispositivo (cuda ou cpu)")
+    parser.add_argument(
+        "--model", default="base", help="Modelo Whisper ASR (ex: base, large-v3)"
+    )
 
     args = parser.parse_args()
     try:
@@ -97,6 +101,7 @@ def main() -> None:
             saida_segmentos=Path(args.saida_segmentos),
             idioma=args.lang,
             device=args.device,
+            model_name=args.model,
         )
         sys.exit(0)
     except Exception as e:
