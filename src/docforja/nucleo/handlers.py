@@ -11,10 +11,11 @@ from docforja.audio.adaptadores.kokoro import AdaptadorKokoro
 from docforja.audio.alinhamento import AlinhadorWhisperX
 from docforja.audio.metricas import calcular_wer
 from docforja.audio.narracao import OrquestradorNarracao, ResultadoSegmentoAudio
-from docforja.esquemas import Shot
+from docforja.esquemas import Ativo, Bloco, Shot
 from docforja.io import atomic_write_json
 from docforja.nucleo.executor import ContextoEtapa, ExecutorPipeline
 from docforja.nucleo.projeto import Projeto
+from docforja.planejamento.ativos import consolidar_ativos_plano
 from docforja.planejamento.entidades import SegmentoProcessado
 from docforja.planejamento.estrategia import EstrategiaBloco, planejar_estrategias
 from docforja.planejamento.leitura import ler_roteiro_formatado
@@ -115,6 +116,34 @@ def registrar_handlers_disponiveis(
         atomic_write_json(
             ctx.projeto.pastas.plano / "shots.json",
             {"versao": 1, "tempos": "estimados", "blocos": saidas},
+        )
+
+    def blocos_com_shots(ctx: ContextoEtapa) -> list[Bloco]:
+        if not shots_validos(ctx):
+            raise ValueError("Shots ausentes ou inválidos para consolidar os ativos.")
+        dados = json.loads(
+            (ctx.projeto.pastas.plano / "shots.json").read_text(encoding="utf-8")
+        )
+        roteiro = ler_roteiro_formatado(ctx.projeto.obter_roteiro())
+        return [
+            Bloco(
+                id=bloco.id,
+                titulo=bloco.nome,
+                shots=[Shot.model_validate(item) for item in saida["shots"]],
+            )
+            for bloco, saida in zip(roteiro, dados["blocos"], strict=True)
+        ]
+
+    def consolidar_ativos(ctx: ContextoEtapa) -> None:
+        blocos = blocos_com_shots(ctx)
+        preset = ctx.projeto.obter_opcoes().get("preset", "padrao")
+        ativos = consolidar_ativos_plano(blocos, preset=preset)
+        atomic_write_json(
+            ctx.projeto.pastas.plano / "ativos.json",
+            {
+                "versao": 1,
+                "ativos": {aid: item.model_dump(mode="json") for aid, item in ativos.items()},
+            },
         )
 
     def obter_orquestrador() -> OrquestradorNarracao:
@@ -299,6 +328,28 @@ def registrar_handlers_disponiveis(
                 ids_shots.add(shot.id)
         return True
 
+    def ativos_validos(ctx: ContextoEtapa) -> bool:
+        caminho = ctx.projeto.pastas.plano / "ativos.json"
+        if not caminho.is_file():
+            return False
+        dados = json.loads(caminho.read_text(encoding="utf-8"))
+        if dados.get("versao") != 1 or not isinstance(dados.get("ativos"), dict):
+            return False
+        blocos = blocos_com_shots(ctx)
+        esperados = consolidar_ativos_plano(
+            blocos, preset=ctx.projeto.obter_opcoes().get("preset", "padrao")
+        )
+        try:
+            ativos = {
+                aid: Ativo.model_validate(item)
+                for aid, item in dados["ativos"].items()
+            }
+        except (TypeError, ValueError):
+            return False
+        return {aid: item.model_dump(mode="json") for aid, item in ativos.items()} == {
+            aid: item.model_dump(mode="json") for aid, item in esperados.items()
+        }
+
     def narracao_valida(ctx: ContextoEtapa) -> bool:
         _, pasta = _audio_idioma(ctx.projeto)
         wav = pasta / "narracao_completa.wav"
@@ -334,6 +385,7 @@ def registrar_handlers_disponiveis(
     executor.registrar_handler("P1_leitura", ler_roteiro, validador=leitura_valida)
     executor.registrar_handler("P3_estrategia", planejar_estrategia, validador=estrategia_valida)
     executor.registrar_handler("P4_shots", gerar_shots, validador=shots_validos)
+    executor.registrar_handler("P5_ativos", consolidar_ativos, validador=ativos_validos)
     executor.registrar_handler("P2_narracao", gerar_narracao, validador=narracao_valida)
     executor.registrar_handler("P2b_alinhamento", alinhar_narracao, validador=alinhamento_valido)
     return executor

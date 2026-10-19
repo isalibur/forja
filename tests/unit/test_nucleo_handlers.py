@@ -74,6 +74,38 @@ async def test_handler_p4_cobre_blocos_e_refaz_saida_corrompida(tmp_path):
 
 
 @pytest.mark.anyio
+async def test_handler_p5_consolida_ativos_e_refaz_saida_alterada(tmp_path):
+    roteiro = (
+        "## B1 — Primeiro\n\n**B1-S01**\nUma abertura.\n"
+        "**B1-S02**\nMais um detalhe.\n"
+    )
+    projeto = Projeto.criar(nome="teste_p5_ativos", roteiro=roteiro, raiz_projetos=tmp_path)
+    executor = criar_executor_projeto(projeto)
+    status = await executor.executar(ate_etapa="P5_ativos")
+    assert status["P5_ativos"] == "concluida"
+
+    shots = json.loads((projeto.pastas.plano / "shots.json").read_text(encoding="utf-8"))
+    usos = {}
+    for bloco in shots["blocos"]:
+        for shot in bloco["shots"]:
+            for aid in shot["ativos"]:
+                usos.setdefault(aid, []).append(shot["id"])
+    caminho = projeto.pastas.plano / "ativos.json"
+    dados = json.loads(caminho.read_text(encoding="utf-8"))
+    assert dados["versao"] == 1
+    assert {aid: item["usado_em"] for aid, item in dados["ativos"].items()} == usos
+    assert all(item["caminho"] is None for item in dados["ativos"].values())
+
+    primeiro = next(iter(dados["ativos"]))
+    dados["ativos"][primeiro]["usado_em"] = []
+    caminho.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
+    status_retomado = await executor.executar(ate_etapa="P5_ativos")
+    assert status_retomado["P5_ativos"] == "concluida"
+    corrigido = json.loads(caminho.read_text(encoding="utf-8"))
+    assert corrigido["ativos"][primeiro]["usado_em"] == usos[primeiro]
+
+
+@pytest.mark.anyio
 async def test_handler_p3_recria_estrategia_ausente_na_retomada(tmp_path):
     projeto = Projeto.criar(
         nome="teste_retomada_p3", roteiro=ROTEIRO_VALIDO, raiz_projetos=tmp_path
