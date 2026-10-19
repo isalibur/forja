@@ -130,17 +130,25 @@ class OrquestradorNarracao:
         gerar_timestamps_estimados: bool = True,
         limite_wer: float = 0.02,
         max_refacoes_qualidade: int = 1,
+        resultados_iniciais: list[ResultadoSegmentoAudio] | None = None,
     ) -> RelatorioNarracao:
         pasta_idioma = pasta_audio / idioma
         pasta_segs = pasta_idioma / "segmentos"
         pasta_segs.mkdir(parents=True, exist_ok=True)
 
-        resultados_segs: list[ResultadoSegmentoAudio] = []
-        for seg in segmentos:
-            res_seg = self.processar_segmento(
-                seg, pasta_segs, idioma=idioma, voz=voz, velocidade=velocidade
-            )
-            resultados_segs.append(res_seg)
+        if resultados_iniciais is not None:
+            if [item.id for item in resultados_iniciais] != [item.id for item in segmentos]:
+                raise ValueError("Áudios existentes não correspondem aos segmentos do roteiro.")
+            if any(not item.arquivo_wav.is_file() for item in resultados_iniciais):
+                raise FileNotFoundError("Áudio de segmento ausente para refação seletiva.")
+            resultados_segs = list(resultados_iniciais)
+        else:
+            resultados_segs = [
+                self.processar_segmento(
+                    seg, pasta_segs, idioma=idioma, voz=voz, velocidade=velocidade
+                )
+                for seg in segmentos
+            ]
 
         # Concatena em um arquivo mestre de narração
         narracao_completa_wav = pasta_idioma / "narracao_completa.wav"

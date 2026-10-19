@@ -187,7 +187,9 @@ class TTSFalso(AdaptadorTTS):
 
 
 class AlinhadorFalso:
-    def __init__(self, disponivel: bool = True, texto_asr: str = "A história começa aqui.") -> None:
+    def __init__(
+        self, disponivel: bool = True, texto_asr: str | list[str] = "A história começa aqui."
+    ) -> None:
         self._disponivel = disponivel
         self.texto_asr = texto_asr
 
@@ -205,14 +207,24 @@ class AlinhadorFalso:
         timeout: float = 300,
     ) -> tuple[Path, Path]:
         if segmentos_info is None:
-            segmentos = [{"texto": self.texto_asr, "inicio_s": 0, "fim_s": 0.5}]
+            textos = self.texto_asr if isinstance(self.texto_asr, list) else [self.texto_asr]
+            segmentos = [
+                {"texto": texto, "inicio_s": i * 0.5, "fim_s": (i + 1) * 0.5}
+                for i, texto in enumerate(textos)
+            ]
             palavras = []
         else:
             segmentos = segmentos_info
-            palavras = [
-                {"palavra": palavra, "inicio_s": 0, "fim_s": 0.1, "segmento_id": "B1-S01"}
-                for palavra in ["A", "história", "começa", "aqui"]
-            ]
+            if isinstance(self.texto_asr, list):
+                palavras = [
+                    {"palavra": "teste", "inicio_s": 0, "fim_s": 0.1, "segmento_id": item["id"]}
+                    for item in segmentos_info
+                ]
+            else:
+                palavras = [
+                    {"palavra": palavra, "inicio_s": 0, "fim_s": 0.1, "segmento_id": "B1-S01"}
+                    for palavra in ["A", "história", "começa", "aqui"]
+                ]
         saida_palavras.write_text(json.dumps(palavras, ensure_ascii=False), encoding="utf-8")
         saida_segmentos.write_text(json.dumps(segmentos, ensure_ascii=False), encoding="utf-8")
         return saida_palavras, saida_segmentos
@@ -273,6 +285,39 @@ async def test_pipeline_registra_wer_reprovado_sem_concluir_alinhamento(tmp_path
 
 
 @pytest.mark.anyio
+async def test_pipeline_refaz_apenas_segmento_reprovado(tmp_path):
+    class TTSContador(TTSFalso):
+        def __init__(self):
+            self.chamadas = 0
+
+        def gerar(self, texto, saida_wav, voz=None, idioma="pt-BR", velocidade=1.0):
+            self.chamadas += 1
+            return super().gerar(texto, saida_wav, voz, idioma, velocidade)
+
+    roteiro = (
+        "## B1 — Abertura\n\n**B1-S01**\nA história começa aqui.\n"
+        "**B1-S02**\nA cidade desapareceu ontem.\n"
+    )
+    projeto = Projeto.criar(nome="teste_refacao", roteiro=roteiro, raiz_projetos=tmp_path)
+    tts = TTSContador()
+    executor = ExecutorPipeline(projeto)
+    registrar_handlers_disponiveis(
+        executor,
+        orquestrador=OrquestradorNarracao(
+            adaptador_tts=tts,
+            alinhador=AlinhadorFalso(
+                texto_asr=["A história começa aqui.", "A cidade apareceu ontem."]
+            ),
+        ),
+    )
+
+    status = await executor.executar(ate_etapa="P2b_alinhamento")
+
+    assert status["P2b_alinhamento"] == "falhou"
+    assert tts.chamadas == 3  # dois takes iniciais e só um segmento refeito
+
+
+@pytest.mark.anyio
 async def test_pipeline_aceita_numero_equivalente_no_asr(tmp_path):
     roteiro = "## B1 — Abertura\n\n**B1-S01**\nDezesseis dias antes de novembro.\n"
     projeto = Projeto.criar(
@@ -295,6 +340,53 @@ async def test_pipeline_aceita_numero_equivalente_no_asr(tmp_path):
     )
     assert qualidade["wer"] == 0.0
     assert qualidade["wer_bruto_primeira_passagem"] > 0
+
+
+@pytest.mark.anyio
+async def test_pipeline_usa_wer_global_sem_reprovar_segmento_curto(tmp_path):
+    texto_1 = (
+        "A história começa aqui com detalhes sobre a cidade e as pessoas daquele tempo antigo."
+    )
+    texto_2 = "O dia era claro e o caminho seguia pela região. " * 5
+    roteiro = f"## B1 — Abertura\n\n**B1-S01**\n{texto_1}\n\n**B1-S02**\n{texto_2}\n"
+
+    class AlinhadorDoisSegmentos(AlinhadorFalso):
+        def alinhar(self, audio_wav, saida_palavras, saida_segmentos, segmentos_info=None,
+                    idioma="pt", device=None, timeout=300):
+            if segmentos_info is None:
+                segmentos = [
+                    {"texto": texto_1.replace("cidade", "aldeia"), "inicio_s": 0, "fim_s": 0.5},
+                    {"texto": texto_2, "inicio_s": 0.5, "fim_s": 1.0},
+                ]
+                palavras = []
+            else:
+                segmentos = segmentos_info
+                palavras = [
+                    {"palavra": "teste", "inicio_s": 0, "fim_s": 0.1, "segmento_id": item["id"]}
+                    for item in segmentos_info
+                ]
+            saida_palavras.write_text(json.dumps(palavras), encoding="utf-8")
+            saida_segmentos.write_text(
+                json.dumps(segmentos, ensure_ascii=False), encoding="utf-8"
+            )
+            return saida_palavras, saida_segmentos
+
+    projeto = Projeto.criar(nome="teste_wer_global", roteiro=roteiro, raiz_projetos=tmp_path)
+    executor = ExecutorPipeline(projeto)
+    registrar_handlers_disponiveis(
+        executor,
+        orquestrador=OrquestradorNarracao(
+            adaptador_tts=TTSFalso(), alinhador=AlinhadorDoisSegmentos()
+        ),
+    )
+    status = await executor.executar(ate_etapa="P2b_alinhamento")
+
+    assert status["P2b_alinhamento"] == "concluida"
+    qualidade = json.loads(
+        (projeto.pastas.audio / "pt-BR" / "qualidade.json").read_text(encoding="utf-8")
+    )
+    assert 0 < qualidade["wer"] <= qualidade["limite_wer"]
+    assert qualidade["wer_segmentos_primeira_passagem"]["B1-S01"] > 0.02
 
 
 @pytest.mark.anyio

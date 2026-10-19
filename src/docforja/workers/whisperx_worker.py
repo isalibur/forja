@@ -7,6 +7,7 @@ from pathlib import Path
 
 import torch
 import whisperx
+from whisperx_mapping import montar_saida_alinhamento
 
 
 def processar_alinhamento(
@@ -61,42 +62,9 @@ def processar_alinhamento(
         print(f"Aviso no alinhamento fonético, usando segmentos diretos: {e}", file=sys.stderr)
         aligned_segments = segments
 
-    palavras_lista = []
-    segmentos_lista = []
-
-    for seg in aligned_segments:
-        seg_id = seg.get("id", "")
-        seg_start = round(float(seg.get("start", 0.0)), 3)
-        seg_end = round(float(seg.get("end", seg_start)), 3)
-        seg_text = seg.get("text", "").strip()
-
-        segmentos_lista.append(
-            {
-                "id": seg_id,
-                "texto": seg_text,
-                "inicio_s": seg_start,
-                "fim_s": seg_end,
-                "duracao_s": round(seg_end - seg_start, 3),
-            }
-        )
-
-        words = seg.get("words", [])
-        for w in words:
-            word_str = w.get("word", "").strip()
-            if not word_str:
-                continue
-            w_start = round(float(w.get("start", seg_start)), 3)
-            w_end = round(float(w.get("end", w_start)), 3)
-            w_score = round(float(w.get("score", 1.0)), 3)
-            palavras_lista.append(
-                {
-                    "palavra": word_str,
-                    "inicio_s": w_start,
-                    "fim_s": w_end,
-                    "score": w_score,
-                    "segmento_id": seg_id,
-                }
-            )
+    palavras_lista, segmentos_lista = montar_saida_alinhamento(
+        aligned_segments, segments if segmentos_input else None
+    )
 
     saida_palavras.parent.mkdir(parents=True, exist_ok=True)
     with open(saida_palavras, "w", encoding="utf-8") as f:

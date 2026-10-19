@@ -295,7 +295,11 @@ def registrar_handlers_disponiveis(
             ResultadoSegmentoAudio(
                 id=item["id"],
                 texto=item["texto"],
-                arquivo_wav=pasta_idioma / "segmentos" / f"{item['id']}.wav",
+                arquivo_wav=(
+                    pasta_idioma / "segmentos" / f"{item['id']}_final.wav"
+                    if (pasta_idioma / "segmentos" / f"{item['id']}_final.wav").is_file()
+                    else pasta_idioma / "segmentos" / f"{item['id']}.wav"
+                ),
                 duracao_s=float(item["fim_s"]) - float(item["inicio_s"]),
             )
             for item in segmentos_info
@@ -303,10 +307,8 @@ def registrar_handlers_disponiveis(
         motor._atualizar_wer_segmentos(
             resultados, segmentos_info, transcricao, idioma=idioma
         )
-        segmentos_reprovados = any(
-            item.wer is not None and item.wer > limite_wer for item in resultados
-        )
-        if wer > limite_wer or segmentos_reprovados:
+        wer_segmentos_primeira_passagem = {item.id: item.wer for item in resultados}
+        if wer > limite_wer:
             # A rotina existente refaz os trechos reprovados uma vez.
             relatorio = motor.processar_projeto_completo(
                 segmentos=segmentos,
@@ -315,6 +317,7 @@ def registrar_handlers_disponiveis(
                 voz=ctx.projeto.obter_opcoes().get("voz"),
                 executar_alinhamento=True,
                 limite_wer=limite_wer,
+                resultados_iniciais=resultados,
             )
             wer = relatorio.wer_medio if relatorio.wer_medio is not None else 1.0
         else:
@@ -334,6 +337,7 @@ def registrar_handlers_disponiveis(
                     "status": "reprovado",
                     "wer": wer,
                     "wer_bruto_primeira_passagem": wer_bruto_primeira_passagem,
+                    "wer_segmentos_primeira_passagem": wer_segmentos_primeira_passagem,
                     "limite_wer": limite_wer,
                     "transcricao_primeira_passagem": hipotese,
                 },
@@ -353,6 +357,7 @@ def registrar_handlers_disponiveis(
                 "status": "aprovado",
                 "wer": wer,
                 "wer_bruto_primeira_passagem": wer_bruto_primeira_passagem,
+                "wer_segmentos_primeira_passagem": wer_segmentos_primeira_passagem,
                 "limite_wer": limite_wer,
             },
         )
