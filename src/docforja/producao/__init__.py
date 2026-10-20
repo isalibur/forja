@@ -1,7 +1,6 @@
 """Módulo de produção final e exportação (13 §2)."""
 
 from docforja.producao.execucao import (
-    executar_noop_idioma_extra,
     executar_r1_imagens,
     executar_r2_tratamento,
     executar_r3_mapas,
@@ -22,7 +21,6 @@ from docforja.producao.saida import (
 )
 
 __all__ = [
-    "executar_noop_idioma_extra",
     "executar_r1_imagens",
     "executar_r2_tratamento",
     "executar_r3_mapas",

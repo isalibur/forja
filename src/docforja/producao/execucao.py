@@ -216,13 +216,3 @@ def executar_r10_biblioteca(ctx: ContextoEtapa) -> None:
         "itens": [item.model_dump(mode="json") for item in itens_sugeridos],
     }
     atomic_write_json(ctx.projeto.pastas.saida / "promocao_global.json", manifesto)
-
-
-def executar_noop_idioma_extra(ctx: ContextoEtapa) -> None:
-    """Não declara traduções/narrações concluídas antes da implementação M7."""
-    extras = ctx.projeto.obter_opcoes().get("idiomas", {}).get("extras", [])
-    if extras:
-        raise NotImplementedError(
-            f"{ctx.etapa.id} ainda não implementa idiomas extras: {', '.join(extras)}"
-        )
-    return None

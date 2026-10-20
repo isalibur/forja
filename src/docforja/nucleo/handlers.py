@@ -14,6 +14,7 @@ from docforja.audio.metricas import calcular_wer
 from docforja.audio.narracao import OrquestradorNarracao, ResultadoSegmentoAudio
 from docforja.audio.trilha import resolver_trilha_provisoria
 from docforja.esquemas import Ativo, Bloco, Plano, Shot
+from docforja.idiomas.narracao import executar_narracoes_extras, narracoes_extras_validas
 from docforja.idiomas.traducao import executar_traducao_projeto
 from docforja.io import atomic_write_json, atomic_write_text
 from docforja.llm.roteador import RoteadorLLM
@@ -41,7 +42,6 @@ from docforja.planejamento.shots import (
 )
 from docforja.planejamento.tempos import intervalos_narrados, segmentos_em_ordem
 from docforja.producao import (
-    executar_noop_idioma_extra,
     executar_r1_imagens,
     executar_r2_tratamento,
     executar_r3_mapas,
@@ -415,6 +415,9 @@ def registrar_handlers_disponiveis(
             gerar_shots(ctx)
             if (ctx.projeto.pastas.plano / "ativos.json").is_file():
                 consolidar_ativos(ctx)
+
+    async def gerar_narracoes_extras(ctx: ContextoEtapa) -> None:
+        await asyncio.to_thread(executar_narracoes_extras, ctx.projeto, obter_orquestrador())
 
     def alinhar_narracao_sync(ctx: ContextoEtapa) -> None:
         motor = obter_orquestrador()
@@ -840,7 +843,11 @@ def registrar_handlers_disponiveis(
     executor.registrar_handler(
         "T1_traducao", lambda ctx: executar_traducao_projeto(ctx.projeto, obter_roteador())
     )
-    executor.registrar_handler("T2_narracao_idiomas", executar_noop_idioma_extra)
+    executor.registrar_handler(
+        "T2_narracao_idiomas",
+        gerar_narracoes_extras,
+        validador=lambda ctx: narracoes_extras_validas(ctx.projeto),
+    )
 
     return executor
 
