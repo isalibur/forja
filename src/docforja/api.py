@@ -48,6 +48,7 @@ from docforja.shorts.candidatos import (
     pontuar_candidatos_do_plano,
 )
 from docforja.shorts.modelos import CandidatoShort, FrasePonte
+from docforja.shorts.producao import executar_producao_background
 from docforja.shorts.verticalizar import verticalizar_plano
 
 app = FastAPI(title="DocForja API", version="0.1.0")
@@ -130,9 +131,7 @@ def _dados_shorts(projeto: Projeto) -> tuple[Plano, list[dict[str, Any]], str]:
             status_code=422, detail="Artefatos do plano/narração inválidos"
         ) from exc
     if not isinstance(segmentos, list):
-        raise HTTPException(
-            status_code=422, detail="Lista de segmentos da narração inválida"
-        )
+        raise HTTPException(status_code=422, detail="Lista de segmentos da narração inválida")
     if plano.tipo != "longo":
         raise HTTPException(status_code=400, detail="Shorts derivados exigem projeto longo")
     fonte_hash = calcular_hash_dados(
@@ -487,11 +486,57 @@ def listar_shorts_derivados(slug: str) -> dict[str, Any]:
                 if dados.get("fonte_hash") == fonte_hash and versao.is_file():
                     aprovacao = json.loads(versao.read_text(encoding="utf-8"))
                     aprovacao["versao"] = dados["versao"]
+        manifesto_atual = None
+        manifesto_pointer_path = pasta / "manifesto_atual.json"
+        if manifesto_pointer_path.is_file():
+            with contextlib.suppress(ValueError, OSError, KeyError, TypeError):
+                pointer = json.loads(manifesto_pointer_path.read_text(encoding="utf-8"))
+                if (
+                    pointer.get("fonte_hash") == fonte_hash
+                    and aprovacao
+                    and pointer.get("aprovacao_versao") == aprovacao.get("versao")
+                ):
+                    manifesto_path = pasta / f"manifesto-vertical-{pointer['versao']}.json"
+                    if manifesto_path.is_file():
+                        manifesto_atual = {
+                            "versao": pointer["versao"],
+                            "shots": len(
+                                json.loads(manifesto_path.read_text(encoding="utf-8")).get(
+                                    "shots", []
+                                )
+                            ),
+                        }
+        estado_producao = None
+        estado_path = pasta / "producao_atual.json"
+        if estado_path.is_file():
+            with contextlib.suppress(ValueError, OSError, TypeError):
+                estado = json.loads(estado_path.read_text(encoding="utf-8"))
+                ponte_atual = (
+                    json.loads((pasta / "aprovacao_atual.json").read_text(encoding="utf-8"))
+                    if (pasta / "aprovacao_atual.json").is_file()
+                    else {}
+                )
+                manifesto_pointer = (
+                    json.loads((pasta / "manifesto_atual.json").read_text(encoding="utf-8"))
+                    if (pasta / "manifesto_atual.json").is_file()
+                    else {}
+                )
+                if (
+                    aprovacao
+                    and aprovacao.get("fonte_hash") == fonte_hash
+                    and manifesto_pointer.get("fonte_hash") == fonte_hash
+                    and estado.get("fonte_hash") == fonte_hash
+                    and estado.get("aprovacao_versao") == ponte_atual.get("versao")
+                    and estado.get("manifesto_versao") == manifesto_pointer.get("versao")
+                ):
+                    estado_producao = estado
         saida.append(
             {
                 "referencia": referencia,
                 "candidato": candidato.model_dump(mode="json"),
                 "aprovacao": aprovacao,
+                "manifesto_atual": manifesto_atual,
+                "producao": estado_producao,
             }
         )
     return {"slug": slug, "fonte_hash": fonte_hash, "candidatos": saida}
@@ -591,10 +636,31 @@ def criar_manifesto_vertical_short(
             ativos_usados.update(shot.ativos)
         if shots:
             blocos.append(bloco.model_copy(update={"shots": shots}))
+    ativos_vertical = dict(plano.ativos)
+    resolvidos_path = projeto.pastas.plano / "ativos_resolvidos.json"
+    if resolvidos_path.is_file():
+        try:
+            resolvidos = json.loads(resolvidos_path.read_text(encoding="utf-8")).get("ativos", {})
+            ativos_vertical.update(
+                {aid: Ativo.model_validate(item) for aid, item in resolvidos.items()}
+            )
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(status_code=422, detail="Ativos resolvidos inválidos") from exc
+    escolhas_path = projeto.pastas.midias / "escolhas.json"
+    if escolhas_path.is_file():
+        try:
+            escolhas = json.loads(escolhas_path.read_text(encoding="utf-8")).get("ativos", {})
+            for aid, escolha in escolhas.items():
+                if aid in ativos_vertical and isinstance(escolha, dict) and escolha.get("caminho"):
+                    ativos_vertical[aid].caminho = Path(escolha["caminho"])
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(status_code=422, detail="Escolhas de mídia inválidas") from exc
     plano_derivado = plano.model_copy(
         update={
             "blocos": blocos,
-            "ativos": {aid: plano.ativos[aid] for aid in ativos_usados if aid in plano.ativos},
+            "ativos": {
+                aid: ativos_vertical[aid] for aid in ativos_usados if aid in ativos_vertical
+            },
         }
     )
     try:
@@ -621,11 +687,110 @@ def criar_manifesto_vertical_short(
     atomic_write_json(
         pasta / f"manifesto-vertical-{versao_manifesto}.json", manifesto.model_dump(mode="json")
     )
+    atomic_write_json(
+        pasta / "manifesto_atual.json",
+        {
+            "versao": versao_manifesto,
+            "aprovacao_versao": atual["versao"],
+            "fonte_hash": fonte_hash,
+        },
+    )
     return {
         "versao": versao_manifesto,
         "manifesto": manifesto.model_dump(mode="json"),
         "aprovacao_versao": atual["versao"],
     }
+
+
+@app.post("/api/projetos/{slug}/shorts/derivados/{referencia}/produzir", status_code=202)
+def iniciar_producao_short_derivado(
+    slug: str, referencia: str, background_tasks: BackgroundTasks
+) -> dict[str, Any]:
+    projeto = _projeto_da_interface(slug)
+    _, fonte_hash, candidatos = _candidatos_shorts(projeto)
+    if not re.fullmatch(r"[a-f0-9]{24}", referencia):
+        raise HTTPException(status_code=404, detail="Candidato não encontrado")
+    if not any(ref == referencia for ref, _ in candidatos):
+        raise HTTPException(status_code=409, detail="O plano mudou; recarregue os candidatos")
+    pasta = _pasta_short_derivado(projeto, referencia)
+    aprovacao_path = pasta / "aprovacao_atual.json"
+    manifesto_path = pasta / "manifesto_atual.json"
+    if not aprovacao_path.is_file() or not manifesto_path.is_file():
+        raise HTTPException(
+            status_code=409, detail="Aprove a ponte e gere o manifesto vertical primeiro"
+        )
+    aprovacao = json.loads(aprovacao_path.read_text(encoding="utf-8"))
+    manifesto = json.loads(manifesto_path.read_text(encoding="utf-8"))
+    if (
+        aprovacao.get("fonte_hash") != fonte_hash
+        or manifesto.get("fonte_hash") != fonte_hash
+        or manifesto.get("aprovacao_versao") != aprovacao.get("versao")
+    ):
+        raise HTTPException(status_code=409, detail="A aprovação ou o manifesto está desatualizado")
+    estado_path = pasta / "producao_atual.json"
+    if estado_path.is_file():
+        with contextlib.suppress(ValueError, OSError, TypeError):
+            estado_anterior = json.loads(estado_path.read_text(encoding="utf-8"))
+            if (
+                estado_anterior.get("status") in ("aguardando", "executando")
+                and estado_anterior.get("aprovacao_versao") == aprovacao.get("versao")
+                and estado_anterior.get("manifesto_versao") == manifesto.get("versao")
+            ):
+                return {"status": estado_anterior["status"], "referencia": referencia}
+    atomic_write_json(
+        estado_path,
+        {
+            "status": "aguardando",
+            "referencia": referencia,
+            "fonte_hash": fonte_hash,
+            "aprovacao_versao": aprovacao.get("versao"),
+            "manifesto_versao": manifesto.get("versao"),
+        },
+    )
+    background_tasks.add_task(executar_producao_background, projeto, referencia)
+    return {"status": "aguardando", "referencia": referencia}
+
+
+@app.get("/api/projetos/{slug}/shorts/derivados/{referencia}/saida/{arquivo}")
+def obter_arquivo_short_derivado(slug: str, referencia: str, arquivo: str) -> FileResponse:
+    projeto = _projeto_da_interface(slug)
+    if not re.fullmatch(r"[a-f0-9]{24}", referencia):
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+    _, fonte_hash, candidatos = _candidatos_shorts(projeto)
+    if not any(ref == referencia for ref, _ in candidatos):
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+    if arquivo not in {"video.mp4", "capa.jpg", "legendas.srt"}:
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+    estado_path = _pasta_short_derivado(projeto, referencia) / "producao_atual.json"
+    if not estado_path.is_file():
+        raise HTTPException(status_code=404, detail="Produção ainda não disponível")
+    with contextlib.suppress(ValueError, OSError, TypeError):
+        estado = json.loads(estado_path.read_text(encoding="utf-8"))
+        pasta = estado_path.parent
+        if estado.get("fonte_hash") != fonte_hash:
+            raise HTTPException(status_code=404, detail="Esta revisão de saída está desatualizada")
+        ponte_atual = json.loads((pasta / "aprovacao_atual.json").read_text(encoding="utf-8"))
+        manifesto_atual = json.loads((pasta / "manifesto_atual.json").read_text(encoding="utf-8"))
+        if estado.get("aprovacao_versao") != ponte_atual.get("versao") or estado.get(
+            "manifesto_versao"
+        ) != manifesto_atual.get("versao"):
+            raise HTTPException(status_code=404, detail="Esta revisão de saída está desatualizada")
+        resultado = estado.get("resultado", {})
+        caminho_base = Path(resultado.get("caminho_video", "")).resolve().parent
+        raiz_saida = projeto.pastas.saida.resolve()
+        caminho = (caminho_base / arquivo).resolve()
+        if (
+            caminho_base.is_relative_to(raiz_saida)
+            and caminho.is_relative_to(raiz_saida)
+            and caminho.is_file()
+        ):
+            tipo = {
+                "video.mp4": "video/mp4",
+                "capa.jpg": "image/jpeg",
+                "legendas.srt": "text/plain",
+            }[arquivo]
+            return FileResponse(caminho, media_type=tipo, filename=arquivo)
+    raise HTTPException(status_code=404, detail="Arquivo não encontrado")
 
 
 @app.get("/api/projetos/{slug}/narracao.wav")

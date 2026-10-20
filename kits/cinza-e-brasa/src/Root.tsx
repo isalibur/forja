@@ -13,7 +13,8 @@ import {
   ShortVertical,
   type TemplateShort,
 } from "./composicoes/ShortVertical";
-import { SchemaShortVertical } from "./schemas/shorts";
+import { SchemaShortTimeline, SchemaShortVertical } from "./schemas/shorts";
+import { ShortTimeline } from "./composicoes/ShortTimeline";
 
 export const Root: React.FC = () => {
   useEffect(() => {
@@ -391,6 +392,28 @@ export const Root: React.FC = () => {
       </Folder>
 
       <Folder name="03-Shorts-9x16">
+        <Composition
+          id="Short-Derivado"
+          component={ShortTimeline}
+          durationInFrames={1800}
+          fps={30}
+          width={1080}
+          height={1920}
+          schema={SchemaShortTimeline}
+          defaultProps={{
+            duracao_frames: 900,
+            audio: "",
+            cenas: [
+              {
+                id: "gancho",
+                inicio_frame: 0,
+                duracao_frames: 60,
+                props: { ...defaultPropsShort, variante: "V01", titulo: "GANCHO" },
+              },
+            ],
+          }}
+          calculateMetadata={({ props }) => ({ durationInFrames: props.duracao_frames })}
+        />
         <Composition
           id="Guia-Safe-Area-Short"
           component={ShortSafeAreaGuide}

@@ -21,6 +21,18 @@ type ShortDerivado = {
   referencia: string;
   candidato: Candidato;
   aprovacao: { versao: string; candidato: Candidato } | null;
+  manifesto_atual: { versao: string; shots: number } | null;
+  producao: {
+    status: "aguardando" | "executando" | "concluido" | "falhou";
+    erro?: string;
+    resultado?: {
+      idioma: string;
+      revisao: string;
+      duracao_s: number;
+      qa_aprovado: boolean;
+      falhas_qa: string[];
+    };
+  } | null;
 };
 type DadosShorts = {
   fonte_hash: string;
@@ -150,9 +162,28 @@ export const Shorts: React.FC<{ slug: string }> = ({ slug }) => {
           shots: corpo.manifesto.shots.length,
         },
       }));
+      await queryClient.invalidateQueries({ queryKey: ["shorts-derivados", slug] });
       toast.success("Manifesto vertical salvo. O plano mestre não foi alterado.");
     } catch (erro) {
       toast.error(erro instanceof Error ? erro.message : "Falha ao gerar o manifesto vertical.");
+    } finally {
+      setOcupado(null);
+    }
+  };
+
+  const produzir = async (item: ShortDerivado) => {
+    setOcupado(item.referencia);
+    try {
+      const resposta = await fetch(
+        `/api/projetos/${encodeURIComponent(slug)}/shorts/derivados/${item.referencia}/produzir`,
+        { method: "POST" },
+      );
+      const corpo = await resposta.json().catch(() => ({}));
+      if (!resposta.ok) throw new Error(corpo.detail || "Não foi possível iniciar a produção.");
+      await queryClient.invalidateQueries({ queryKey: ["shorts-derivados", slug] });
+      toast.success("Produção iniciada. A tela atualizará o andamento automaticamente.");
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Falha ao iniciar a produção.");
     } finally {
       setOcupado(null);
     }
@@ -178,7 +209,7 @@ export const Shorts: React.FC<{ slug: string }> = ({ slug }) => {
           <h1 className="text-2xl font-bold mt-1">Momentos para levar ao vídeo completo</h1>
           <p className="text-sm text-mut mt-2 max-w-3xl">Revise os trechos sugeridos, aprove uma frase-ponte e prepare o manifesto 9:16. O roteiro e o plano mestre continuam intactos.</p>
         </div>
-        <div className="flex items-center gap-2 rounded-btn border border-line bg-surf px-3 py-2 text-xs text-mut"><Smartphone className="w-4 h-4 text-brasa" />Prévia editorial · render ainda não disponível</div>
+        <div className="flex items-center gap-2 rounded-btn border border-line bg-surf px-3 py-2 text-xs text-mut"><Smartphone className="w-4 h-4 text-brasa" />Produção vertical · idioma principal</div>
       </header>
 
       {candidatos.length === 0 ? (
@@ -241,6 +272,22 @@ export const Shorts: React.FC<{ slug: string }> = ({ slug }) => {
                         <button disabled={ativo} onClick={() => { void gerarManifesto(item); }} className="inline-flex items-center gap-2 rounded-btn border border-line px-4 py-2 text-sm hover:border-brasa disabled:opacity-50"><WandSparkles className="w-4 h-4 text-brasa" />{ativo ? "Preparando…" : "Gerar manifesto vertical"}</button>
                       </div>
                       {manifestos[item.referencia] && <p role="status" className="text-xs text-ok">Manifesto salvo · {manifestos[item.referencia].shots} shots · revisão {manifestos[item.referencia].versao.slice(0, 8)}</p>}
+                      {item.manifesto_atual && <p className="text-xs text-ok">Manifesto vigente · {item.manifesto_atual.shots} shots · revisão {item.manifesto_atual.versao.slice(0, 8)}</p>}
+                      {(item.manifesto_atual || manifestos[item.referencia]) && <div className="space-y-2">
+                        <button disabled={ativo || item.producao?.status === "aguardando" || item.producao?.status === "executando"} onClick={() => { void produzir(item); }} className="inline-flex items-center gap-2 rounded-btn bg-brasa px-4 py-2 text-sm font-semibold text-bg disabled:opacity-50">
+                          <Clapperboard className="w-4 h-4" />
+                          {item.producao?.status === "aguardando" || item.producao?.status === "executando" ? "Produzindo…" : item.producao?.status === "concluido" ? "Produzir nova revisão" : "Produzir short"}
+                        </button>
+                        <p className="text-xs text-mut">A primeira versão usa o idioma principal e a voz TTS configurada. Projetos com narração gravada ficam bloqueados até a ponte gravada estar disponível.</p>
+                      </div>}
+                      {item.producao?.status === "falhou" && <p role="alert" className="text-xs text-err">A produção não foi concluída: {item.producao.erro || "verifique os arquivos e tente novamente"}</p>}
+                      {item.producao?.status === "concluido" && item.producao.resultado && <div className="space-y-2 rounded-btn border border-line bg-bg p-3">
+                        <p role="status" className={`text-xs ${item.producao.resultado.qa_aprovado ? "text-ok" : "text-brasa"}`}>
+                          Rascunho renderizado · {item.producao.resultado.idioma} · {Math.round(item.producao.resultado.duracao_s)} s · QA {item.producao.resultado.qa_aprovado ? "aprovado" : `com pendências (${item.producao.resultado.falhas_qa.join(", ") || "ver relatório"})`}
+                        </p>
+                        <video controls preload="metadata" className="w-full max-h-[320px] rounded-btn bg-black" src={`/api/projetos/${encodeURIComponent(slug)}/shorts/derivados/${item.referencia}/saida/video.mp4`} />
+                        <div className="flex gap-3 text-xs"><a className="text-brasa underline" href={`/api/projetos/${encodeURIComponent(slug)}/shorts/derivados/${item.referencia}/saida/capa.jpg`} target="_blank" rel="noreferrer">Ver capa</a><a className="text-brasa underline" href={`/api/projetos/${encodeURIComponent(slug)}/shorts/derivados/${item.referencia}/saida/legendas.srt`} target="_blank" rel="noreferrer">Baixar legendas</a></div>
+                      </div>}
                     </div>}
                   </div>
 

@@ -1,7 +1,14 @@
 import React from "react";
 import { Video } from "@remotion/media";
 import type { Caption } from "@remotion/captions";
-import { AbsoluteFill, Img, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import {
+  AbsoluteFill,
+  Img,
+  interpolate,
+  staticFile,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 import { tokens } from "../tokens";
 
 export type TemplateShort =
@@ -39,6 +46,11 @@ export type PropsShortVertical = {
   foco_y: number;
   usar_fundo_desfocado: boolean;
   legendas: Caption[];
+};
+
+const resolverMidia = (src: string): string => {
+  if (!src || /^(?:https?:|data:|blob:|\/)/i.test(src)) return src;
+  return staticFile(src);
 };
 
 const Texto: React.FC<{
@@ -105,49 +117,68 @@ const Fundo: React.FC<{
   focoX: number;
   focoY: number;
   usarFundoDesfocado: boolean;
-}> = ({ src, focoX, focoY, usarFundoDesfocado }) => (
-  <>
-    {src ? (
-      <AbsoluteFill>
-        {usarFundoDesfocado ? (
-          <>
+}> = ({ src, focoX, focoY, usarFundoDesfocado }) => {
+  const fonte = resolverMidia(src);
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const progresso = interpolate(frame, [0, fps * 2.5], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const escala = interpolate(progresso, [0, 1], [1, 1.08]);
+  const deslocamento = (focoX < 0.5 ? 1 : -1) * progresso * 0.025;
+  const posicaoX = Math.min(0.98, Math.max(0.02, focoX + deslocamento));
+
+  return (
+    <>
+      {src ? (
+        <AbsoluteFill>
+          {usarFundoDesfocado ? (
+            <>
+              <Img
+                src={fonte}
+                style={{
+                  position: "absolute",
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  filter: "blur(28px) brightness(.48)",
+                  transform: `scale(${1.12 * escala})`,
+                }}
+              />
+              <Img
+                src={fonte}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  transform: `scale(${escala})`,
+                }}
+              />
+            </>
+          ) : (
             <Img
-              src={src}
+              src={fonte}
               style={{
-                position: "absolute",
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
-                filter: "blur(28px) brightness(.48)",
-                scale: "1.12",
+                objectPosition: `${posicaoX * 100}% ${focoY * 100}%`,
+                transform: `scale(${escala})`,
               }}
             />
-            <Img
-              src={src}
-              style={{ width: "100%", height: "100%", objectFit: "contain" }}
-            />
-          </>
-        ) : (
-          <Img
-            src={src}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              objectPosition: `${focoX * 100}% ${focoY * 100}%`,
-            }}
-          />
-        )}
-      </AbsoluteFill>
-    ) : null}
-    <AbsoluteFill
-      style={{
-        background:
-          "linear-gradient(180deg, rgba(14,14,16,.28) 0%, rgba(14,14,16,.56) 46%, rgba(14,14,16,.94) 100%)",
-      }}
-    />
-  </>
-);
+          )}
+        </AbsoluteFill>
+      ) : null}
+      <AbsoluteFill
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(14,14,16,.28) 0%, rgba(14,14,16,.56) 46%, rgba(14,14,16,.94) 100%)",
+        }}
+      />
+    </>
+  );
+};
 
 export const ShortVertical: React.FC<PropsShortVertical> = (props) => {
   const frame = useCurrentFrame();
@@ -182,7 +213,7 @@ export const ShortVertical: React.FC<PropsShortVertical> = (props) => {
           {[props.imagem_antes, props.imagem_depois].map((src, index) => (
             <div key={`${index}-${src}`} style={{ position: "relative", flex: 1, overflow: "hidden" }}>
               <Img
-                src={src}
+                src={resolverMidia(src)}
                 style={{
                   width: "100%",
                   height: "100%",
@@ -200,7 +231,7 @@ export const ShortVertical: React.FC<PropsShortVertical> = (props) => {
       {props.variante === "V09" && props.clipe ? (
         <AbsoluteFill style={{ inset: "15% 12% 36% 6%", overflow: "hidden", borderRadius: 20 }}>
           <Video
-            src={props.clipe}
+            src={resolverMidia(props.clipe)}
             style={{
               width: "100%",
               height: "100%",

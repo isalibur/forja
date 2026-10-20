@@ -34,4 +34,18 @@ export const SchemaShortVertical = z.object({
   legendas: z.array(CaptionSchema).default([]),
 });
 
+export const SchemaShortTimeline = z.object({
+  duracao_frames: z.number().int().positive(),
+  audio: z.string().default(""),
+  cenas: z.array(
+    z.object({
+      id: z.string().min(1),
+      inicio_frame: z.number().int().min(0),
+      duracao_frames: z.number().int().positive(),
+      props: SchemaShortVertical,
+    }),
+  ).min(1),
+});
+
 export type PropsShortVerticalSchema = z.infer<typeof SchemaShortVertical>;
+export type PropsShortTimelineSchema = z.infer<typeof SchemaShortTimeline>;

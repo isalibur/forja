@@ -151,6 +151,24 @@ def test_api_fluxo_short_derivado_versionado(tmp_path, monkeypatch):
     assert manifesto.json()["manifesto"]["proporcao"] == "9:16"
     assert len(manifesto.json()["manifesto"]["shots"]) == 1
     assert manifesto.json()["manifesto"]["shots"][0]["fim_s"] == 20
+    atual = client.get(endpoint).json()["candidatos"][0]
+    assert atual["manifesto_atual"]["versao"] == manifesto.json()["versao"]
+    chamadas: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        "docforja.api.executar_producao_background",
+        lambda projeto_arg, referencia_arg: chamadas.append((projeto_arg.slug, referencia_arg)),
+    )
+    producao = client.post(f"{endpoint}/{referencia}/produzir")
+    assert producao.status_code == 202
+    assert producao.json()["status"] == "aguardando"
+    assert chamadas == [(projeto.slug, referencia)]
+    assert client.get(f"{endpoint}/{referencia}/saida/video.mp4").status_code == 404
+    assert client.get(endpoint).json()["candidatos"][0]["producao"]["status"] == "aguardando"
+    nova_aprovacao = client.post(aprovar_url, json={"indice_frase": 2})
+    assert nova_aprovacao.status_code == 200
+    desatualizado = client.get(endpoint).json()["candidatos"][0]
+    assert desatualizado["manifesto_atual"] is None
+    assert desatualizado["producao"] is None
     assert (projeto.pastas.plano / "plano.json").read_bytes() == plano_mestre_antes
     assert client.post(aprovar_url, json={}).status_code == 400
 
