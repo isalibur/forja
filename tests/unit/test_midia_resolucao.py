@@ -82,6 +82,10 @@ def test_classificar_licenca():
     comercial, _ = classificar_licenca("Pexels License")
     assert comercial
 
+    comercial, req_credito = classificar_licenca("Licença proprietária autorizada pelo titular")
+    assert comercial
+    assert req_credito
+
 
 def test_detectar_patrimonio_restrito():
     """Detecta referências a bens culturais protegidos italianos."""

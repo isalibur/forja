@@ -74,6 +74,13 @@ PADROES_LIVRE_COM_ATRIBUICAO = [
     r"unsplash",
 ]
 
+PADROES_AUTORIZACAO_TITULAR = [
+    r"autorização do titular",
+    r"autorizacao do titular",
+    r"licença proprietária autorizada",
+    r"licenca proprietaria autorizada",
+]
+
 
 class FichaLicenca(BaseModel):
     """Ficha cadastral de licença e autoria de um ativo de mídia."""
@@ -114,6 +121,11 @@ def classificar_licenca(licenca_str: str) -> tuple[bool, bool]:
 
     # 3. Licenças com atribuição comercial permitida
     for padrao in PADROES_LIVRE_COM_ATRIBUICAO:
+        if re.search(padrao, texto):
+            return True, True
+
+    # Permite licença proprietária quando a ficha declara expressamente autorização do titular.
+    for padrao in PADROES_AUTORIZACAO_TITULAR:
         if re.search(padrao, texto):
             return True, True
 
