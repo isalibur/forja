@@ -26,9 +26,11 @@ from docforja.shorts.producao import (
     _agrupar_palavras,
     _captions_remotion,
     _metadados,
+    _mixar_audio,
     _resolver_trilha_short,
     _rotulos_cta,
     _srt,
+    _trecho_ja_tem_cta_video,
     aprovar_ponte_short_idioma,
     produzir_short_derivado,
 )
@@ -74,6 +76,11 @@ def test_legendas_sao_frases_breves_em_ate_duas_linhas_sem_karaoke() -> None:
     assert srt.count("\n\n") == len(grupos) - 1
 
 
+def test_trecho_com_cta_final_nao_duplica_chamada_para_video_completo() -> None:
+    assert _trecho_ja_tem_cta_video("O restante dessa descoberta está no vídeo completo.")
+    assert not _trecho_ja_tem_cta_video("Eles preservaram as cartas e chamaram especialistas.")
+
+
 def test_short_nao_adiciona_trilha_provisoria_sem_escolha_explicita(tmp_path: Path) -> None:
     projeto = Projeto.criar(nome="Sem trilha", roteiro="Roteiro", raiz_projetos=tmp_path)
 
@@ -99,6 +106,31 @@ def test_short_prefere_trilha_definitiva_usada_no_video_longo(tmp_path: Path) ->
     provisoria.write_bytes(b"outra faixa")
 
     assert _resolver_trilha_short(projeto) == definitiva
+
+
+def test_mix_short_usa_trilha_reduzida_e_registra_volume(tmp_path: Path, monkeypatch) -> None:
+    voz = tmp_path / "voz.wav"
+    trilha = tmp_path / "trilha.wav"
+    voz.write_bytes(b"voz")
+    trilha.write_bytes(b"jazz de teste")
+    atomic_write_json(
+        trilha.with_name(f"{trilha.name}.licenca.json"),
+        {"licenca": "CC0-1.0", "comercial": True},
+    )
+    comandos = []
+    monkeypatch.setattr("docforja.shorts.producao.shutil.which", lambda _: "ffmpeg")
+    monkeypatch.setattr(
+        "docforja.shorts.producao._executar",
+        lambda comando, **_kwargs: comandos.append(comando) or "I: -14.0 LUFS",
+    )
+
+    lufs, mais_presente = _mixar_audio(
+        voz, tmp_path / "mix.wav", trilha, tmp_path / "relatorio_mix.json"
+    )
+
+    assert "volume=0.08" in comandos[0][comandos[0].index("-filter_complex") + 1]
+    assert lufs == -14.0
+    assert mais_presente is None
 
 
 def test_metadados_short_oferecem_titulos_exatos_e_limites(tmp_path: Path) -> None:

@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tempfile
 import textwrap
+import unicodedata
 from itertools import pairwise
 from pathlib import Path
 from typing import Any
@@ -43,6 +44,7 @@ from docforja.shorts.verificador import verificar_short
 FPS = 30
 MAX_CHARS_LEGENDA = 42
 MAX_CHARS_LINHA_LEGENDA = 21
+GANHO_TRILHA_SHORT = 0.08
 
 
 class CaptionRemotion(BaseModel):
@@ -590,7 +592,7 @@ def _mixar_audio(
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
         raise RuntimeError("FFmpeg não está instalado ou não está no PATH.")
-    volume_trilha_short = 0.22
+    volume_trilha_short = GANHO_TRILHA_SHORT
     if trilha and trilha.is_file():
         if not _licenca_trilha_comercial(trilha):
             raise ValueError(
@@ -759,6 +761,7 @@ def produzir_short_derivado(
         if not voz:
             raise ValueError(f"Configure uma voz TTS aprovada para o idioma {idioma}.")
     palavras = _palavras(palavras_path, set(candidato.segmento_ids), inicio, fim)
+    incluir_ponte = not _trecho_ja_tem_cta_video(candidato.texto)
     trilha = _resolver_trilha_short(projeto)
     if trilha and not _licenca_trilha_comercial(trilha):
         raise ValueError("A trilha não tem ficha comercial vigente para uso no short.")
@@ -819,6 +822,10 @@ def produzir_short_derivado(
             "manifesto": manifesto_id,
             "tts": motor_id,
             "candidato": candidato.model_dump(mode="json"),
+            "mix": {
+                "ganho_trilha": GANHO_TRILHA_SHORT,
+                "incluir_ponte": incluir_ponte,
+            },
         }
     )
     ordenados = pontuar_candidatos_do_plano(plano, segmentos_principal, limite=5)
@@ -851,7 +858,7 @@ def produzir_short_derivado(
         )
 
     bridge_path = pasta_aprovacao / "cache" / f"ponte-{hash_ponte}.wav"
-    if not bridge_path.is_file():
+    if incluir_ponte and not bridge_path.is_file():
         orquestrador = _criar_orquestrador(motor_tts=motor_nome, projeto=projeto)
         if not orquestrador.tts.disponivel():
             raise RuntimeError(
@@ -908,27 +915,30 @@ def produzir_short_derivado(
             cwd=KIT_REMOTION,
             timeout=900,
         )
-        _executar(
-            [
-                ffmpeg,
-                "-y",
-                "-i",
-                str(trim),
-                "-i",
-                str(bridge_path),
-                "-filter_complex",
-                "[0:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo[a0];"
-                "[1:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo[a1];"
-                "[a0][a1]concat=n=2:v=0:a=1[out]",
-                "-map",
-                "[out]",
-                "-c:a",
-                "pcm_s16le",
-                str(concat),
-            ],
-            cwd=KIT_REMOTION,
-            timeout=900,
-        )
+        if incluir_ponte:
+            _executar(
+                [
+                    ffmpeg,
+                    "-y",
+                    "-i",
+                    str(trim),
+                    "-i",
+                    str(bridge_path),
+                    "-filter_complex",
+                    "[0:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo[a0];"
+                    "[1:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo[a1];"
+                    "[a0][a1]concat=n=2:v=0:a=1[out]",
+                    "-map",
+                    "[out]",
+                    "-c:a",
+                    "pcm_s16le",
+                    str(concat),
+                ],
+                cwd=KIT_REMOTION,
+                timeout=900,
+            )
+        else:
+            shutil.copy2(trim, concat)
         voz_mix = public / "audio.wav"
         loudness, musica_mais_presente = _mixar_audio(
             concat,
@@ -938,7 +948,7 @@ def produzir_short_derivado(
         )
 
         duracao_base = fim - inicio
-        duracao_ponte = _duracao_wav(bridge_path)
+        duracao_ponte = _duracao_wav(bridge_path) if incluir_ponte else 0.0
         duracao_total = duracao_base + duracao_ponte
         if not 15 <= duracao_total <= 60:
             raise ValueError(
@@ -1004,26 +1014,30 @@ def produzir_short_derivado(
                 )
                 cursor = fim_cena
                 parte += 1
-        palavras_ponte = ponte.split()
-        for idx, palavra in enumerate(palavras_ponte):
-            a = duracao_base + duracao_ponte * idx / len(palavras_ponte)
-            b = duracao_base + duracao_ponte * (idx + 1) / len(palavras_ponte)
-            palavras.append({"text": palavra, "start": a, "end": b})
-        bridge_captions = _captions_remotion(palavras, duracao_base, duracao_total)
-        texto_completo, texto_assista = _rotulos_cta(idioma)
-        cenas.append(
-            CenaRenderShort(
-                id="cta",
-                inicio_frame=round(duracao_base * FPS),
-                duracao_frames=max(1, round(duracao_ponte * FPS)),
-                props=PropsCenaShort(
-                    variante="V07",
-                    titulo=texto_completo,
-                    cta=texto_assista,
-                    legendas=bridge_captions,
-                ),
-            )
+        if incluir_ponte:
+            palavras_ponte = ponte.split()
+            for idx, palavra in enumerate(palavras_ponte):
+                a = duracao_base + duracao_ponte * idx / len(palavras_ponte)
+                b = duracao_base + duracao_ponte * (idx + 1) / len(palavras_ponte)
+                palavras.append({"text": palavra, "start": a, "end": b})
+        bridge_captions = (
+            _captions_remotion(palavras, duracao_base, duracao_total) if incluir_ponte else []
         )
+        texto_completo, texto_assista = _rotulos_cta(idioma)
+        if incluir_ponte:
+            cenas.append(
+                CenaRenderShort(
+                    id="cta",
+                    inicio_frame=round(duracao_base * FPS),
+                    duracao_frames=max(1, round(duracao_ponte * FPS)),
+                    props=PropsCenaShort(
+                        variante="V07",
+                        titulo=texto_completo,
+                        cta=texto_assista,
+                        legendas=bridge_captions,
+                    ),
+                )
+            )
         duracao_frames = max(1, round(duracao_total * FPS))
         props = PropsRenderShort(duracao_frames=duracao_frames, audio="audio.wav", cenas=cenas)
         props_path = work / "props.json"
@@ -1038,10 +1052,13 @@ def produzir_short_derivado(
         elementos = [
             ElementoTelaShort(id="gancho", x=0.08, y=0.18, largura=0.78, altura=0.35, texto=hook),
             ElementoTelaShort(id="legenda", x=0.08, y=0.67, largura=0.78, altura=0.06),
-            ElementoTelaShort(
-                id="cta", x=0.08, y=0.2, largura=0.78, altura=0.4, texto=texto_completo
-            ),
         ]
+        if incluir_ponte:
+            elementos.append(
+                ElementoTelaShort(
+                    id="cta", x=0.08, y=0.2, largura=0.78, altura=0.4, texto=texto_completo
+                )
+            )
         intervalos = [
             IntervaloLegendaShort(inicio_s=item["start"], fim_s=item["end"], texto=item["text"])
             for item in palavras
@@ -1079,7 +1096,9 @@ def produzir_short_derivado(
                 "descricao": ativo.descricao,
                 "licenca": ficha.model_dump(mode="json") if ficha else ativo.licenca,
             }
-        opcoes_metadados = _metadados(projeto, candidato, ponte, idioma)
+        opcoes_metadados = _metadados(
+            projeto, candidato, ponte if incluir_ponte else "", idioma
+        )
         metadados_dir = work / "metadados"
         metadados_dir.mkdir()
         atomic_write_json(
@@ -1132,6 +1151,23 @@ def _rotulos_cta(idioma: str) -> tuple[str, str]:
     if not rotulos:
         raise ValueError(f"Os textos de CTA para {idioma} ainda não estão localizados.")
     return rotulos
+
+
+def _trecho_ja_tem_cta_video(texto: str) -> bool:
+    """Detecta convite explícito ao vídeo completo no fecho do trecho narrado."""
+    normalizado = unicodedata.normalize("NFKD", texto.lower())
+    normalizado = "".join(char for char in normalizado if not unicodedata.combining(char))
+    final = " ".join(normalizado.split())[-140:].rstrip(" .,!?:;—-")
+    return any(
+        convite in final
+        for convite in (
+            "video completo",
+            "assista ao video",
+            "veja o video",
+            "watch the full video",
+            "mira el video completo",
+        )
+    )
 
 
 def _metadados(
@@ -1214,8 +1250,9 @@ def _metadados(
         "en": f"Vertical video with narration: {candidato.texto.strip()}.",
         "es": f"Video vertical con narración: {candidato.texto.strip()}.",
     }[idioma_base]
+    texto_ponte = f"\n\n{ponte}" if ponte else ""
     instagram = (
-        f"{hook}\n\n{ponte}\n\n{textos['hashtags_ig']}\n\n"
+        f"{hook}{texto_ponte}\n\n{textos['hashtags_ig']}\n\n"
         f"{textos['alt']}: {alt} {textos['legenda_palavra']}."
     )
     youtube = (
