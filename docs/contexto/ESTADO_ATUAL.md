@@ -61,17 +61,20 @@ Atualizado em 20 de outubro de 2026. Este arquivo registra somente o estado oper
   2. T1 (Tradução automática estruturada): `RoteadorLLM` gerou tradução via 9Router/Ollama obedecendo estritamente ao schema `BlocoTraducaoLLM`, preservando IDs (`B0-S01`, `B0-S02`), ordem e marcações técnicas (concluído em 67,19 s com gravação em `01_plano/idiomas/en/atual.json`).
   3. T2 (Narração Kokoro e Retime): sintetizou `pt-BR` (`pm_alex`, 6,30 s) e `en` (`af_heart`, 7,38 s) no venv isolado de áudio, gerando WAVs reais audíveis em `03_audio/en/narracao_completa.wav` e `segmentos.json`. O retime proporcional ajustou com precisão os shots no plano retimado (`B0-01` 3,667 s, `B0-02` 3,708 s), aprovado por `intervalos_narrados`.
   4. Retomada segura e cache por hash: reexecução imediata consumiu o cache em 0,032 s, comprovando idempotência e integridade dos manifestos.
-- Verificação automatizada: 141 testes unitários passaram sem GPU e sem rede (`pytest tests/unit`); Ruff 100% limpo em `src/`, `tests/` e `scripts/`. Lint e checagem de tipos do kit Cinza e Brasa aprovados (`npm run lint`, `tsc --noEmit`); build de produção do frontend `web` aprovado (`npm run build`).
+- Integração do Hermes Agent como Operador Conversacional M7 (20/10/2026):
+  1. Skill oficial em `hermes/skills/docforja/` (`SKILL.md`, `README.md` e `ferramentas.py`) e pacote `src/docforja/hermes/` com lista fechada de ferramentas: `docforja_novo`, `docforja_status`, `docforja_resumo_plano`, `docforja_imagens_nao_atribuidas`, `docforja_planejar`, `docforja_produzir` e `docforja_status_producao`.
+  2. Limites estritos de segurança implementados: validação de slug e bloqueio de travessia de diretório (`..`, `/`, `\`); sem acesso a shell arbitrário; proteção inviolável do código de confirmação (`docforja_produzir` falha com `ValueError` se o código não for exatamente `"PRODUZIR"`); autorização de Telegram restrita a `TELEGRAM_CHAT_ID`.
+  3. Barramento de notificação: `src/docforja/hermes/notificador.py` implementa `Notificador(Protocol)` com `NotificadorHermes`, `NotificadorTelegram` e `NotificadorNenhum`, formatando alertas de plano pronto, revisão pendente e produção concluída.
+  4. Hermes opera via 9Router sem alocar VRAM nem disputar o semáforo de GPU; o pipeline DocForja acionado mantém acesso total e gerenciado à GPU.
+- Verificação automatizada: 149 testes unitários passaram sem GPU e sem rede (`pytest tests/unit`); Ruff 100% limpo em `src/`, `tests/`, `scripts/` e `hermes/`. Lint e checagem de tipos do kit Cinza e Brasa aprovados (`npm run lint`, `tsc --noEmit`); build de produção do frontend `web` aprovado (`npm run build`).
 
 ## Pendências e próxima tarefa
 
-- Próxima tarefa: Integração opcional do Hermes Agent como operador conversacional do Marco M7 (`docs/construtor/07-arquitetura-e-integracoes.md §6`, `08 §M7`, `09 §7`), atuando estritamente sobre a CLI/API local do DocForja:
-  1. Funções no escopo: criar projetos, consultar status, avisar quando o plano estiver pronto com resumo da lista de busca (`lista_de_busca.md`), perguntar sobre imagens não atribuídas (`02_midias/manual/nao_atribuidas/`), iniciar produção somente mediante código de confirmação digitado pelo usuário (`PRODUZIR`) e avisar quando a produção terminar.
-  2. Limites de segurança: comandos permitidos explicitamente (whitelist fechada), projetos acessíveis restritos à pasta configurada, sem shell irrestrito do SO, proteção inviolável do código de confirmação e Telegram limitado ao chat autorizado. O Hermes usa 9Router e não concorre pelo semáforo de GPU; o pipeline DocForja acionado por ele mantém acesso total e gerenciado à GPU.
-- Pendências modulares complementares do Marco M7 (não bloqueantes para o Hermes):
-  1. Invalidação seletiva multilíngue: definir que a alteração de uma imagem em `escolhas.json` invalida apenas os chunks de render do bloco afetado (`04_sistema/render/<idioma>/blocos/<bloco_id>.mp4`) e o vídeo final de cada idioma, preservando narrações, sincronismo, transições, QA e demais blocos; a troca na prévia interativa em `selecoes_ui/`, por si só, não atualiza o MP4.
+- Próxima tarefa: Invalidação seletiva multilíngue e reaproveitamento da Pasta Global por ID (Marco M7):
+  1. Invalidação seletiva: alteração de uma imagem em `escolhas.json` invalida apenas os chunks de render do bloco afetado (`04_sistema/render/<idioma>/blocos/<bloco_id>.mp4`) e o vídeo final de cada idioma, preservando narrações, sincronismo, transições, QA e demais blocos; a seleção na prévia interativa em `selecoes_ui/`, por si só, não atualiza o MP4.
   2. Reaproveitamento da Pasta Global: promoção estritamente condicionada a confirmação humana com ficha e licença comercial permissiva (`.licenca.json`), e consumo posterior em novos projetos via referência estável ao ID (`global:<categoria>:<id>`).
-  3. Adaptadores adicionais de TTS: `openai_compat` (HTTP `/v1/audio/speech`), VoiceStudio (com bloqueio de engines não-comerciais para projetos monetizados) e `arquivo_pronto` (narração por arquivo com tolerância a divergências de texto WER > 8%).
+- Pendências complementares do Marco M7:
+  - Adaptadores adicionais de TTS: `openai_compat` (HTTP `/v1/audio/speech`), VoiceStudio (com bloqueio de engines não-comerciais para projetos monetizados) e `arquivo_pronto` (narração por arquivo com tolerância a divergências de texto WER > 8%).
 - Observações: manter escritas atômicas, cache por hash e não avançar para M8 ou M9. Teste assistivo manual com NVDA/VoiceOver a ser executado em ambiente com leitor instalado.
 
 ## Entrega entre Codex e Antigravity
