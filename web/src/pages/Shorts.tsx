@@ -33,9 +33,24 @@ type ShortDerivado = {
       falhas_qa: string[];
     };
   } | null;
+  pontes_idiomas: Record<string, { versao: string; texto: string } | null>;
+  producoes_idiomas: Record<string, {
+    status: "aguardando" | "executando" | "concluido" | "falhou";
+    erro?: string;
+    resultado?: {
+      idioma: string;
+      revisao: string;
+      duracao_s: number;
+      qa_aprovado: boolean;
+      falhas_qa: string[];
+    };
+  } | null>;
 };
 type DadosShorts = {
   fonte_hash: string;
+  idioma_principal: string;
+  idiomas_extras: string[];
+  idiomas_short_indisponiveis: string[];
   candidatos: ShortDerivado[];
 };
 
@@ -67,6 +82,7 @@ export const Shorts: React.FC<{ slug: string }> = ({ slug }) => {
   const plano = usePlano(slug);
   const [escolhas, setEscolhas] = useState<Record<string, string>>({});
   const [frasesEditadas, setFrasesEditadas] = useState<Record<string, string>>({});
+  const [pontesLocalizadas, setPontesLocalizadas] = useState<Record<string, string>>({});
   const [estrategias, setEstrategias] = useState<Record<string, "recorte" | "fundo_desfocado">>({});
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [manifestos, setManifestos] = useState<Record<string, { versao: string; shots: number }>>({});
@@ -189,6 +205,53 @@ export const Shorts: React.FC<{ slug: string }> = ({ slug }) => {
     }
   };
 
+  const aprovarPonteIdioma = async (item: ShortDerivado, idioma: string) => {
+    const chave = `${item.referencia}:${idioma}`;
+    const texto = (pontesLocalizadas[chave] ?? item.pontes_idiomas[idioma]?.texto ?? "").trim();
+    if (!texto) {
+      toast.error(`Escreva a frase-ponte em ${idioma} antes de aprovar.`);
+      return;
+    }
+    setOcupado(chave);
+    try {
+      const resposta = await fetch(
+        `/api/projetos/${encodeURIComponent(slug)}/shorts/derivados/${item.referencia}/idiomas/${encodeURIComponent(idioma)}/aprovar-ponte`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texto }),
+        },
+      );
+      const corpo = await resposta.json().catch(() => ({}));
+      if (!resposta.ok) throw new Error(corpo.detail || `Não foi possível aprovar a ponte em ${idioma}.`);
+      await queryClient.invalidateQueries({ queryKey: ["shorts-derivados", slug] });
+      toast.success(`Ponte de ${idioma} aprovada em uma revisão própria.`);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : `Falha ao aprovar ponte em ${idioma}.`);
+    } finally {
+      setOcupado(null);
+    }
+  };
+
+  const produzirIdioma = async (item: ShortDerivado, idioma: string) => {
+    const chave = `${item.referencia}:${idioma}`;
+    setOcupado(chave);
+    try {
+      const resposta = await fetch(
+        `/api/projetos/${encodeURIComponent(slug)}/shorts/derivados/${item.referencia}/idiomas/${encodeURIComponent(idioma)}/produzir`,
+        { method: "POST" },
+      );
+      const corpo = await resposta.json().catch(() => ({}));
+      if (!resposta.ok) throw new Error(corpo.detail || `Não foi possível iniciar ${idioma}.`);
+      await queryClient.invalidateQueries({ queryKey: ["shorts-derivados", slug] });
+      toast.success(`Produção em ${idioma} iniciada.`);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : `Falha ao iniciar ${idioma}.`);
+    } finally {
+      setOcupado(null);
+    }
+  };
+
   if (!slug) return <div className="p-8 text-mut">Selecione um projeto longo em Início para revisar shorts.</div>;
   if (plano.isLoading || query.isLoading) return <div className="p-8 text-mut">Carregando candidatos…</div>;
   if (plano.error) return <ErroCarregamento tentarNovamente={() => { void plano.refetch(); }} />;
@@ -201,6 +264,9 @@ export const Shorts: React.FC<{ slug: string }> = ({ slug }) => {
   }
 
   const candidatos = query.data?.candidatos ?? [];
+  const idiomasExtrasShort = (query.data?.idiomas_extras ?? []).filter(
+    (idioma) => !(query.data?.idiomas_short_indisponiveis ?? []).includes(idioma),
+  );
   return (
     <div className="p-6 xl:p-8 max-w-[1500px] mx-auto space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -209,7 +275,7 @@ export const Shorts: React.FC<{ slug: string }> = ({ slug }) => {
           <h1 className="text-2xl font-bold mt-1">Momentos para levar ao vídeo completo</h1>
           <p className="text-sm text-mut mt-2 max-w-3xl">Revise os trechos sugeridos, aprove uma frase-ponte e prepare o manifesto 9:16. O roteiro e o plano mestre continuam intactos.</p>
         </div>
-        <div className="flex items-center gap-2 rounded-btn border border-line bg-surf px-3 py-2 text-xs text-mut"><Smartphone className="w-4 h-4 text-brasa" />Produção vertical · idioma principal</div>
+        <div className="flex items-center gap-2 rounded-btn border border-line bg-surf px-3 py-2 text-xs text-mut"><Smartphone className="w-4 h-4 text-brasa" />Produção vertical · {query.data?.idioma_principal ?? "idioma principal"}</div>
       </header>
 
       {candidatos.length === 0 ? (
@@ -288,6 +354,30 @@ export const Shorts: React.FC<{ slug: string }> = ({ slug }) => {
                         <video controls preload="metadata" className="w-full max-h-[320px] rounded-btn bg-black" src={`/api/projetos/${encodeURIComponent(slug)}/shorts/derivados/${item.referencia}/saida/video.mp4`} />
                         <div className="flex gap-3 text-xs"><a className="text-brasa underline" href={`/api/projetos/${encodeURIComponent(slug)}/shorts/derivados/${item.referencia}/saida/capa.jpg`} target="_blank" rel="noreferrer">Ver capa</a><a className="text-brasa underline" href={`/api/projetos/${encodeURIComponent(slug)}/shorts/derivados/${item.referencia}/saida/legendas.srt`} target="_blank" rel="noreferrer">Baixar legendas</a></div>
                       </div>}
+                      {idiomasExtrasShort.length > 0 && <div className="border-t border-line pt-4 space-y-4">
+                        <div><h3 className="text-sm font-semibold">Versões em outros idiomas</h3><p className="text-xs text-mut mt-1">Para cada idioma, informe e aprove uma ponte localizada. A produção exige tradução, narração alinhada e voz configurada no M7; não reutiliza a fala de outro idioma.</p></div>
+                        {idiomasExtrasShort.map((idioma) => {
+                          const chave = `${item.referencia}:${idioma}`;
+                          const ponte = item.pontes_idiomas[idioma];
+                          const producao = item.producoes_idiomas[idioma];
+                          const idiomaOcupado = ocupado === chave;
+                          return <div key={idioma} className="rounded-btn border border-line bg-bg p-3 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2"><strong className="text-sm">{idioma}</strong>{ponte && <span className="text-xs text-ok">Ponte aprovada · {ponte.versao.slice(0, 8)}</span>}</div>
+                            <textarea aria-label={`Frase-ponte em ${idioma}`} maxLength={240} value={pontesLocalizadas[chave] ?? ponte?.texto ?? ""} onChange={(evento) => setPontesLocalizadas((atuais) => ({ ...atuais, [chave]: evento.target.value }))} placeholder={`Escreva a frase-ponte em ${idioma}`} className="w-full min-h-16 rounded-btn border border-line bg-elev px-3 py-2 text-sm outline-none focus:border-brasa" />
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button disabled={idiomaOcupado} onClick={() => { void aprovarPonteIdioma(item, idioma); }} className="rounded-btn border border-line px-3 py-2 text-xs hover:border-brasa disabled:opacity-50">{idiomaOcupado ? "Salvando…" : ponte ? "Salvar ponte localizada" : "Aprovar ponte localizada"}</button>
+                              {ponte && item.manifesto_atual && <button disabled={idiomaOcupado || producao?.status === "aguardando" || producao?.status === "executando"} onClick={() => { void produzirIdioma(item, idioma); }} className="rounded-btn bg-brasa px-3 py-2 text-xs font-semibold text-bg disabled:opacity-50">{producao?.status === "aguardando" || producao?.status === "executando" ? "Produzindo…" : `Produzir em ${idioma}`}</button>}
+                            </div>
+                            {producao?.status === "falhou" && <p role="alert" className="text-xs text-err">{producao.erro || `Falha na produção em ${idioma}.`}</p>}
+                            {producao?.status === "concluido" && producao.resultado && <div className="space-y-2">
+                              <p role="status" className={`text-xs ${producao.resultado.qa_aprovado ? "text-ok" : "text-brasa"}`}>Rascunho {idioma} · {Math.round(producao.resultado.duracao_s)} s · QA {producao.resultado.qa_aprovado ? "aprovado" : "com pendências"}</p>
+                              <video controls preload="metadata" className="w-full max-h-[280px] rounded-btn bg-black" src={`/api/projetos/${encodeURIComponent(slug)}/shorts/derivados/${item.referencia}/saida/video.mp4?idioma=${encodeURIComponent(idioma)}`} />
+                              <div className="flex gap-3 text-xs"><a className="text-brasa underline" href={`/api/projetos/${encodeURIComponent(slug)}/shorts/derivados/${item.referencia}/saida/capa.jpg?idioma=${encodeURIComponent(idioma)}`} target="_blank" rel="noreferrer">Ver capa</a><a className="text-brasa underline" href={`/api/projetos/${encodeURIComponent(slug)}/shorts/derivados/${item.referencia}/saida/legendas.srt?idioma=${encodeURIComponent(idioma)}`} target="_blank" rel="noreferrer">Baixar legendas</a></div>
+                            </div>}
+                          </div>;
+                        })}
+                      </div>}
+                      {(query.data?.idiomas_short_indisponiveis ?? []).length > 0 && <p className="text-xs text-mut">Produção de Shorts ainda não localizada para: {query.data?.idiomas_short_indisponiveis.join(", ")}.</p>}
                     </div>}
                   </div>
 

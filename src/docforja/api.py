@@ -48,7 +48,11 @@ from docforja.shorts.candidatos import (
     pontuar_candidatos_do_plano,
 )
 from docforja.shorts.modelos import CandidatoShort, FrasePonte
-from docforja.shorts.producao import executar_producao_background
+from docforja.shorts.producao import (
+    aprovar_ponte_short_idioma,
+    executar_producao_background,
+    obter_ponte_idioma_aprovada,
+)
 from docforja.shorts.verticalizar import verticalizar_plano
 
 app = FastAPI(title="DocForja API", version="0.1.0")
@@ -96,6 +100,10 @@ class SelecionarCandidataPayload(BaseModel):
 class AprovarShortPayload(BaseModel):
     indice_frase: int | None = Field(default=None, ge=0, le=2)
     frase_personalizada: str | None = Field(default=None, min_length=1, max_length=240)
+
+
+class AprovarPonteIdiomaPayload(BaseModel):
+    texto: str = Field(min_length=1, max_length=240)
 
 
 class ManifestoShortPayload(BaseModel):
@@ -472,6 +480,19 @@ def selecionar_candidata(
 def listar_shorts_derivados(slug: str) -> dict[str, Any]:
     projeto = _projeto_da_interface(slug)
     _, fonte_hash, candidatos = _candidatos_shorts(projeto)
+    idiomas_cfg = projeto.obter_opcoes().get("idiomas", {})
+    idioma_principal = str(idiomas_cfg.get("principal", "pt-BR"))
+    idiomas_extras = idiomas_cfg.get("extras", []) if isinstance(idiomas_cfg, dict) else []
+    idiomas_extras = [
+        idioma
+        for idioma in idiomas_extras
+        if isinstance(idioma, str) and re.fullmatch(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*", idioma)
+    ]
+    idiomas_short_indisponiveis = [
+        idioma
+        for idioma in idiomas_extras
+        if idioma.split("-", maxsplit=1)[0].lower() not in {"pt", "en", "es"}
+    ]
     saida = []
     for referencia, candidato in candidatos:
         pasta = _pasta_short_derivado(projeto, referencia)
@@ -530,6 +551,33 @@ def listar_shorts_derivados(slug: str) -> dict[str, Any]:
                     and estado.get("manifesto_versao") == manifesto_pointer.get("versao")
                 ):
                     estado_producao = estado
+        pontes_idiomas: dict[str, dict[str, str] | None] = {}
+        producoes_idiomas: dict[str, dict[str, Any] | None] = {}
+        for idioma in idiomas_extras:
+            ponte_localizada = None
+            try:
+                texto, versao_ponte = obter_ponte_idioma_aprovada(
+                    projeto, referencia, idioma, candidato
+                )
+                ponte_localizada = {"versao": versao_ponte, "texto": texto}
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+            pontes_idiomas[idioma] = ponte_localizada
+            estado_local_path = pasta / f"producao-{idioma}.json"
+            producao_localizada = None
+            if estado_local_path.is_file() and ponte_localizada:
+                with contextlib.suppress(ValueError, OSError, TypeError):
+                    estado_local = json.loads(estado_local_path.read_text(encoding="utf-8"))
+                    if (
+                        estado_local.get("idioma") == idioma
+                        and estado_local.get("fonte_hash") == fonte_hash
+                        and estado_local.get("aprovacao_versao") == (aprovacao or {}).get("versao")
+                        and estado_local.get("manifesto_versao")
+                        == (manifesto_atual or {}).get("versao")
+                        and estado_local.get("aprovacao_ponte_idioma") == ponte_localizada["versao"]
+                    ):
+                        producao_localizada = estado_local
+            producoes_idiomas[idioma] = producao_localizada
         saida.append(
             {
                 "referencia": referencia,
@@ -537,9 +585,18 @@ def listar_shorts_derivados(slug: str) -> dict[str, Any]:
                 "aprovacao": aprovacao,
                 "manifesto_atual": manifesto_atual,
                 "producao": estado_producao,
+                "pontes_idiomas": pontes_idiomas,
+                "producoes_idiomas": producoes_idiomas,
             }
         )
-    return {"slug": slug, "fonte_hash": fonte_hash, "candidatos": saida}
+    return {
+        "slug": slug,
+        "fonte_hash": fonte_hash,
+        "idioma_principal": idioma_principal,
+        "idiomas_extras": idiomas_extras,
+        "idiomas_short_indisponiveis": idiomas_short_indisponiveis,
+        "candidatos": saida,
+    }
 
 
 @app.post("/api/projetos/{slug}/shorts/derivados/{referencia}/aprovar")
@@ -588,6 +645,22 @@ def aprovar_short_derivado(
         },
     )
     return {"versao": versao, "aprovacao": conteudo}
+
+
+@app.post("/api/projetos/{slug}/shorts/derivados/{referencia}/idiomas/{idioma}/aprovar-ponte")
+def aprovar_ponte_short_localizada(
+    slug: str, referencia: str, idioma: str, payload: AprovarPonteIdiomaPayload
+) -> dict[str, Any]:
+    projeto = _projeto_da_interface(slug)
+    if not re.fullmatch(r"[a-f0-9]{24}", referencia):
+        raise HTTPException(status_code=404, detail="Candidato não encontrado")
+    _, _, candidatos = _candidatos_shorts(projeto)
+    if not any(ref == referencia for ref, _ in candidatos):
+        raise HTTPException(status_code=409, detail="O plano mudou; recarregue os candidatos")
+    try:
+        return aprovar_ponte_short_idioma(projeto, referencia, idioma, payload.texto)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @app.post("/api/projetos/{slug}/shorts/derivados/{referencia}/manifesto-vertical")
@@ -751,23 +824,114 @@ def iniciar_producao_short_derivado(
     return {"status": "aguardando", "referencia": referencia}
 
 
+@app.post(
+    "/api/projetos/{slug}/shorts/derivados/{referencia}/idiomas/{idioma}/produzir",
+    status_code=202,
+)
+def iniciar_producao_short_idioma(
+    slug: str, referencia: str, idioma: str, background_tasks: BackgroundTasks
+) -> dict[str, Any]:
+    projeto = _projeto_da_interface(slug)
+    idiomas_cfg = projeto.obter_opcoes().get("idiomas", {})
+    extras = idiomas_cfg.get("extras", []) if isinstance(idiomas_cfg, dict) else []
+    if idioma not in extras or not re.fullmatch(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*", idioma):
+        raise HTTPException(status_code=404, detail="Idioma extra não configurado")
+    if idioma.split("-", maxsplit=1)[0].lower() not in {"pt", "en", "es"}:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"A produção de Shorts ainda não localiza textos de CTA e metadados para {idioma}."
+            ),
+        )
+    _, fonte_hash, candidatos = _candidatos_shorts(projeto)
+    candidato = next((item for ref, item in candidatos if ref == referencia), None)
+    if not re.fullmatch(r"[a-f0-9]{24}", referencia) or candidato is None:
+        raise HTTPException(status_code=409, detail="O plano mudou; recarregue os candidatos")
+    pasta = _pasta_short_derivado(projeto, referencia)
+    aprovacao_path = pasta / "aprovacao_atual.json"
+    manifesto_path = pasta / "manifesto_atual.json"
+    if not aprovacao_path.is_file() or not manifesto_path.is_file():
+        raise HTTPException(status_code=409, detail="Aprove a ponte principal e gere o manifesto")
+    aprovacao = json.loads(aprovacao_path.read_text(encoding="utf-8"))
+    manifesto = json.loads(manifesto_path.read_text(encoding="utf-8"))
+    if (
+        aprovacao.get("fonte_hash") != fonte_hash
+        or manifesto.get("fonte_hash") != fonte_hash
+        or manifesto.get("aprovacao_versao") != aprovacao.get("versao")
+    ):
+        raise HTTPException(
+            status_code=409, detail="A aprovação base ou manifesto está desatualizado"
+        )
+    try:
+        _, ponte_versao = obter_ponte_idioma_aprovada(projeto, referencia, idioma, candidato)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    estado_path = pasta / f"producao-{idioma}.json"
+    if estado_path.is_file():
+        with contextlib.suppress(ValueError, OSError, TypeError):
+            anterior = json.loads(estado_path.read_text(encoding="utf-8"))
+            if (
+                anterior.get("status") in ("aguardando", "executando")
+                and anterior.get("aprovacao_ponte_idioma") == ponte_versao
+                and anterior.get("manifesto_versao") == manifesto.get("versao")
+            ):
+                return {"status": anterior["status"], "referencia": referencia, "idioma": idioma}
+    atomic_write_json(
+        estado_path,
+        {
+            "status": "aguardando",
+            "referencia": referencia,
+            "idioma": idioma,
+            "fonte_hash": fonte_hash,
+            "aprovacao_versao": aprovacao.get("versao"),
+            "manifesto_versao": manifesto.get("versao"),
+            "aprovacao_ponte_idioma": ponte_versao,
+        },
+    )
+    background_tasks.add_task(executar_producao_background, projeto, referencia, idioma)
+    return {"status": "aguardando", "referencia": referencia, "idioma": idioma}
+
+
 @app.get("/api/projetos/{slug}/shorts/derivados/{referencia}/saida/{arquivo}")
-def obter_arquivo_short_derivado(slug: str, referencia: str, arquivo: str) -> FileResponse:
+def obter_arquivo_short_derivado(
+    slug: str, referencia: str, arquivo: str, idioma: str | None = None
+) -> FileResponse:
     projeto = _projeto_da_interface(slug)
     if not re.fullmatch(r"[a-f0-9]{24}", referencia):
         raise HTTPException(status_code=404, detail="Arquivo não encontrado")
     _, fonte_hash, candidatos = _candidatos_shorts(projeto)
-    if not any(ref == referencia for ref, _ in candidatos):
+    candidato = next((item for ref, item in candidatos if ref == referencia), None)
+    if candidato is None:
         raise HTTPException(status_code=404, detail="Arquivo não encontrado")
     if arquivo not in {"video.mp4", "capa.jpg", "legendas.srt"}:
         raise HTTPException(status_code=404, detail="Arquivo não encontrado")
-    estado_path = _pasta_short_derivado(projeto, referencia) / "producao_atual.json"
+    idioma_principal = str(projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR"))
+    idioma_saida = idioma or idioma_principal
+    pasta_short = _pasta_short_derivado(projeto, referencia)
+    if idioma_saida == idioma_principal:
+        estado_path = pasta_short / "producao_atual.json"
+        ponte_idioma_versao = None
+    else:
+        extras = projeto.obter_opcoes().get("idiomas", {}).get("extras", [])
+        if idioma_saida not in extras or not re.fullmatch(
+            r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*", idioma_saida
+        ):
+            raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+        try:
+            _, ponte_idioma_versao = obter_ponte_idioma_aprovada(
+                projeto, referencia, idioma_saida, candidato
+            )
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise HTTPException(status_code=404, detail="Saída localizada desatualizada") from exc
+        estado_path = pasta_short / f"producao-{idioma_saida}.json"
     if not estado_path.is_file():
         raise HTTPException(status_code=404, detail="Produção ainda não disponível")
     with contextlib.suppress(ValueError, OSError, TypeError):
         estado = json.loads(estado_path.read_text(encoding="utf-8"))
         pasta = estado_path.parent
-        if estado.get("fonte_hash") != fonte_hash:
+        if estado.get("fonte_hash") != fonte_hash or (
+            ponte_idioma_versao and estado.get("aprovacao_ponte_idioma") != ponte_idioma_versao
+        ):
             raise HTTPException(status_code=404, detail="Esta revisão de saída está desatualizada")
         ponte_atual = json.loads((pasta / "aprovacao_atual.json").read_text(encoding="utf-8"))
         manifesto_atual = json.loads((pasta / "manifesto_atual.json").read_text(encoding="utf-8"))

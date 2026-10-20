@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import wave
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from docforja.esquemas import Plano
+from docforja.idiomas.traducao import RoteiroTraduzido, SegmentoTraduzido
 from docforja.io import atomic_write_json
 from docforja.nucleo.etapas import calcular_hash_dados
 from docforja.nucleo.projeto import Projeto
@@ -18,7 +22,12 @@ from docforja.shorts.modelos import (
     ManifestoVertical,
     ShotVerticalizado,
 )
-from docforja.shorts.producao import _metadados, produzir_short_derivado
+from docforja.shorts.producao import (
+    _metadados,
+    _rotulos_cta,
+    aprovar_ponte_short_idioma,
+    produzir_short_derivado,
+)
 
 
 def _escrever_wav(caminho: Path, duracao: float) -> None:
@@ -55,6 +64,12 @@ def test_metadados_short_oferecem_titulos_exatos_e_limites(tmp_path: Path) -> No
     assert all(titulo in candidato.texto for titulo in opcoes)
     assert "vincular como vídeo relacionado" in dados["arquivos"]["youtube.md"]
     assert "#Shorts" in dados["arquivos"]["instagram.md"]
+    dados_en = _metadados(projeto, candidato, "Watch the full video.", "en")
+    assert "Title:" in dados_en["arquivos"]["youtube.md"]
+    assert "Related video:" in dados_en["arquivos"]["youtube.md"]
+    assert "Vertical video with narration:" in dados_en["arquivos"]["instagram.md"]
+    with pytest.raises(ValueError, match="CTA"):
+        _rotulos_cta("fr-FR")
 
 
 def test_producao_renderiza_revisao_sem_alterar_midia_manual(tmp_path, monkeypatch) -> None:
@@ -62,7 +77,12 @@ def test_producao_renderiza_revisao_sem_alterar_midia_manual(tmp_path, monkeypat
         nome="Short Integrado",
         roteiro="Roteiro",
         raiz_projetos=tmp_path,
-        opcoes_adicionais={"voz": "voz-teste", "motor_tts": "kokoro"},
+        idiomas_extras=["en"],
+        opcoes_adicionais={
+            "voz": "voz-teste",
+            "motor_tts": "kokoro",
+            "vozes": {"en": "voz-en-teste"},
+        },
     )
     imagem = projeto.pastas.midias / "manual" / "A-001.png"
     imagem.parent.mkdir(parents=True, exist_ok=True)
@@ -106,6 +126,48 @@ def test_producao_renderiza_revisao_sem_alterar_midia_manual(tmp_path, monkeypat
     atomic_write_json(
         audio_dir / "segmentos.json",
         [{"id": "S01", "inicio_s": 0, "fim_s": 20, "texto": "Uma descoberta histórica aconteceu."}],
+    )
+    traducao = RoteiroTraduzido(
+        idioma="en",
+        hash_roteiro_origem=hashlib.sha256(projeto.obter_roteiro().encode("utf-8")).hexdigest(),
+        hash_traducao="e" * 64,
+        segmentos=[
+            SegmentoTraduzido(
+                id="S01",
+                bloco="B0",
+                texto_original="Uma descoberta histórica aconteceu.",
+                texto_limpo="A historic discovery happened.",
+            )
+        ],
+    )
+    pasta_traducao = projeto.pastas.plano / "idiomas" / "en"
+    pasta_traducao.mkdir(parents=True)
+    atomic_write_json(pasta_traducao / "roteiro_eeeeeeeeeeeeeeee.json", traducao.model_dump())
+    atomic_write_json(pasta_traducao / "atual.json", {"versao": "roteiro_eeeeeeeeeeeeeeee.json"})
+    audio_en = projeto.pastas.audio / "en"
+    _escrever_wav(audio_en / "narracao_completa.wav", 23)
+    atomic_write_json(
+        audio_en / "segmentos.json",
+        [{"id": "S01", "inicio_s": 0, "fim_s": 22, "texto": "A historic discovery happened."}],
+    )
+    atomic_write_json(
+        audio_en / "palavras.json",
+        [
+            {"segmento_id": "S01", "palavra": "A", "inicio_s": 0, "fim_s": 2},
+            {"segmento_id": "S01", "palavra": "historic", "inicio_s": 2, "fim_s": 7},
+            {"segmento_id": "S01", "palavra": "discovery", "inicio_s": 7, "fim_s": 14},
+            {"segmento_id": "S01", "palavra": "happened.", "inicio_s": 14, "fim_s": 22},
+        ],
+    )
+    atomic_write_json(
+        audio_en / "narracao_idioma.json",
+        {
+            "hash_traducao": traducao.hash_traducao,
+            "hash_saidas": {
+                nome: calcular_hash_dados(audio_en / nome)
+                for nome in ("narracao_completa.wav", "segmentos.json", "palavras.json")
+            },
+        },
     )
     candidato_base = pontuar_candidatos_do_plano(
         Plano.model_validate(plano),
@@ -174,6 +236,10 @@ def test_producao_renderiza_revisao_sem_alterar_midia_manual(tmp_path, monkeypat
         pasta / "manifesto_atual.json",
         {"versao": manifesto_id, "aprovacao_versao": aprovacao_id, "fonte_hash": fonte_hash},
     )
+    ponte_en = aprovar_ponte_short_idioma(
+        projeto, referencia, "en", "The full story is in the complete video."
+    )
+    assert ponte_en["aprovacao"]["aprovada"] is True
 
     class OrquestradorFalso:
         tts = SimpleNamespace(disponivel=lambda: True)
@@ -205,6 +271,7 @@ def test_producao_renderiza_revisao_sem_alterar_midia_manual(tmp_path, monkeypat
 
     resultado = produzir_short_derivado(projeto, referencia)
     cache = produzir_short_derivado(projeto, referencia)
+    resultado_en = produzir_short_derivado(projeto, referencia, "en")
 
     assert resultado.status == "concluido"
     assert resultado.duracao_s == 20.5
@@ -214,5 +281,13 @@ def test_producao_renderiza_revisao_sem_alterar_midia_manual(tmp_path, monkeypat
     assert (Path(resultado.caminho_video).parent / "metadados" / "youtube.md").is_file()
     assert (Path(resultado.caminho_video).parents[2] / "atual.json").is_file()
     assert cache.cache is True
+    assert resultado_en.idioma == "en"
+    assert resultado_en.duracao_s == 22.5
+    assert Path(resultado_en.caminho_video).is_file()
+    legendas_en = Path(resultado_en.caminho_legendas).read_text(encoding="utf-8")
+    assert "historic" in legendas_en and "discovery" in legendas_en
+    assert "The full story is in the complete video." in (
+        Path(resultado_en.caminho_video).parent / "metadados" / "metadados.json"
+    ).read_text(encoding="utf-8")
     assert imagem.read_bytes() == imagem_antes
     assert sidecar.read_bytes() == sidecar_antes

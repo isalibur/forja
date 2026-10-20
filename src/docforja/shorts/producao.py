@@ -1,7 +1,8 @@
-"""Produção versionada de um short derivado no idioma principal."""
+"""Produção versionada de um short derivado nos idiomas disponíveis no projeto."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import shutil
@@ -15,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from docforja.audio.trilha import resolver_trilha_provisoria
 from docforja.esquemas import Ativo, Plano
+from docforja.idiomas.narracao import carregar_traducao_atual, eh_modo_so_legendas
 from docforja.io import atomic_write_json, atomic_write_text
 from docforja.midia.licenca import (
     caminho_sidecar_licenca,
@@ -119,6 +121,14 @@ def _executar(comando: list[str], *, cwd: Path, timeout: int = 3600) -> str:
     return resultado.stderr + "\n" + resultado.stdout
 
 
+def _traducao_atual_validada(projeto: Projeto, idioma: str) -> tuple[Any, Path]:
+    traducao, caminho = carregar_traducao_atual(projeto, idioma)
+    hash_roteiro_atual = hashlib.sha256(projeto.obter_roteiro().encode("utf-8")).hexdigest()
+    if traducao.hash_roteiro_origem != hash_roteiro_atual:
+        raise ValueError(f"A tradução em {idioma} está desatualizada em relação ao roteiro atual.")
+    return traducao, caminho
+
+
 def _carregar_aprovacao_manifesto(
     projeto: Projeto, referencia: str
 ) -> tuple[dict[str, Any], CandidatoShort, ManifestoVertical, str, str]:
@@ -155,11 +165,21 @@ def _carregar_aprovacao_manifesto(
     return aprovacao, candidato, manifesto, aprovacao_id, manifesto_id
 
 
-def _opcoes_projeto(projeto: Projeto) -> tuple[dict[str, Any], str, str, str]:
+def _opcoes_projeto(
+    projeto: Projeto, idioma_solicitado: str | None = None
+) -> tuple[dict[str, Any], str, str, str]:
     opcoes = projeto.obter_opcoes()
-    idioma = str(opcoes.get("idiomas", {}).get("principal", "pt-BR"))
+    idiomas_cfg = opcoes.get("idiomas", {})
+    principal = str(idiomas_cfg.get("principal", "pt-BR"))
+    idioma = idioma_solicitado or principal
+    if not re.fullmatch(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*", idioma):
+        raise ValueError("O código de idioma do projeto é inválido.")
+    extras = idiomas_cfg.get("extras", []) if isinstance(idiomas_cfg, dict) else []
+    if idioma != principal and idioma not in extras:
+        raise ValueError(f"{idioma} não está configurado como idioma extra do projeto.")
     motor = str(opcoes.get("tts", {}).get("motor") or opcoes.get("motor_tts") or "kokoro")
-    voz = str(opcoes.get("vozes", {}).get(idioma) or opcoes.get("voz") or "")
+    vozes = opcoes.get("vozes", {})
+    voz = str(vozes.get(idioma) or (opcoes.get("voz") if idioma == principal else "") or "")
     if opcoes.get("narracao_pronta") or any(
         (projeto.pastas.entrada / f"narracao{suffix}").is_file()
         for suffix in (".wav", ".mp3", f"_{idioma}.wav", f"_{idioma}.mp3")
@@ -169,6 +189,179 @@ def _opcoes_projeto(projeto: Projeto) -> tuple[dict[str, Any], str, str, str]:
             "não vamos sintetizar uma voz diferente automaticamente."
         )
     return opcoes, idioma, motor, voz
+
+
+def obter_ponte_idioma_aprovada(
+    projeto: Projeto, referencia: str, idioma: str, candidato: CandidatoShort
+) -> tuple[str, str]:
+    """Carrega uma frase localizada somente quando há aprovação humana vigente."""
+    if not re.fullmatch(r"[a-f0-9]{24}", referencia) or not re.fullmatch(
+        r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*", idioma
+    ):
+        raise ValueError("Referência ou idioma da ponte localizada inválido.")
+    pasta = (
+        projeto.pastas.montagem / "shorts" / "derivados" / referencia / "pontes_idiomas" / idioma
+    )
+    indice_path = pasta / "aprovacao_atual.json"
+    if not indice_path.is_file():
+        raise ValueError(f"A frase-ponte localizada para {idioma} precisa de aprovação.")
+    indice = json.loads(indice_path.read_text(encoding="utf-8"))
+    versao = str(indice.get("versao", ""))
+    if not re.fullmatch(r"[a-f0-9]{64}", versao):
+        raise ValueError(f"A aprovação da frase-ponte em {idioma} é inválida.")
+    arquivo = pasta / f"aprovacao-{versao}.json"
+    if not arquivo.is_file():
+        raise ValueError(f"A aprovação da frase-ponte em {idioma} não está disponível.")
+    dados = json.loads(arquivo.read_text(encoding="utf-8"))
+    if calcular_hash_dados(dados) != versao:
+        raise ValueError(f"A revisão da frase-ponte em {idioma} foi alterada.")
+    base_atual_path = pasta.parent.parent / "aprovacao_atual.json"
+    if not base_atual_path.is_file():
+        raise ValueError("A aprovação base do candidato não está disponível.")
+    base_versao = json.loads(base_atual_path.read_text(encoding="utf-8")).get("versao")
+    traducao, _ = _traducao_atual_validada(projeto, idioma)
+    if (
+        dados.get("idioma") != idioma
+        or dados.get("candidato_id") != candidato.id
+        or dados.get("aprovacao_base") != base_versao
+        or dados.get("hash_traducao") != traducao.hash_traducao
+        or not dados.get("aprovada")
+        or not isinstance(dados.get("texto"), str)
+    ):
+        raise ValueError(f"A frase-ponte em {idioma} não está aprovada para este trecho.")
+    texto = " ".join(dados["texto"].split())
+    if not texto or len(texto) > 240:
+        raise ValueError(f"A frase-ponte em {idioma} está vazia ou excede 240 caracteres.")
+    return texto, versao
+
+
+def aprovar_ponte_short_idioma(
+    projeto: Projeto, referencia: str, idioma: str, texto: str
+) -> dict[str, Any]:
+    """Persiste a tradução manual da ponte como revisão imutável por idioma."""
+    if not re.fullmatch(r"[a-f0-9]{24}", referencia):
+        raise ValueError("Referência de short inválida.")
+    opcoes = projeto.obter_opcoes()
+    idiomas_cfg = opcoes.get("idiomas", {})
+    extras = idiomas_cfg.get("extras", []) if isinstance(idiomas_cfg, dict) else []
+    principal = (
+        str(idiomas_cfg.get("principal", "pt-BR")) if isinstance(idiomas_cfg, dict) else "pt-BR"
+    )
+    if (
+        idioma == principal
+        or idioma not in extras
+        or not re.fullmatch(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*", idioma)
+    ):
+        raise ValueError("O idioma deve ser um idioma extra configurado no projeto.")
+    _aprovacao, candidato, _, aprovacao_id, _ = _carregar_aprovacao_manifesto(projeto, referencia)
+    traducao, _ = _traducao_atual_validada(projeto, idioma)
+    ids_traduzidos = {item.id for item in traducao.segmentos}
+    if not set(candidato.segmento_ids).issubset(ids_traduzidos):
+        raise ValueError(f"A tradução em {idioma} não contém os segmentos deste short.")
+    texto_limpo = " ".join(texto.split())
+    if not texto_limpo or len(texto_limpo) > 240:
+        raise ValueError("A frase-ponte localizada deve ter entre 1 e 240 caracteres.")
+    conteudo = {
+        "referencia": referencia,
+        "idioma": idioma,
+        "candidato_id": candidato.id,
+        "aprovacao_base": aprovacao_id,
+        "hash_traducao": traducao.hash_traducao,
+        "texto": texto_limpo,
+        "aprovada": True,
+    }
+    versao = calcular_hash_dados(conteudo)
+    pasta = (
+        projeto.pastas.montagem / "shorts" / "derivados" / referencia / "pontes_idiomas" / idioma
+    )
+    atomic_write_json(pasta / f"aprovacao-{versao}.json", conteudo)
+    atomic_write_json(pasta / "aprovacao_atual.json", {"versao": versao})
+    return {"versao": versao, "aprovacao": conteudo}
+
+
+def _localizar_dados_short(
+    projeto: Projeto,
+    idioma: str,
+    candidato: CandidatoShort,
+    plano: Plano,
+    manifesto: ManifestoVertical,
+) -> tuple[CandidatoShort, ManifestoVertical, Path, Path, Path, dict[str, str]]:
+    """Resolve narração, tempos, palavras e shots retimados para um idioma extra."""
+    traducao, _ = _traducao_atual_validada(projeto, idioma)
+    if eh_modo_so_legendas(projeto, idioma):
+        raise ValueError(
+            f"{idioma} está em 'só legendas'; falta narração localizada para renderizar."
+        )
+    pasta_audio = projeto.pastas.audio / idioma
+    audio = pasta_audio / "narracao_completa.wav"
+    segmentos_path = pasta_audio / "segmentos.json"
+    palavras_path = pasta_audio / "palavras.json"
+    manifesto_audio_path = pasta_audio / "narracao_idioma.json"
+    if not all(
+        path.is_file() for path in (audio, segmentos_path, palavras_path, manifesto_audio_path)
+    ):
+        raise ValueError(f"Narração alinhada e palavras são necessárias para {idioma}.")
+    manifesto_audio = json.loads(manifesto_audio_path.read_text(encoding="utf-8"))
+    if manifesto_audio.get("hash_traducao") != traducao.hash_traducao:
+        raise ValueError(f"A narração em {idioma} está desatualizada em relação à tradução.")
+    for nome in ("narracao_completa.wav", "segmentos.json", "palavras.json"):
+        esperado = manifesto_audio.get("hash_saidas", {}).get(nome)
+        caminho = pasta_audio / nome
+        if not esperado or calcular_hash_dados(caminho) != esperado:
+            raise ValueError(f"O arquivo {nome} em {idioma} mudou; regenere a narração localizada.")
+
+    dados_segmentos = json.loads(segmentos_path.read_text(encoding="utf-8"))
+    por_id = {str(item.get("id")): item for item in dados_segmentos if item.get("id")}
+    textos = {item.id: item.texto_limpo for item in traducao.segmentos}
+    if not set(candidato.segmento_ids).issubset(por_id) or not set(candidato.segmento_ids).issubset(
+        textos
+    ):
+        raise ValueError(f"Segmentos traduzidos ou alinhados ausentes em {idioma}.")
+    inicio = min(float(por_id[sid]["inicio_s"]) for sid in candidato.segmento_ids)
+    fim = max(float(por_id[sid]["fim_s"]) for sid in candidato.segmento_ids)
+    texto = " ".join(textos[sid] for sid in candidato.segmento_ids).strip()
+    candidato_localizado = candidato.model_copy(
+        update={"inicio_s": inicio, "fim_s": fim, "texto": texto}
+    )
+
+    shot_por_id = {shot.id: shot for bloco in plano.blocos for shot in bloco.shots}
+    shots_localizados = []
+    ids_candidato = set(candidato.segmento_ids)
+    for shot_v in manifesto.shots:
+        shot = shot_por_id.get(shot_v.shot_id)
+        if not shot:
+            raise ValueError(f"Shot {shot_v.shot_id} não existe mais no plano mestre.")
+        ids_shot = ids_candidato.intersection(shot.segmentos)
+        if not ids_shot:
+            continue
+        inicio_shot = min(float(por_id[sid]["inicio_s"]) for sid in ids_shot)
+        fim_shot = max(float(por_id[sid]["fim_s"]) for sid in ids_shot)
+        shots_localizados.append(
+            shot_v.model_copy(
+                update={
+                    "inicio_s": max(inicio, inicio_shot),
+                    "fim_s": min(fim, fim_shot),
+                }
+            )
+        )
+    if not shots_localizados:
+        raise ValueError(f"O manifesto não contém shots associados aos segmentos de {idioma}.")
+    manifesto_localizado = manifesto.model_copy(update={"shots": shots_localizados})
+    hashes_localizados = {
+        "traducao": traducao.hash_traducao,
+        "narracao": calcular_hash_dados(audio),
+        "segmentos": calcular_hash_dados(segmentos_path),
+        "palavras": calcular_hash_dados(palavras_path),
+        "manifesto_narracao": calcular_hash_dados(manifesto_audio_path),
+    }
+    return (
+        candidato_localizado,
+        manifesto_localizado,
+        audio,
+        segmentos_path,
+        palavras_path,
+        hashes_localizados,
+    )
 
 
 def _ativos_resolvidos(projeto: Projeto, plano: Plano) -> dict[str, Ativo]:
@@ -406,11 +599,16 @@ def _escrever_ponteiro_saida(pasta_saida: Path, resultado: ResultadoProducaoShor
     )
 
 
-def produzir_short_derivado(projeto: Projeto, referencia: str) -> ResultadoProducaoShort:
+def produzir_short_derivado(
+    projeto: Projeto, referencia: str, idioma_solicitado: str | None = None
+) -> ResultadoProducaoShort:
     """Renderiza em staging isolado e publica uma revisão imutável do short derivado."""
     if not re.fullmatch(r"[a-f0-9]{24}", referencia):
         raise ValueError("Referência de short inválida.")
-    _opcoes, idioma, motor_nome, voz = _opcoes_projeto(projeto)
+    opcoes, idioma_principal, motor_nome, voz_principal = _opcoes_projeto(projeto)
+    idioma = idioma_solicitado or idioma_principal
+    _rotulos_cta(idioma)
+    voz = voz_principal
     pasta_aprovacao = projeto.pastas.montagem / "shorts" / "derivados" / referencia
     aprovacao, candidato, manifesto, aprovacao_id, manifesto_id = _carregar_aprovacao_manifesto(
         projeto, referencia
@@ -419,12 +617,12 @@ def produzir_short_derivado(projeto: Projeto, referencia: str) -> ResultadoProdu
         (projeto.pastas.plano / "plano.json").read_text(encoding="utf-8")
     )
     ativos = _ativos_resolvidos(projeto, plano)
-    audio = projeto.pastas.audio / idioma / "narracao_completa.wav"
-    segmentos_path = projeto.pastas.audio / idioma / "segmentos.json"
-    palavras_path = projeto.pastas.audio / idioma / "palavras.json"
+    audio = projeto.pastas.audio / idioma_principal / "narracao_completa.wav"
+    segmentos_path = projeto.pastas.audio / idioma_principal / "segmentos.json"
+    palavras_path = projeto.pastas.audio / idioma_principal / "palavras.json"
     if not audio.is_file() or not segmentos_path.is_file():
         raise ValueError(f"Áudio e tempos narrados são necessários para {idioma}.")
-    segmentos = json.loads(segmentos_path.read_text(encoding="utf-8"))
+    segmentos_principal = json.loads(segmentos_path.read_text(encoding="utf-8"))
     plano_path = projeto.pastas.plano / "plano.json"
     fonte_hash_atual = calcular_hash_dados(
         {
@@ -434,23 +632,40 @@ def produzir_short_derivado(projeto: Projeto, referencia: str) -> ResultadoProdu
     )
     if fonte_hash_atual != aprovacao.get("fonte_hash"):
         raise ValueError("O plano ou a narração mudou; atualize os candidatos e aprove novamente.")
-    por_id = {str(item.get("id")): item for item in segmentos}
+    por_id = {str(item.get("id")): item for item in segmentos_principal}
     if any(sid not in por_id for sid in candidato.segmento_ids):
         raise ValueError("Os segmentos do candidato não correspondem mais à narração.")
     inicio = min(float(por_id[sid]["inicio_s"]) for sid in candidato.segmento_ids)
     fim = max(float(por_id[sid]["fim_s"]) for sid in candidato.segmento_ids)
+    ponte = next(frase.texto for frase in candidato.frases_ponte if frase.aprovada)
+    hashes_localizados: dict[str, str] = {}
+    ponte_idioma_versao = aprovacao_id
+    if idioma != idioma_principal:
+        candidato_original = candidato
+        candidato, manifesto, audio, segmentos_path, palavras_path, hashes_localizados = (
+            _localizar_dados_short(projeto, idioma, candidato, plano, manifesto)
+        )
+        segmentos_localizados = json.loads(segmentos_path.read_text(encoding="utf-8"))
+        por_id = {str(item.get("id")): item for item in segmentos_localizados}
+        inicio, fim = candidato.inicio_s, candidato.fim_s
+        ponte, ponte_idioma_versao = obter_ponte_idioma_aprovada(
+            projeto, referencia, idioma, candidato_original
+        )
+        opcoes, _, motor_nome, voz = _opcoes_projeto(projeto, idioma)
+        if not voz:
+            raise ValueError(f"Configure uma voz TTS aprovada para o idioma {idioma}.")
     palavras = _palavras(palavras_path, set(candidato.segmento_ids), inicio, fim)
     trilha = resolver_trilha_provisoria(projeto)
     if trilha and not _licenca_trilha_comercial(trilha):
         raise ValueError("A trilha não tem ficha comercial vigente para uso no short.")
 
-    ponte = next(frase.texto for frase in candidato.frases_ponte if frase.aprovada)
     fontes: dict[str, str] = {
         "audio": calcular_hash_dados(audio),
         "palavras": calcular_hash_dados(palavras_path),
         "fonte": str(aprovacao["fonte_hash"]),
         "trilha": calcular_hash_dados(trilha) if trilha and trilha.is_file() else "",
     }
+    fontes.update(hashes_localizados)
     sidecar_trilha = _sidecar_trilha(trilha) if trilha else None
     if sidecar_trilha:
         fontes["trilha_licenca"] = calcular_hash_dados(sidecar_trilha)
@@ -489,19 +704,20 @@ def produzir_short_derivado(projeto: Projeto, referencia: str) -> ResultadoProdu
         "voz": voz,
         "idioma": idioma,
         "velocidade": 1.0,
-        "configuracao": _opcoes.get("tts", {}),
+        "configuracao": opcoes.get("tts", {}),
     }
     hash_ponte = calcular_hash_dados({"texto": ponte, "tts": motor_id})
     revisao = calcular_hash_dados(
         {
             "fonte": fontes,
             "aprovacao": aprovacao_id,
+            "aprovacao_ponte_idioma": ponte_idioma_versao,
             "manifesto": manifesto_id,
             "tts": motor_id,
             "candidato": candidato.model_dump(mode="json"),
         }
     )
-    ordenados = pontuar_candidatos_do_plano(plano, segmentos, limite=5)
+    ordenados = pontuar_candidatos_do_plano(plano, segmentos_principal, limite=5)
     try:
         indice_short = next(
             indice for indice, item in enumerate(ordenados, start=1) if item.id == candidato.id
@@ -539,21 +755,24 @@ def produzir_short_derivado(projeto: Projeto, referencia: str) -> ResultadoProdu
             )
         bridge_path.parent.mkdir(parents=True, exist_ok=True)
         modelo_gpu = motor_nome if motor_nome in {"kokoro", "chatterbox", "voicestudio"} else None
-        with semaforo_gpu.adquirir_sync(
-            modelo=modelo_gpu,
-            tarefa=f"M8 ponte de short {referencia[:8]}",
-            projeto=projeto.slug,
-        ):
-            orquestrador.processar_segmento(
-                SegmentoProcessado(id="ponte-short", texto_original=ponte, texto_limpo=ponte),
-                bridge_path.parent,
-                idioma=idioma,
-                voz=voz or None,
-            )
-        gerado = bridge_path.parent / "ponte-short.wav"
-        if not gerado.is_file():
-            raise RuntimeError("O TTS não gerou o áudio da frase-ponte.")
-        shutil.copy2(gerado, bridge_path)
+        with tempfile.TemporaryDirectory(
+            prefix=f"ponte-{hash_ponte[:8]}-", dir=bridge_path.parent
+        ) as pasta_temporaria:
+            with semaforo_gpu.adquirir_sync(
+                modelo=modelo_gpu,
+                tarefa=f"M8 ponte de short {referencia[:8]} ({idioma})",
+                projeto=projeto.slug,
+            ):
+                orquestrador.processar_segmento(
+                    SegmentoProcessado(id="ponte-short", texto_original=ponte, texto_limpo=ponte),
+                    Path(pasta_temporaria),
+                    idioma=idioma,
+                    voz=voz or None,
+                )
+            gerado = Path(pasta_temporaria) / "ponte-short.wav"
+            if not gerado.is_file():
+                raise RuntimeError("O TTS não gerou o áudio da frase-ponte.")
+            gerado.replace(bridge_path)
 
     pasta_saida.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="short-render-", dir=pasta_saida.parent) as temp_dir:
@@ -687,13 +906,17 @@ def produzir_short_derivado(projeto: Projeto, referencia: str) -> ResultadoProdu
             b = duracao_base + duracao_ponte * (idx + 1) / len(palavras_ponte)
             palavras.append({"text": palavra, "start": a, "end": b})
         bridge_captions = _captions_remotion(palavras, duracao_base, duracao_total)
+        texto_completo, texto_assista = _rotulos_cta(idioma)
         cenas.append(
             CenaRenderShort(
                 id="cta",
                 inicio_frame=round(duracao_base * FPS),
                 duracao_frames=max(1, round(duracao_ponte * FPS)),
                 props=PropsCenaShort(
-                    variante="V07", titulo="VÍDEO COMPLETO", cta="ASSISTA", legendas=bridge_captions
+                    variante="V07",
+                    titulo=texto_completo,
+                    cta=texto_assista,
+                    legendas=bridge_captions,
                 ),
             )
         )
@@ -712,7 +935,7 @@ def produzir_short_derivado(projeto: Projeto, referencia: str) -> ResultadoProdu
             ElementoTelaShort(id="gancho", x=0.08, y=0.18, largura=0.78, altura=0.35, texto=hook),
             ElementoTelaShort(id="legenda", x=0.08, y=0.67, largura=0.78, altura=0.06),
             ElementoTelaShort(
-                id="cta", x=0.08, y=0.2, largura=0.78, altura=0.4, texto="VÍDEO COMPLETO"
+                id="cta", x=0.08, y=0.2, largura=0.78, altura=0.4, texto=texto_completo
             ),
         ]
         intervalos = [
@@ -732,7 +955,7 @@ def produzir_short_derivado(projeto: Projeto, referencia: str) -> ResultadoProdu
                 ],
                 elementos=elementos,
                 legendas=intervalos,
-                textos_tela=[hook, "VÍDEO COMPLETO", "ASSISTA"],
+                textos_tela=[hook, texto_completo, texto_assista],
                 quantidade_ctas_principais=1,
                 derivado=True,
                 frase_ponte_aprovada=True,
@@ -752,10 +975,7 @@ def produzir_short_derivado(projeto: Projeto, referencia: str) -> ResultadoProdu
                 "descricao": ativo.descricao,
                 "licenca": ficha.model_dump(mode="json") if ficha else ativo.licenca,
             }
-        descricao_visual = next(iter(ativos_metadados.values()))["descricao"]
-        opcoes_metadados = _metadados(
-            projeto, candidato, ponte, idioma, descricao_visual=str(descricao_visual)
-        )
+        opcoes_metadados = _metadados(projeto, candidato, ponte, idioma)
         metadados_dir = work / "metadados"
         metadados_dir.mkdir()
         atomic_write_json(
@@ -798,15 +1018,76 @@ def _duracao_wav(caminho: Path) -> float:
         return wav.getnframes() / wav.getframerate()
 
 
+def _rotulos_cta(idioma: str) -> tuple[str, str]:
+    base = idioma.split("-", maxsplit=1)[0].lower()
+    rotulos = {
+        "pt": ("VÍDEO COMPLETO", "ASSISTA"),
+        "en": ("FULL VIDEO", "WATCH"),
+        "es": ("VIDEO COMPLETO", "VER"),
+    }.get(base)
+    if not rotulos:
+        raise ValueError(f"Os textos de CTA para {idioma} ainda não estão localizados.")
+    return rotulos
+
+
 def _metadados(
     projeto: Projeto,
     candidato: CandidatoShort,
     ponte: str,
     idioma: str,
-    *,
-    descricao_visual: str = "imagem do trecho narrado",
 ) -> dict[str, Any]:
     opcoes = projeto.obter_opcoes()
+    idioma_base = idioma.split("-", maxsplit=1)[0].lower()
+    textos_por_idioma = {
+        "pt": {
+            "video_completo": "Vídeo completo",
+            "instruir_relacionado": "vincular como vídeo relacionado",
+            "relacionado": "Vídeo relacionado: selecione o vídeo longo na plataforma.",
+            "alt": "Texto alternativo",
+            "capa": "Capa sugerida",
+            "comentario": "Assista ao vídeo completo",
+            "placeholder_link": "adicionar link",
+            "titulo": "Título",
+            "descricao": "Descrição",
+            "titulos_header": "# Títulos sugeridos (máximo 40 caracteres)",
+            "legenda_palavra": "com legendas palavra a palavra",
+            "hashtags_ig": "#Shorts #Reels #Documentario #VideoCurto #DocForja",
+            "hashtags_yt": "#Shorts #Documentario #VideoCurto",
+        },
+        "en": {
+            "video_completo": "Full video",
+            "instruir_relacionado": "Link as the related video",
+            "relacionado": "Related video: select the full-length video on the platform.",
+            "alt": "Alt text",
+            "capa": "Suggested cover",
+            "comentario": "Watch the full video",
+            "placeholder_link": "add link",
+            "titulo": "Title",
+            "descricao": "Description",
+            "titulos_header": "# Suggested titles (maximum 40 characters)",
+            "legenda_palavra": "with word-by-word captions",
+            "hashtags_ig": "#Shorts #Reels #Documentary #ShortVideo #DocForja",
+            "hashtags_yt": "#Shorts #Documentary #ShortVideo",
+        },
+        "es": {
+            "video_completo": "Video completo",
+            "instruir_relacionado": "vincular como video relacionado",
+            "relacionado": "Video relacionado: selecciona el video largo en la plataforma.",
+            "alt": "Texto alternativo",
+            "capa": "Portada sugerida",
+            "comentario": "Mira el video completo",
+            "placeholder_link": "añade el enlace",
+            "titulo": "Título",
+            "descricao": "Descripción",
+            "titulos_header": "# Títulos sugeridos (máximo 40 caracteres)",
+            "legenda_palavra": "con subtítulos palabra por palabra",
+            "hashtags_ig": "#Shorts #Reels #Documental #VideoCorto #DocForja",
+            "hashtags_yt": "#Shorts #Documental #VideoCorto",
+        },
+    }
+    textos = textos_por_idioma.get(idioma_base)
+    if not textos:
+        raise ValueError(f"Os metadados de Shorts para {idioma} ainda não estão localizados.")
     titulo_longo = str(opcoes.get("nome", projeto.slug))
     hook = " ".join(candidato.texto.split()[:7])
     titulos: list[str] = []
@@ -821,19 +1102,25 @@ def _metadados(
         if len(titulos) == 8:
             break
     descricao = (
-        f"{candidato.texto.strip()}\n\nVídeo completo: {titulo_longo} "
-        "(vincular como vídeo relacionado)."
+        f"{candidato.texto.strip()}\n\n{textos['video_completo']}: {titulo_longo}. "
+        f"({textos['instruir_relacionado']})."
     )
+    alt = {
+        "pt": f"Vídeo vertical com narração: {candidato.texto.strip()}.",
+        "en": f"Vertical video with narration: {candidato.texto.strip()}.",
+        "es": f"Video vertical con narración: {candidato.texto.strip()}.",
+    }[idioma_base]
     instagram = (
-        f"{hook}\n\n{ponte}\n\n#Shorts #Reels #Documentario #VideoCurto #DocForja\n\n"
-        f"Texto alternativo: {descricao_visual}, com legendas palavra a palavra."
+        f"{hook}\n\n{ponte}\n\n{textos['hashtags_ig']}\n\n"
+        f"{textos['alt']}: {alt} {textos['legenda_palavra']}."
     )
     youtube = (
-        f"Título: {titulos[0] if titulos else titulo_longo[:40]}\n\nDescrição:\n{descricao}\n\n"
-        "Vídeo relacionado: selecione o vídeo longo na plataforma."
+        f"{textos['titulo']}: {titulos[0] if titulos else titulo_longo[:40]}\n\n"
+        f"{textos['descricao']}:\n{descricao}\n\n"
+        f"{textos['relacionado']}"
     )
-    instagram += "\nCapa sugerida: capa.jpg."
-    youtube += "\n\n#Shorts #Documentario #VideoCurto"
+    instagram += f"\n{textos['capa']}: capa.jpg."
+    youtube += f"\n\n{textos['hashtags_yt']}"
     return {
         "projeto": projeto.slug,
         "titulo_longo": titulo_longo,
@@ -843,29 +1130,43 @@ def _metadados(
         "video_relacionado": projeto.slug,
         "requer_vinculo_manual": True,
         "arquivos": {
-            "titulos.md": "# Títulos sugeridos (máximo 40 caracteres)\n\n"
+            "titulos.md": f"{textos['titulos_header']}\n\n"
             + "\n".join(f"{idx}. {titulo}" for idx, titulo in enumerate(titulos, 1))
             + "\n",
             "youtube.md": youtube + "\n",
             "instagram.md": instagram + "\n",
             "comentario_fixado.md": (
-                f"Assista ao vídeo completo: [adicionar link de {titulo_longo}]\n"
+                f"{textos['comentario']}: [{textos['placeholder_link']}: {titulo_longo}]\n"
             ),
         },
     }
 
 
-def executar_producao_background(projeto: Projeto, referencia: str) -> None:
+def executar_producao_background(
+    projeto: Projeto, referencia: str, idioma_solicitado: str | None = None
+) -> None:
     """Registra a conclusão/falha para consulta assíncrona pela interface."""
-    estado = projeto.pastas.montagem / "shorts" / "derivados" / referencia / "producao_atual.json"
+    pasta = projeto.pastas.montagem / "shorts" / "derivados" / referencia
+    principal = str(projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR"))
+    idioma = idioma_solicitado or principal
+    estado = pasta / ("producao_atual.json" if idioma == principal else f"producao-{idioma}.json")
     solicitado = json.loads(estado.read_text(encoding="utf-8"))
-    aprovado = json.loads((estado.parent / "aprovacao_atual.json").read_text(encoding="utf-8"))
-    manifesto = json.loads((estado.parent / "manifesto_atual.json").read_text(encoding="utf-8"))
+    aprovado = json.loads((pasta / "aprovacao_atual.json").read_text(encoding="utf-8"))
+    manifesto = json.loads((pasta / "manifesto_atual.json").read_text(encoding="utf-8"))
     versoes = {
         "fonte_hash": solicitado.get("fonte_hash"),
         "aprovacao_versao": solicitado.get("aprovacao_versao"),
         "manifesto_versao": solicitado.get("manifesto_versao"),
+        "idioma": idioma,
     }
+    if solicitado.get("idioma", idioma) != idioma:
+        atomic_write_json(
+            estado,
+            {"status": "falhou", "erro": "O idioma do pedido mudou; atualize a tela.", **versoes},
+        )
+        return
+    if idioma != principal:
+        versoes["aprovacao_ponte_idioma"] = solicitado.get("aprovacao_ponte_idioma")
     if (
         aprovado.get("fonte_hash") != versoes["fonte_hash"]
         or aprovado.get("versao") != versoes["aprovacao_versao"]
@@ -881,9 +1182,30 @@ def executar_producao_background(projeto: Projeto, referencia: str) -> None:
             },
         )
         return
+    if idioma != principal:
+        try:
+            aprovacao_path = pasta / f"aprovacao-{versoes['aprovacao_versao']}.json"
+            candidato = CandidatoShort.model_validate(
+                json.loads(aprovacao_path.read_text(encoding="utf-8"))["candidato"]
+            )
+            _, ponte_versao = obter_ponte_idioma_aprovada(projeto, referencia, idioma, candidato)
+        except (OSError, ValueError, KeyError, TypeError):
+            ponte_versao = None
+        if ponte_versao != versoes["aprovacao_ponte_idioma"]:
+            atomic_write_json(
+                estado,
+                {
+                    "status": "falhou",
+                    "erro": "A frase-ponte localizada mudou antes do início; atualize a tela.",
+                    **versoes,
+                },
+            )
+            return
     atomic_write_json(estado, {"status": "executando", "referencia": referencia, **versoes})
     try:
-        resultado = produzir_short_derivado(projeto, referencia)
+        resultado = produzir_short_derivado(
+            projeto, referencia, None if idioma == principal else idioma
+        )
         atomic_write_json(
             estado,
             {"status": "concluido", "resultado": resultado.model_dump(mode="json"), **versoes},
@@ -892,4 +1214,10 @@ def executar_producao_background(projeto: Projeto, referencia: str) -> None:
         atomic_write_json(estado, {"status": "falhou", "erro": str(exc)[:1000], **versoes})
 
 
-__all__ = ["ResultadoProducaoShort", "executar_producao_background", "produzir_short_derivado"]
+__all__ = [
+    "ResultadoProducaoShort",
+    "aprovar_ponte_short_idioma",
+    "executar_producao_background",
+    "obter_ponte_idioma_aprovada",
+    "produzir_short_derivado",
+]

@@ -1,8 +1,10 @@
+import hashlib
 import json
 
 from fastapi.testclient import TestClient
 
 from docforja.api import app
+from docforja.idiomas.traducao import RoteiroTraduzido, SegmentoTraduzido
 from docforja.io import atomic_write_json
 from docforja.nucleo.banco import BancoProjeto
 from docforja.nucleo.projeto import Projeto
@@ -94,7 +96,9 @@ def test_api_fluxo_short_derivado_versionado(tmp_path, monkeypatch):
         "Settings", (), {"paths": type("Paths", (), {"projects": tmp_path})()}
     )()
     monkeypatch.setattr("docforja.api.load_settings", mock_settings)
-    projeto = Projeto.criar(nome="Short API", roteiro="roteiro", raiz_projetos=tmp_path)
+    projeto = Projeto.criar(
+        nome="Short API", roteiro="roteiro", raiz_projetos=tmp_path, idiomas_extras=["en"]
+    )
     plano = {
         "projeto": projeto.slug,
         "tipo": "longo",
@@ -125,6 +129,29 @@ def test_api_fluxo_short_derivado_versionado(tmp_path, monkeypatch):
             {"id": "S02", "inicio_s": 20, "fim_s": 40, "texto": "Segunda parte."},
         ],
     )
+    pasta_traducao = projeto.pastas.plano / "idiomas" / "en"
+    pasta_traducao.mkdir(parents=True)
+    traducao = RoteiroTraduzido(
+        idioma="en",
+        hash_roteiro_origem=hashlib.sha256(projeto.obter_roteiro().encode("utf-8")).hexdigest(),
+        hash_traducao="e" * 64,
+        segmentos=[
+            SegmentoTraduzido(
+                id="S01",
+                bloco="B0",
+                texto_original="Primeira parte.",
+                texto_limpo="First part.",
+            ),
+            SegmentoTraduzido(
+                id="S02",
+                bloco="B0",
+                texto_original="Segunda parte.",
+                texto_limpo="Second part.",
+            ),
+        ],
+    )
+    atomic_write_json(pasta_traducao / "roteiro_eeeeeeeeeeeeeeee.json", traducao.model_dump())
+    atomic_write_json(pasta_traducao / "atual.json", {"versao": "roteiro_eeeeeeeeeeeeeeee.json"})
     client = TestClient(app)
     plano_mestre_antes = (projeto.pastas.plano / "plano.json").read_bytes()
     endpoint = f"/api/projetos/{projeto.slug}/shorts/derivados"
@@ -153,15 +180,28 @@ def test_api_fluxo_short_derivado_versionado(tmp_path, monkeypatch):
     assert manifesto.json()["manifesto"]["shots"][0]["fim_s"] == 20
     atual = client.get(endpoint).json()["candidatos"][0]
     assert atual["manifesto_atual"]["versao"] == manifesto.json()["versao"]
+    ponte_en_url = f"{endpoint}/{referencia}/idiomas/en/aprovar-ponte"
+    ponte_en = client.post(ponte_en_url, json={"texto": "Watch the complete story."})
+    assert ponte_en.status_code == 200
+    assert ponte_en.json()["aprovacao"]["aprovada"] is True
+    atual = client.get(endpoint).json()["candidatos"][0]
+    assert atual["pontes_idiomas"]["en"]["texto"] == "Watch the complete story."
     chamadas: list[tuple[str, str]] = []
     monkeypatch.setattr(
         "docforja.api.executar_producao_background",
-        lambda projeto_arg, referencia_arg: chamadas.append((projeto_arg.slug, referencia_arg)),
+        lambda projeto_arg, referencia_arg, *args: chamadas.append(
+            (projeto_arg.slug, referencia_arg, *args)
+        ),
     )
     producao = client.post(f"{endpoint}/{referencia}/produzir")
     assert producao.status_code == 202
     assert producao.json()["status"] == "aguardando"
     assert chamadas == [(projeto.slug, referencia)]
+    producao_en = client.post(f"{endpoint}/{referencia}/idiomas/en/produzir")
+    assert producao_en.status_code == 202
+    assert producao_en.json()["idioma"] == "en"
+    assert chamadas[-1] == (projeto.slug, referencia, "en")
+    assert client.get(f"{endpoint}/{referencia}/saida/video.mp4?idioma=en").status_code == 404
     assert client.get(f"{endpoint}/{referencia}/saida/video.mp4").status_code == 404
     assert client.get(endpoint).json()["candidatos"][0]["producao"]["status"] == "aguardando"
     nova_aprovacao = client.post(aprovar_url, json={"indice_frase": 2})
@@ -169,6 +209,8 @@ def test_api_fluxo_short_derivado_versionado(tmp_path, monkeypatch):
     desatualizado = client.get(endpoint).json()["candidatos"][0]
     assert desatualizado["manifesto_atual"] is None
     assert desatualizado["producao"] is None
+    assert desatualizado["pontes_idiomas"]["en"] is None
+    assert desatualizado["producoes_idiomas"]["en"] is None
     assert (projeto.pastas.plano / "plano.json").read_bytes() == plano_mestre_antes
     assert client.post(aprovar_url, json={}).status_code == 400
 
