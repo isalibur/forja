@@ -74,6 +74,8 @@ def aplicar_cadeia_voz(
     saida_wav.parent.mkdir(parents=True, exist_ok=True)
 
     filtros = [
+        # Redução espectral leve para hiss de síntese sem apagar consoantes.
+        "afftdn=nr=6:nf=-50:tn=1",
         "highpass=f=80",
         "equalizer=f=3000:width_type=o:w=1:g=2",
         "acompressor=threshold=-18dB:ratio=3:attack=5:release=50",

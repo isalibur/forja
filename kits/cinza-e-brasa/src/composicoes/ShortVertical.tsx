@@ -23,6 +23,15 @@ export type TemplateShort =
   | "V09"
   | "V10";
 
+type PalavraLegenda = {
+  text: string;
+  startMs: number;
+  endMs: number;
+  destacar?: boolean;
+};
+
+type CaptionShort = Caption & { palavras?: PalavraLegenda[] };
+
 export type PropsShortVertical = {
   variante: TemplateShort;
   titulo: string;
@@ -45,7 +54,7 @@ export type PropsShortVertical = {
   foco_x: number;
   foco_y: number;
   usar_fundo_desfocado: boolean;
-  legendas: Caption[];
+  legendas: CaptionShort[];
 };
 
 const resolverMidia = (src: string): string => {
@@ -75,7 +84,7 @@ const Texto: React.FC<{
   </div>
 );
 
-const LegendaPalavra: React.FC<{ captions: Caption[] }> = ({ captions }) => {
+const LegendaPalavra: React.FC<{ captions: CaptionShort[] }> = ({ captions }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const tempoMs = (frame / fps) * 1000;
@@ -101,13 +110,34 @@ const LegendaPalavra: React.FC<{ captions: Caption[] }> = ({ captions }) => {
         color: tokens.color.bone,
         fontFamily: tokens.font.body.family,
         fontWeight: 700,
-        fontSize: 54,
-        lineHeight: 1.05,
+        fontSize: 42,
+        lineHeight: 1.12,
         textAlign: "center",
         textShadow: `0 0 18px ${tokens.color.ember}`,
       }}
     >
-      {ativa.text.trim()}
+      <span>
+        {ativa.palavras?.length
+          ? ativa.palavras.map((palavra, index) => {
+              const falando =
+                palavra.destacar !== false &&
+                tempoMs >= palavra.startMs &&
+                tempoMs < palavra.endMs;
+              return (
+                <span
+                  key={`${palavra.startMs}-${palavra.text}`}
+                  style={{
+                    color: falando ? tokens.color.ember : tokens.color.bone,
+                    textShadow: falando ? `0 0 18px ${tokens.color.ember}` : "none",
+                  }}
+                >
+                  {index > 0 ? " " : ""}
+                  {palavra.text}
+                </span>
+              );
+            })
+          : ativa.text.trim()}
+      </span>
     </div>
   );
 };

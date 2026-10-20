@@ -23,8 +23,11 @@ from docforja.shorts.modelos import (
     ShotVerticalizado,
 )
 from docforja.shorts.producao import (
+    _agrupar_palavras,
+    _captions_remotion,
     _metadados,
     _rotulos_cta,
+    _srt,
     aprovar_ponte_short_idioma,
     produzir_short_derivado,
 )
@@ -37,6 +40,33 @@ def _escrever_wav(caminho: Path, duracao: float) -> None:
         arquivo.setsampwidth(2)
         arquivo.setframerate(24_000)
         arquivo.writeframes(b"\x00\x00" * int(24_000 * duracao))
+
+
+def test_legendas_sao_frases_legiveis_com_palavra_falada_destacada() -> None:
+    palavras = [
+        {"text": "No", "start": 0.0, "end": 0.4},
+        {"text": "início", "start": 0.4, "end": 0.9},
+        {"text": "do", "start": 0.9, "end": 1.1},
+        {"text": "século", "start": 1.1, "end": 1.7},
+        {"text": "vinte,", "start": 1.7, "end": 2.2},
+        {"text": "a", "start": 2.2, "end": 2.4},
+        {"text": "equipe", "start": 2.4, "end": 3.0},
+        {"text": "chegou.", "start": 3.0, "end": 3.7},
+    ]
+
+    grupos = _agrupar_palavras(palavras)
+    captions = _captions_remotion(palavras, 0.0, 3.7)
+    srt = _srt(palavras)
+
+    assert [grupo["text"] for grupo in grupos] == [
+        "No início do século vinte, a equipe chegou."
+    ]
+    assert len(captions) == 1
+    assert captions[0].text == grupos[0]["text"]
+    assert len(captions[0].palavras) == len(palavras)
+    assert captions[0].palavras[1].startMs == 400
+    assert "No início do século vinte, a equipe chegou." in " ".join(srt.split())
+    assert srt.count("\n\n") == 0
 
 
 def test_metadados_short_oferecem_titulos_exatos_e_limites(tmp_path: Path) -> None:

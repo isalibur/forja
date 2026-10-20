@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import textwrap
 from itertools import pairwise
 from pathlib import Path
 from typing import Any
@@ -43,6 +44,15 @@ from docforja.shorts.verificador import verificar_short
 FPS = 30
 
 
+class PalavraCaptionRemotion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    text: str
+    startMs: float = Field(ge=0)
+    endMs: float = Field(gt=0)
+    destacar: bool = True
+
+
 class CaptionRemotion(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -51,6 +61,7 @@ class CaptionRemotion(BaseModel):
     endMs: float = Field(gt=0)
     timestampMs: float | None = None
     confidence: float | None = None
+    palavras: list[PalavraCaptionRemotion] = Field(default_factory=list)
 
 
 class PropsCenaShort(BaseModel):
@@ -429,16 +440,87 @@ def _captions_remotion(
     palavras: list[dict[str, Any]], inicio: float, fim: float
 ) -> list[CaptionRemotion]:
     saida = []
-    for item in palavras:
-        a = max(inicio, float(item["start"]))
-        b = min(fim, float(item["end"]))
-        if b > a:
-            saida.append(
-                CaptionRemotion(
-                    text=item["text"], startMs=(a - inicio) * 1000, endMs=(b - inicio) * 1000
-                )
+    for grupo in _agrupar_palavras(palavras):
+        a = max(inicio, float(grupo["start"]))
+        b = min(fim, float(grupo["end"]))
+        if b <= a:
+            continue
+        tokens = [
+            PalavraCaptionRemotion(
+                text=str(item["text"]),
+                startMs=max(0.0, (float(item["start"]) - inicio) * 1000),
+                endMs=max(0.001, (float(item["end"]) - inicio) * 1000),
+                destacar=float(item["start"]) < fim and float(item["end"]) > inicio,
             )
+            for item in grupo["palavras"]
+        ]
+        saida.append(
+            CaptionRemotion(
+                text=str(grupo["text"]),
+                startMs=(a - inicio) * 1000,
+                endMs=(b - inicio) * 1000,
+                palavras=tokens,
+            )
+        )
     return saida
+
+
+def _agrupar_palavras(palavras: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Agrupa palavras em frases curtas, sincronizadas e legíveis em tela pequena."""
+    grupos: list[dict[str, Any]] = []
+    atual: list[dict[str, Any]] = []
+
+    def finalizar() -> None:
+        if not atual:
+            return
+        grupos.append(
+            {
+                "text": " ".join(str(item["text"]).strip() for item in atual),
+                "start": float(atual[0]["start"]),
+                "end": float(atual[-1]["end"]),
+                "palavras": atual.copy(),
+            }
+        )
+        atual.clear()
+
+    for palavra in sorted(palavras, key=lambda item: float(item["start"])):
+        texto = str(palavra["text"]).strip()
+        if not texto:
+            continue
+        candidata = [*atual, palavra]
+        texto_candidato = " ".join(str(item["text"]).strip() for item in candidata)
+        duracao = float(candidata[-1]["end"]) - float(candidata[0]["start"])
+        excede_limites = len(texto_candidato) > 72 or duracao > 6
+        if atual and excede_limites:
+            finalizar()
+        atual.append(palavra)
+        if texto.endswith((".", "!", "?", "…", ";", ":")):
+            finalizar()
+    finalizar()
+    indice = 1
+    while indice < len(grupos):
+        anterior, atual_grupo = grupos[indice - 1], grupos[indice]
+        if len(atual_grupo["palavras"]) == 1:
+            ultima_palavra_anterior = str(anterior["palavras"][-1]["text"]).rstrip()
+            combinada = f"{anterior['text']} {atual_grupo['text']}"
+            duracao_combinada = float(atual_grupo["end"]) - float(anterior["start"])
+            if (
+                len(combinada) <= 84
+                and duracao_combinada <= 6
+                and not ultima_palavra_anterior.endswith((".", "!", "?", "…"))
+            ):
+                grupos[indice - 1 : indice + 1] = [
+                    {
+                        "text": combinada,
+                        "start": anterior["start"],
+                        "end": atual_grupo["end"],
+                        "palavras": [*anterior["palavras"], *atual_grupo["palavras"]],
+                    }
+                ]
+                indice = max(1, indice - 1)
+                continue
+        indice += 1
+    return grupos
 
 
 def _srt(palavras: list[dict[str, Any]]) -> str:
@@ -449,13 +531,15 @@ def _srt(palavras: list[dict[str, Any]]) -> str:
         segundos_i, ms = divmod(restante, 1000)
         return f"{horas:02d}:{minutos:02d}:{segundos_i:02d},{ms:03d}"
 
-    return (
-        "\n\n".join(
-            f"{idx}\n{timestamp(item['start'])} --> {timestamp(item['end'])}\n{item['text']}"
-            for idx, item in enumerate(palavras, 1)
+    grupos = _agrupar_palavras(palavras)
+    entradas = []
+    for idx, item in enumerate(grupos, 1):
+        linhas = textwrap.wrap(str(item["text"]), width=42, break_long_words=False)
+        entradas.append(
+            f"{idx}\n{timestamp(item['start'])} --> {timestamp(item['end'])}\n"
+            + "\n".join(linhas)
         )
-        + "\n"
-    )
+    return "\n\n".join(entradas) + "\n"
 
 
 def _licenca_trilha_comercial(trilha: Path) -> bool:
