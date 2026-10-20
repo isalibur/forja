@@ -96,12 +96,22 @@ Atualizado em 20 de outubro de 2026. Este arquivo registra somente o estado oper
      - `_criar_orquestrador` instancia os motores dinamicamente com base nas opções do projeto (`kokoro`, `openai_compat`, `voicestudio`, `chatterbox`).
      - Handler `P2_narracao` unificado para síntese ou narração pronta, atualizando shots e ativos automaticamente caso as etapas P4/P5 já tenham sido executadas.
 - Verificação automatizada: 163 testes unitários passando 100% sem GPU e sem rede (`pytest tests/unit`); Ruff 100% limpo em `src/`, `tests/`, `scripts/` e `hermes/`.
-- Conclusão do Marco M7: Todos os requisitos previstos para M7 (internacionalização multilíngue, operador conversacional Hermes Agent, invalidação seletiva por bloco, reaproveitamento da pasta global e adaptadores de TTS) estão concluídos e validados.
+- Ensaio de Aceitação E2E do Marco M7 Concluído com Sucesso (20/10/2026):
+  1. Execução via `scripts/aceite_m7_e2e.py` em pasta temporária isolada (`E:/05_PROJETOS/forja/aceite-m7-e2e-c23r52u5`), sem tocar arquivos reais do usuário.
+  2. Cenário 1 (Vesúvio em 3 idiomas pt-BR + en + es): Produção completa R1→R9 aprovada em 42,27 s, gerando vídeo renderizado via Remotion, legendas sincronizadas (`legendas.srt`) e o pacote com os 11 artefatos de metadados estratégicos localizados em cada idioma.
+  3. Cenário 2 (Invalidação seletiva por bloco nos 3 idiomas): Aprovada em 34,66 s. A troca da imagem do ativo `A-001` (bloco B0) via `02_midias/escolhas.json` re-renderizou exclusivamente o bloco B0 (`blocos_re_renderizados == ["B0"]`) nos 3 idiomas, enquanto o bloco B1 foi 100% reaproveitado do cache (`blocos_reaproveitados == ["B1"]`, com hash binário do chunk `B1.mp4` rigorosamente preservado em todos os idiomas) e os vídeos finais foram concatenados com sucesso.
+  4. Cenário 3 (Reaproveitamento da Pasta Global por ID): Promoção assistida com licença comercial de mapa (`M-VESUVIO`) e trilha (`T-EPICA`). Um segundo projeto independente resolveu e incorporou o mapa diretamente da Pasta Global sem duplicação e adotou a trilha da Pasta Global com prioridade sobre o kit.
+- Conclusão do Marco M7: Todos os requisitos e critérios de aceite do Marco M7 ("Vesúvio em pt-BR + en + es; trocar uma imagem refaz só o necessário nos três idiomas; um segundo vídeo reaproveita mapas e trilhas da pasta global") foram integralmente validados e aprovados.
 
 ## Pendências e próxima tarefa
 
-- Próxima tarefa: Revisão final e encerramento do Marco M7. Aguardar autorização do usuário antes de planejar ou iniciar os marcos posteriores (Marco M8 — Formatos Curtos/Shorts ou Marco M9 — Canal de Música).
-- Observações: manter escritas atômicas, cache por hash e não avançar para M8 ou M9 sem autorização prévia. Teste assistivo manual com NVDA/VoiceOver a ser executado em ambiente com leitor instalado.
+- Próxima tarefa: Iniciar o Marco M8 — Shorts (derivados e avulsos), cobrindo:
+  1. Templates verticais 9:16 (V01–V10) no kit Cinza e Brasa (Remotion) com legendas dinâmicas palavra por palavra (`@remotion/captions`) e safe areas.
+  2. Módulo de pontuação e seleção de candidatos (`shorts/candidatos.py`) e frases-ponte.
+  3. Verticalização e reenquadramento com movimento (`shorts/verticalizar.py`).
+  4. Verificador de dosagem de shorts (DS1–DS9), fórmulas estruturadas e lote por CSV.
+  5. Template V11 (`CartaoProduto`) para afiliados e tela interativa "Shorts" na interface web.
+- Observações: manter escritas atômicas, cache por hash, modularidade e preservação dos testes unitários sem rede/GPU.
 
 ## Entrega entre Codex e Antigravity
 
