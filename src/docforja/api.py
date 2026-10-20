@@ -486,6 +486,7 @@ def listar_shorts_derivados(slug: str) -> dict[str, Any]:
                 versao = pasta / f"aprovacao-{dados['versao']}.json"
                 if dados.get("fonte_hash") == fonte_hash and versao.is_file():
                     aprovacao = json.loads(versao.read_text(encoding="utf-8"))
+                    aprovacao["versao"] = dados["versao"]
         saida.append(
             {
                 "referencia": referencia,

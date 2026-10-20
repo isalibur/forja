@@ -141,7 +141,8 @@ def test_api_fluxo_short_derivado_versionado(tmp_path, monkeypatch):
     assert (
         projeto.pastas.montagem / "shorts" / "derivados" / referencia / f"aprovacao-{versao}.json"
     ).is_file()
-    assert client.get(endpoint).json()["candidatos"][0]["aprovacao"] is not None
+    aprovacao_atual = client.get(endpoint).json()["candidatos"][0]["aprovacao"]
+    assert aprovacao_atual["versao"] == versao
     manifesto = client.post(
         f"{endpoint}/{referencia}/manifesto-vertical",
         json={"dimensoes": {}},

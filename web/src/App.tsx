@@ -16,6 +16,7 @@ const Resultado = React.lazy(() => import("./pages/Resultado").then((modulo) => 
 const PastaGlobal = React.lazy(() => import("./pages/PastaGlobal").then((modulo) => ({ default: modulo.PastaGlobal })));
 const Kits = React.lazy(() => import("./pages/Kits").then((modulo) => ({ default: modulo.Kits })));
 const Sistema = React.lazy(() => import("./pages/Sistema").then((modulo) => ({ default: modulo.Sistema })));
+const Shorts = React.lazy(() => import("./pages/Shorts").then((modulo) => ({ default: modulo.Shorts })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -116,6 +117,7 @@ const AppContent: React.FC = () => {
           {telaAtiva === "busca" && <ListaBusca slug={projetoAtivo} />}
           {telaAtiva === "producao" && <Producao slug={projetoAtivo} onNavegar={setTelaAtiva} />}
           {telaAtiva === "resultado" && <Resultado slug={projetoAtivo} onNavegar={setTelaAtiva} />}
+          {telaAtiva === "shorts" && <Shorts slug={projetoAtivo} />}
           {telaAtiva === "global" && <PastaGlobal />}
           {telaAtiva === "kits" && <Kits />}
           {telaAtiva === "sistema" && <Sistema />}
