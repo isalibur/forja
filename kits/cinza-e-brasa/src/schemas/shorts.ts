@@ -6,12 +6,6 @@ const CaptionSchema = z.object({
   endMs: z.number().positive(),
   timestampMs: z.number().nullable(),
   confidence: z.number().nullable(),
-  palavras: z.array(z.object({
-    text: z.string(),
-    startMs: z.number().min(0),
-    endMs: z.number().positive(),
-    destacar: z.boolean().optional(),
-  })).optional(),
   pageBreakAfter: z.boolean().optional(),
 });
 

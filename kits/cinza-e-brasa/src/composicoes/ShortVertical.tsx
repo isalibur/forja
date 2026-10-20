@@ -23,15 +23,6 @@ export type TemplateShort =
   | "V09"
   | "V10";
 
-type PalavraLegenda = {
-  text: string;
-  startMs: number;
-  endMs: number;
-  destacar?: boolean;
-};
-
-type CaptionShort = Caption & { palavras?: PalavraLegenda[] };
-
 export type PropsShortVertical = {
   variante: TemplateShort;
   titulo: string;
@@ -54,7 +45,7 @@ export type PropsShortVertical = {
   foco_x: number;
   foco_y: number;
   usar_fundo_desfocado: boolean;
-  legendas: CaptionShort[];
+  legendas: Caption[];
 };
 
 const resolverMidia = (src: string): string => {
@@ -84,7 +75,7 @@ const Texto: React.FC<{
   </div>
 );
 
-const LegendaPalavra: React.FC<{ captions: CaptionShort[] }> = ({ captions }) => {
+const LegendaPalavra: React.FC<{ captions: Caption[] }> = ({ captions }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const tempoMs = (frame / fps) * 1000;
@@ -100,44 +91,22 @@ const LegendaPalavra: React.FC<{ captions: CaptionShort[] }> = ({ captions }) =>
         left: "8%",
         right: "14%",
         bottom: "28%",
-        minHeight: "5%",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        padding: "16px 20px",
-        borderRadius: 14,
-        backgroundColor: "rgba(14, 14, 16, .86)",
+        padding: "0 8px",
         color: tokens.color.bone,
         fontFamily: tokens.font.body.family,
         fontWeight: 700,
         fontSize: 42,
         lineHeight: 1.12,
         textAlign: "center",
-        textShadow: `0 0 18px ${tokens.color.ember}`,
+        textShadow: "0 3px 12px rgba(0,0,0,.95), 0 0 4px rgba(0,0,0,.95)",
+        whiteSpace: "pre-line",
+        overflowWrap: "anywhere",
       }}
     >
-      <span>
-        {ativa.palavras?.length
-          ? ativa.palavras.map((palavra, index) => {
-              const falando =
-                palavra.destacar !== false &&
-                tempoMs >= palavra.startMs &&
-                tempoMs < palavra.endMs;
-              return (
-                <span
-                  key={`${palavra.startMs}-${palavra.text}`}
-                  style={{
-                    color: falando ? tokens.color.ember : tokens.color.bone,
-                    textShadow: falando ? `0 0 18px ${tokens.color.ember}` : "none",
-                  }}
-                >
-                  {index > 0 ? " " : ""}
-                  {palavra.text}
-                </span>
-              );
-            })
-          : ativa.text.trim()}
-      </span>
+      <span>{ativa.text.trim()}</span>
     </div>
   );
 };

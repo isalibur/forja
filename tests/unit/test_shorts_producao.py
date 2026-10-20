@@ -26,6 +26,7 @@ from docforja.shorts.producao import (
     _agrupar_palavras,
     _captions_remotion,
     _metadados,
+    _resolver_trilha_short,
     _rotulos_cta,
     _srt,
     aprovar_ponte_short_idioma,
@@ -42,7 +43,7 @@ def _escrever_wav(caminho: Path, duracao: float) -> None:
         arquivo.writeframes(b"\x00\x00" * int(24_000 * duracao))
 
 
-def test_legendas_sao_frases_legiveis_com_palavra_falada_destacada() -> None:
+def test_legendas_sao_frases_breves_em_ate_duas_linhas_sem_karaoke() -> None:
     palavras = [
         {"text": "No", "start": 0.0, "end": 0.4},
         {"text": "início", "start": 0.4, "end": 0.9},
@@ -59,14 +60,33 @@ def test_legendas_sao_frases_legiveis_com_palavra_falada_destacada() -> None:
     srt = _srt(palavras)
 
     assert [grupo["text"] for grupo in grupos] == [
-        "No início do século vinte, a equipe chegou."
+        "No início do século vinte,",
+        "a equipe chegou.",
     ]
-    assert len(captions) == 1
-    assert captions[0].text == grupos[0]["text"]
-    assert len(captions[0].palavras) == len(palavras)
-    assert captions[0].palavras[1].startMs == 400
-    assert "No início do século vinte, a equipe chegou." in " ".join(srt.split())
-    assert srt.count("\n\n") == 0
+    assert len(captions) == 2
+    assert [" ".join(caption.text.splitlines()) for caption in captions] == [
+        grupo["text"] for grupo in grupos
+    ]
+    assert all(len(caption.text.splitlines()) <= 2 for caption in captions)
+    assert all(len(linha) <= 21 for caption in captions for linha in caption.text.splitlines())
+    assert "No início do século vinte," in srt
+    assert "a equipe chegou." in srt
+    assert srt.count("\n\n") == len(grupos) - 1
+
+
+def test_short_nao_adiciona_trilha_provisoria_sem_escolha_explicita(tmp_path: Path) -> None:
+    projeto = Projeto.criar(nome="Sem trilha", roteiro="Roteiro", raiz_projetos=tmp_path)
+
+    assert _resolver_trilha_short(projeto) is None
+
+
+def test_short_usa_trilha_local_escolhida_explicitamente(tmp_path: Path) -> None:
+    projeto = Projeto.criar(nome="Com trilha", roteiro="Roteiro", raiz_projetos=tmp_path)
+    trilha = projeto.pastas.audio / "trilha" / "trilha.wav"
+    trilha.parent.mkdir(parents=True, exist_ok=True)
+    trilha.write_bytes(b"faixa selecionada")
+
+    assert _resolver_trilha_short(projeto) == trilha
 
 
 def test_metadados_short_oferecem_titulos_exatos_e_limites(tmp_path: Path) -> None:
@@ -295,9 +315,7 @@ def test_producao_renderiza_revisao_sem_alterar_midia_manual(tmp_path, monkeypat
     monkeypatch.setattr("docforja.shorts.producao._executar", executar_falso)
     monkeypatch.setattr("docforja.shorts.producao._renderizar", renderizar_falso)
     monkeypatch.setattr("docforja.shorts.producao._mixar_audio", lambda *_args: (-14.1, True))
-    monkeypatch.setattr(
-        "docforja.shorts.producao.resolver_trilha_provisoria", lambda _projeto: None
-    )
+    monkeypatch.setattr("docforja.shorts.producao._resolver_trilha_short", lambda _projeto: None)
 
     resultado = produzir_short_derivado(projeto, referencia)
     cache = produzir_short_derivado(projeto, referencia)

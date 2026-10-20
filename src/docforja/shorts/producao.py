@@ -15,7 +15,6 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from docforja.audio.trilha import resolver_trilha_provisoria
 from docforja.esquemas import Ativo, Plano
 from docforja.idiomas.narracao import carregar_traducao_atual, eh_modo_so_legendas
 from docforja.io import atomic_write_json, atomic_write_text
@@ -42,15 +41,8 @@ from docforja.shorts.modelos import (
 from docforja.shorts.verificador import verificar_short
 
 FPS = 30
-
-
-class PalavraCaptionRemotion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    text: str
-    startMs: float = Field(ge=0)
-    endMs: float = Field(gt=0)
-    destacar: bool = True
+MAX_CHARS_LEGENDA = 42
+MAX_CHARS_LINHA_LEGENDA = 21
 
 
 class CaptionRemotion(BaseModel):
@@ -61,7 +53,6 @@ class CaptionRemotion(BaseModel):
     endMs: float = Field(gt=0)
     timestampMs: float | None = None
     confidence: float | None = None
-    palavras: list[PalavraCaptionRemotion] = Field(default_factory=list)
 
 
 class PropsCenaShort(BaseModel):
@@ -445,21 +436,18 @@ def _captions_remotion(
         b = min(fim, float(grupo["end"]))
         if b <= a:
             continue
-        tokens = [
-            PalavraCaptionRemotion(
-                text=str(item["text"]),
-                startMs=max(0.0, (float(item["start"]) - inicio) * 1000),
-                endMs=max(0.001, (float(item["end"]) - inicio) * 1000),
-                destacar=float(item["start"]) < fim and float(item["end"]) > inicio,
-            )
-            for item in grupo["palavras"]
-        ]
+        texto = " ".join(str(grupo["text"]).split())
         saida.append(
             CaptionRemotion(
-                text=str(grupo["text"]),
+                text="\n".join(
+                    textwrap.wrap(
+                        texto,
+                        width=MAX_CHARS_LINHA_LEGENDA,
+                        break_long_words=False,
+                    )[:2]
+                ),
                 startMs=(a - inicio) * 1000,
                 endMs=(b - inicio) * 1000,
-                palavras=tokens,
             )
         )
     return saida
@@ -490,11 +478,11 @@ def _agrupar_palavras(palavras: list[dict[str, Any]]) -> list[dict[str, Any]]:
         candidata = [*atual, palavra]
         texto_candidato = " ".join(str(item["text"]).strip() for item in candidata)
         duracao = float(candidata[-1]["end"]) - float(candidata[0]["start"])
-        excede_limites = len(texto_candidato) > 72 or duracao > 6
+        excede_limites = len(texto_candidato) > MAX_CHARS_LEGENDA or duracao > 6
         if atual and excede_limites:
             finalizar()
         atual.append(palavra)
-        if texto.endswith((".", "!", "?", "…", ";", ":")):
+        if texto.endswith((".", "!", "?", "…", ";", ":", ",")):
             finalizar()
     finalizar()
     indice = 1
@@ -505,7 +493,7 @@ def _agrupar_palavras(palavras: list[dict[str, Any]]) -> list[dict[str, Any]]:
             combinada = f"{anterior['text']} {atual_grupo['text']}"
             duracao_combinada = float(atual_grupo["end"]) - float(anterior["start"])
             if (
-                len(combinada) <= 84
+                len(combinada) <= MAX_CHARS_LEGENDA
                 and duracao_combinada <= 6
                 and not ultima_palavra_anterior.endswith((".", "!", "?", "…"))
             ):
@@ -551,6 +539,34 @@ def _licenca_trilha_comercial(trilha: Path) -> bool:
     return (
         permitido and dados.get("comercial") is True and not dados.get("patrimonio_restrito", False)
     )
+
+
+def _resolver_trilha_short(projeto: Projeto) -> Path | None:
+    """Usa somente trilha escolhida explicitamente, nunca o drone de fallback do kit."""
+    pasta_trilha = projeto.pastas.audio / "trilha"
+    for nome in (
+        "trilha.wav",
+        "trilha.mp3",
+        "trilha_provisoria.wav",
+        "trilha_provisoria.mp3",
+    ):
+        candidata = pasta_trilha / nome
+        if candidata.is_file():
+            return candidata
+
+    opcoes_audio = projeto.obter_opcoes().get("audio", {})
+    trilha_configurada = (
+        opcoes_audio.get("trilha") if isinstance(opcoes_audio, dict) else None
+    )
+    if not trilha_configurada:
+        return None
+
+    from docforja.global_assets.resolucao import buscar_trilha_global, obter_pasta_global
+
+    resultado = buscar_trilha_global(
+        str(trilha_configurada), pasta_global=obter_pasta_global()
+    )
+    return resultado[0] if resultado else None
 
 
 def _sidecar_trilha(trilha: Path) -> Path | None:
@@ -739,7 +755,7 @@ def produzir_short_derivado(
         if not voz:
             raise ValueError(f"Configure uma voz TTS aprovada para o idioma {idioma}.")
     palavras = _palavras(palavras_path, set(candidato.segmento_ids), inicio, fim)
-    trilha = resolver_trilha_provisoria(projeto)
+    trilha = _resolver_trilha_short(projeto)
     if trilha and not _licenca_trilha_comercial(trilha):
         raise ValueError("A trilha não tem ficha comercial vigente para uso no short.")
 
