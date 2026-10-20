@@ -1,0 +1,8 @@
+id: lista_3
+nome: Lista de três itens
+estrutura: [gancho, item_1, item_2, item_3, CTA]
+objetivos: [educativo, engajamento]
+templates: [V01, V03, V07]
+duracao_min_s: 15
+duracao_max_s: 60
+regras: [texto_curto_por_item]

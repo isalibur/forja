@@ -1,0 +1,8 @@
+id: bastidores
+nome: Bastidores
+estrutura: [como_fazemos, cena_1, cena_2, cena_3, CTA]
+objetivos: [bastidores, autoridade]
+templates: [V01, V09, V09, V09, V07]
+duracao_min_s: 15
+duracao_max_s: 60
+regras: [usar_clipes_proprios_ou_licenciados]

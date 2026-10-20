@@ -1,0 +1,8 @@
+id: anuncio
+nome: Anúncio
+estrutura: [novidade, o_que_muda, quando, CTA]
+objetivos: [anuncio]
+templates: [V01, V02, V07]
+duracao_min_s: 15
+duracao_max_s: 45
+regras: [data_e_informacao_confirmadas]

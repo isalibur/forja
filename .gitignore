@@ -15,6 +15,7 @@ __pycache__/
 # Node / front-end
 node_modules/
 web/dist/
+kits/cinza-e-brasa/build/
 src/docforja/web_dist/
 
 # saídas de teste e mídia (projetos e pasta global ficam fora do repositório, em D:\DocForja\)

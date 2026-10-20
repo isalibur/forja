@@ -1,0 +1,10 @@
+id: oferta
+nome: Oferta
+estrutura: [beneficio, prova_real, condicao, urgencia_verdadeira_opcional, CTA_compra]
+objetivos: [vendas]
+templates: [V01, V04, V10, V07]
+duracao_min_s: 15
+duracao_max_s: 60
+regras: [urgencia_com_data_ou_condicao_real]
+exige_prova_real: true
+exige_fonte_preco: true

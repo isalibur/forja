@@ -1,0 +1,8 @@
+id: curiosidade_1_fato
+nome: Uma curiosidade, um fato
+estrutura: [fato_surpreendente, explicacao, CTA]
+objetivos: [promocao_canal, educativo]
+templates: [V01, V02, V07]
+duracao_min_s: 15
+duracao_max_s: 60
+regras: [fato_deve_constar_no_roteiro_ou_fonte]

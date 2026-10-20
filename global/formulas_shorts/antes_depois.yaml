@@ -1,0 +1,8 @@
+id: antes_depois
+nome: Antes e depois
+estrutura: [antes, processo, depois, CTA]
+objetivos: [vendas, autoridade]
+templates: [V05, V02, V07]
+duracao_min_s: 15
+duracao_max_s: 60
+regras: [comparacao_documentada]

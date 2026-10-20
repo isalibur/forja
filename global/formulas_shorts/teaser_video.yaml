@@ -1,0 +1,8 @@
+id: teaser_video
+nome: Teaser do vídeo longo
+estrutura: [cena_forte, pergunta_aberta, ponte_para_video_completo]
+objetivos: [promocao_canal]
+templates: [V01, V02, V07]
+duracao_min_s: 15
+duracao_max_s: 55
+regras: [frase_ponte_aprovada, video_relacionado_obrigatorio]

@@ -105,12 +105,15 @@ Atualizado em 20 de outubro de 2026. Este arquivo registra somente o estado oper
 
 ## Pendências e próxima tarefa
 
-- Próxima tarefa: Iniciar o Marco M8 — Shorts (derivados e avulsos), cobrindo:
-  1. Templates verticais 9:16 (V01–V10) no kit Cinza e Brasa (Remotion) com legendas dinâmicas palavra por palavra (`@remotion/captions`) e safe areas.
-  2. Módulo de pontuação e seleção de candidatos (`shorts/candidatos.py`) e frases-ponte.
-  3. Verticalização e reenquadramento com movimento (`shorts/verticalizar.py`).
-  4. Verificador de dosagem de shorts (DS1–DS9), fórmulas estruturadas e lote por CSV.
-  5. Template V11 (`CartaoProduto`) para afiliados e tela interativa "Shorts" na interface web.
+- M8 — Base estrutural inicial (20/10/2026):
+  1. `src/docforja/shorts/` inclui modelos Pydantic e `candidatos.py`: pontuação determinística com os pesos de 11 §3.1, janelas contíguas de 20–55 s, leitura de plano longo + tempos/transcrição reais e propostas de três frases-ponte que permanecem pendentes até aprovação explícita.
+  2. `verticalizar.py` calcula recorte 9:16 orientado por ponto focal ou fundo desfocado, produz manifesto derivado com hash de plano/configuração e hashes dos arquivos de origem, sem editar o plano mestre; exige licença comercial explícita e bloqueia NC/ND e patrimônio restrito.
+  3. `verificador.py` avalia DS1–DS9 (safe areas, gancho, ritmo visual, cobertura das legendas, CTA, densidade de texto, duração, ponte/metadados e áudio) e devolve aprovação/falhas estruturadas.
+  4. `global/formulas_shorts/` contém onze fórmulas YAML validadas, incluindo controles de prova, preço, divulgação e links de afiliado.
+  5. Kit Cinza e Brasa declara `@remotion/captions` 4.0.536; as composições V01–V10 e `Guia-Safe-Area-Short` foram registradas a 1080×1920/30 fps. Os templates têm posição focal, alternativa de fundo desfocado, legenda palavra a palavra e proteção do V10 contra prova não fornecida.
+  6. Verificações desta fatia: `uv run pytest tests/unit` — 174 passaram; `uv run ruff check src tests scripts hermes` — passou; `npm run lint`, `npm run build` e `npx remotion compositions src/index.ts` no kit — passaram; catálogo listou V01–V10 e guia.
+- Limitações: esta é a camada estrutural do M8. Ainda falta integrar os módulos ao ciclo de criação/produção e à API/UI; renderizar shorts derivados/avulsos com áudio, cortes, captions, capas e metadados por plataforma; aprovação persistente de candidatos/frases-ponte; verticalizações com movimento e controle visual de safe areas; fórmula executável e lote CSV; V11 CartaoProduto e agenda de afiliados; layouts verticais dos templates T00–T14; e ensaios de aceite M8 (3 derivados, lote CSV de 5, e 10 afiliados). Nenhum conteúdo M9 foi iniciado.
+- Próxima tarefa: integrar a proposta e aprovação de shorts derivados ao projeto longo, persistindo uma cópia derivada versionada sem modificar seu `Plano` mestre; ligar candidatos, frases-ponte aprovadas e manifesto vertical à API. Depois implementar o fluxo de render/saída por idioma e os shorts avulsos até os cenários de aceite do M8.
 - Observações: manter escritas atômicas, cache por hash, modularidade e preservação dos testes unitários sem rede/GPU.
 
 ## Entrega entre Codex e Antigravity

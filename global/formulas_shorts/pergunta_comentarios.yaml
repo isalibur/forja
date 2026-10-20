@@ -1,0 +1,8 @@
+id: pergunta_comentarios
+nome: Pergunta para comentários
+estrutura: [provocacao, opcao_A, opcao_B, CTA_comentar]
+objetivos: [engajamento]
+templates: [V06, V07]
+duracao_min_s: 15
+duracao_max_s: 45
+regras: [uma_pergunta, CTA_comentar]

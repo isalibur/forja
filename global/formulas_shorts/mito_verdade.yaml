@@ -1,0 +1,8 @@
+id: mito_verdade
+nome: Mito e verdade
+estrutura: [pergunta, mito, verdade, CTA]
+objetivos: [educativo, promocao_canal]
+templates: [V06, V02, V07]
+duracao_min_s: 15
+duracao_max_s: 60
+regras: [afirmacoes_devem_ter_fonte]

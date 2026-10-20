@@ -7,6 +7,13 @@ import * as Schemas from "./schemas/templates";
 import * as SchemasSob from "./schemas/sobreposicoes";
 import { BlocoTeste } from "./composicoes/BlocoTeste";
 import { PreviaPlano } from "./composicoes/PreviaPlano";
+import {
+  defaultPropsShort,
+  ShortSafeAreaGuide,
+  ShortVertical,
+  type TemplateShort,
+} from "./composicoes/ShortVertical";
+import { SchemaShortVertical } from "./schemas/shorts";
 
 export const Root: React.FC = () => {
   useEffect(() => {
@@ -381,6 +388,43 @@ export const Root: React.FC = () => {
             rotulo: "ÁREA DE INTERESSE",
           }}
         />
+      </Folder>
+
+      <Folder name="03-Shorts-9x16">
+        <Composition
+          id="Guia-Safe-Area-Short"
+          component={ShortSafeAreaGuide}
+          durationInFrames={48}
+          fps={24}
+          width={1080}
+          height={1920}
+        />
+        {(
+          [
+            "V01",
+            "V02",
+            "V03",
+            "V04",
+            "V05",
+            "V06",
+            "V07",
+            "V08",
+            "V09",
+            "V10",
+          ] as TemplateShort[]
+        ).map((variante) => (
+          <Composition
+            key={variante}
+            id={variante}
+            component={ShortVertical}
+            durationInFrames={720}
+            fps={30}
+            width={1080}
+            height={1920}
+            schema={SchemaShortVertical}
+            defaultProps={{ ...defaultPropsShort, variante }}
+          />
+        ))}
       </Folder>
     </>
   );
