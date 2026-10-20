@@ -545,8 +545,12 @@ def _resolver_trilha_short(projeto: Projeto) -> Path | None:
     """Usa somente trilha escolhida explicitamente, nunca o drone de fallback do kit."""
     pasta_trilha = projeto.pastas.audio / "trilha"
     for nome in (
+        "trilha_definitiva.wav",
+        "trilha_definitiva.mp3",
         "trilha.wav",
         "trilha.mp3",
+        "provisoria.wav",
+        "provisoria.mp3",
         "trilha_provisoria.wav",
         "trilha_provisoria.mp3",
     ):

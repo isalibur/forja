@@ -1,7 +1,9 @@
 """Testes unitários dos módulos de estratégia, otio, saída e promoção global (Marco M6)."""
 
+import json
 import wave
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -25,8 +27,25 @@ from docforja.global_assets.promocao import (
 )
 from docforja.io import atomic_write_json
 from docforja.nucleo.projeto import Projeto
+from docforja.producao.execucao import executar_r4_trilha_sfx
 from docforja.producao.otio import exportar_projeto_otio, gerar_timeline_otio_dict
 from docforja.producao.saida import montar_pacote_saida_completo
+
+
+def test_r4_preserva_ficha_licenca_na_trilha_do_video_longo(tmp_path: Path, monkeypatch) -> None:
+    projeto = Projeto.criar(nome="Com trilha licenciada", roteiro="Teste", raiz_projetos=tmp_path)
+    origem = tmp_path / "trilha_origem.wav"
+    origem.write_bytes(b"audio licenciado")
+    ficha = {"licenca": "CC0-1.0", "comercial": True, "credito": "Livre de direitos"}
+    atomic_write_json(origem.with_name(f"{origem.stem}.licenca.json"), ficha)
+    monkeypatch.setattr("docforja.producao.execucao.resolver_trilha_provisoria", lambda _: origem)
+
+    executar_r4_trilha_sfx(SimpleNamespace(projeto=projeto))
+
+    destino = projeto.pastas.audio / "trilha" / "trilha_definitiva.wav"
+    sidecar = destino.with_name(f"{destino.name}.licenca.json")
+    assert destino.read_bytes() == origem.read_bytes()
+    assert json.loads(sidecar.read_text(encoding="utf-8")) == ficha
 
 
 def _criar_plano_amostra() -> Plano:

@@ -89,6 +89,18 @@ def test_short_usa_trilha_local_escolhida_explicitamente(tmp_path: Path) -> None
     assert _resolver_trilha_short(projeto) == trilha
 
 
+def test_short_prefere_trilha_definitiva_usada_no_video_longo(tmp_path: Path) -> None:
+    projeto = Projeto.criar(nome="Trilha do longo", roteiro="Roteiro", raiz_projetos=tmp_path)
+    pasta = projeto.pastas.audio / "trilha"
+    pasta.mkdir(parents=True, exist_ok=True)
+    definitiva = pasta / "trilha_definitiva.wav"
+    provisoria = pasta / "trilha_provisoria.wav"
+    definitiva.write_bytes(b"mix do video longo")
+    provisoria.write_bytes(b"outra faixa")
+
+    assert _resolver_trilha_short(projeto) == definitiva
+
+
 def test_metadados_short_oferecem_titulos_exatos_e_limites(tmp_path: Path) -> None:
     projeto = Projeto.criar(
         nome="História Antiga",

@@ -161,7 +161,12 @@ def executar_r4_trilha_sfx(ctx: ContextoEtapa) -> None:
     if trilha_origem and trilha_origem.is_file():
         dest = pasta_trilha / "trilha_definitiva.wav"
         if not dest.is_file() or calcular_hash_dados(dest) != calcular_hash_dados(trilha_origem):
-            shutil.copyfile(trilha_origem, dest)
+            temporario = dest.with_suffix(".wav.tmp")
+            shutil.copyfile(trilha_origem, temporario)
+            os.replace(temporario, dest)
+
+        ficha = _ficha_licenca_trilha(ctx.projeto, trilha_origem)
+        atomic_write_json(dest.with_name(f"{dest.name}.licenca.json"), ficha)
 
     manifesto = {
         "etapa": "R4_trilha_sfx",
@@ -169,6 +174,32 @@ def executar_r4_trilha_sfx(ctx: ContextoEtapa) -> None:
         "loudness_alvo_lufs": -14.0,
     }
     atomic_write_json(ctx.projeto.pastas.audio / "manifesto_r4.json", manifesto)
+
+
+def _ficha_licenca_trilha(projeto: Projeto, trilha: Path) -> dict[str, Any]:
+    """Obtém a ficha da trilha usada no longo ou retorna licença desconhecida."""
+    for sidecar in (
+        trilha.with_name(f"{trilha.name}.licenca.json"),
+        trilha.with_name(f"{trilha.stem}.licenca.json"),
+    ):
+        if sidecar.is_file():
+            try:
+                dados = json.loads(sidecar.read_text(encoding="utf-8"))
+                if isinstance(dados, dict):
+                    return dados
+            except (OSError, json.JSONDecodeError):
+                break
+
+    opcoes_audio = projeto.obter_opcoes().get("audio", {})
+    referencia = opcoes_audio.get("trilha") if isinstance(opcoes_audio, dict) else None
+    if referencia:
+        from docforja.global_assets.resolucao import buscar_trilha_global, obter_pasta_global
+
+        resultado = buscar_trilha_global(str(referencia), pasta_global=obter_pasta_global())
+        if resultado and resultado[0].resolve() == trilha.resolve():
+            return resultado[1]
+
+    return {"licenca": "desconhecida", "comercial": False}
 
 
 def executar_r5_montagem(ctx: ContextoEtapa) -> None:
