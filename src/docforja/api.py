@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import mimetypes
 import re
@@ -19,6 +20,10 @@ from pydantic import BaseModel, Field
 
 from docforja.audio.trilha import resolver_trilha_provisoria
 from docforja.esquemas import Ativo
+from docforja.global_assets.promocao import (
+    avaliar_ativos_para_promocao,
+    promover_itens_para_global,
+)
 from docforja.midia.licenca import (
     carregar_ficha_licenca,
     classificar_licenca,
@@ -63,6 +68,11 @@ class CriarProjetoPayload(BaseModel):
 
 class AprovarGatePayload(BaseModel):
     gate: str = "REVISAO"
+    codigo: str | None = None
+
+
+class PromoverGlobalPayload(BaseModel):
+    itens: list[str]
 
 
 class SelecionarCandidataPayload(BaseModel):
@@ -541,6 +551,19 @@ def aprovar_gate(
     except FileNotFoundError as err:
         raise HTTPException(status_code=404, detail="Projeto não encontrado") from err
 
+    if (
+        payload.gate == "REVISAO"
+        and payload.codigo is not None
+        and payload.codigo.strip().upper() != "PRODUZIR"
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Código de confirmação incorreto. "
+                "Digite PRODUZIR para confirmar a produção."
+            ),
+        )
+
     executor = criar_executor_projeto(projeto)
     executor.aprovar_gate(payload.gate)
 
@@ -549,6 +572,162 @@ def aprovar_gate(
 
     background_tasks.add_task(asyncio.run, _rodar())
     return {"status": "aprovado", "gate": payload.gate}
+
+
+@app.get("/api/projetos/{slug}/producao")
+def obter_status_producao(slug: str) -> dict[str, Any]:
+    projeto = _projeto_da_interface(slug)
+    banco = BancoProjeto(projeto.banco_file)
+    etapas = banco.listar_etapas()
+    status_map = {e["id"]: e["status"] for e in etapas}
+
+    etapas_producao = [
+        "R1_imagens", "R2_tratamento", "R3_mapas", "R4_trilha_sfx",
+        "R5_montagem", "R6_mix", "R7_render", "R8_qa", "R9_pacote", "R10_biblioteca",
+    ]
+    concluidas_prod = sum(1 for e in etapas_producao if status_map.get(e) == "concluida")
+    em_execucao = [e for e in etapas if e["status"] == "executando"]
+
+    plano_path = projeto.pastas.plano / "plano.json"
+    estimativa_min = 30
+    if plano_path.is_file():
+        with contextlib.suppress(Exception):
+            plano_dados = json.loads(plano_path.read_text(encoding="utf-8"))
+            estimativa_min = plano_dados.get("estimativa_producao_min", 30)
+
+    progresso = round((concluidas_prod / len(etapas_producao)) * 100)
+    fracao_restante = max(0.0, 1.0 - (concluidas_prod / len(etapas_producao)))
+    tempo_restante_min = round(estimativa_min * fracao_restante, 1)
+
+    return {
+        "slug": slug,
+        "em_producao": bool(em_execucao),
+        "concluida": concluidas_prod == len(etapas_producao),
+        "progresso_percent": progresso,
+        "etapa_ativa": em_execucao[0]["id"] if em_execucao else None,
+        "tempo_restante_min": tempo_restante_min,
+        "etapas": etapas,
+        "gpu_status": semaforo_gpu.obter_status(),
+    }
+
+
+@app.get("/api/projetos/{slug}/saida")
+def obter_saida_projeto(slug: str) -> dict[str, Any]:
+    projeto = _projeto_da_interface(slug)
+    idioma = projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR")
+    pasta_saida = projeto.pastas.saida
+    pasta_meta = pasta_saida / idioma / "metadados"
+
+    meta_json_path = pasta_meta / "metadados.json"
+    pronto = meta_json_path.is_file()
+
+    metadados = {}
+    if pronto:
+        with contextlib.suppress(Exception):
+            metadados = json.loads(meta_json_path.read_text(encoding="utf-8"))
+
+    relatorio_txt = ""
+    relatorio_path = pasta_saida / "relatorio.md"
+    if relatorio_path.is_file():
+        relatorio_txt = relatorio_path.read_text(encoding="utf-8")
+
+    creditos_txt = ""
+    creditos_path = pasta_saida / "creditos.txt"
+    if creditos_path.is_file():
+        creditos_txt = creditos_path.read_text(encoding="utf-8")
+
+    promover_itens = []
+    resolvidos_path = projeto.pastas.plano / "ativos_resolvidos.json"
+    if resolvidos_path.is_file():
+        with contextlib.suppress(Exception):
+            dados_res = json.loads(resolvidos_path.read_text(encoding="utf-8"))
+            ativos = {k: Ativo.model_validate(v) for k, v in dados_res.get("ativos", {}).items()}
+            itens_promo = avaliar_ativos_para_promocao(slug, ativos)
+            promover_itens = [item.model_dump(mode="json") for item in itens_promo]
+            pass
+
+    video_final = pasta_saida / idioma / "video.mp4"
+    previa = projeto.pastas.plano / "previa.mp4"
+    tem_video = video_final.is_file() or previa.is_file()
+    video_url = f"/api/projetos/{slug}/video_final.mp4" if tem_video else None
+
+    return {
+        "slug": slug,
+        "pronto": pronto,
+        "idioma": idioma,
+        "video_url": video_url,
+        "metadados": metadados,
+        "relatorio": relatorio_txt,
+        "creditos": creditos_txt,
+        "promover_itens": promover_itens,
+    }
+
+
+@app.post("/api/projetos/{slug}/promover_global")
+def promover_ativos_global(slug: str, payload: PromoverGlobalPayload) -> dict[str, Any]:
+    projeto = _projeto_da_interface(slug)
+    resolvidos_path = projeto.pastas.plano / "ativos_resolvidos.json"
+    if not resolvidos_path.is_file():
+        raise HTTPException(status_code=404, detail="Ativos não encontrados")
+
+    dados_res = json.loads(resolvidos_path.read_text(encoding="utf-8"))
+    ativos = {k: Ativo.model_validate(v) for k, v in dados_res.get("ativos", {}).items()}
+    itens_promo = avaliar_ativos_para_promocao(slug, ativos)
+    itens_filtrados = [item for item in itens_promo if item.id in payload.itens]
+
+    pasta_global = load_settings().paths.projects.parent / "global_assets"
+    promovidos = promover_itens_para_global(itens_filtrados, pasta_global)
+    return {"sucesso": True, "promovidos": promovidos}
+
+
+@app.get("/api/projetos/{slug}/video_final.mp4")
+def obter_video_final(slug: str) -> FileResponse:
+    projeto = _projeto_da_interface(slug)
+    idioma = projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR")
+    video = projeto.pastas.saida / idioma / "video.mp4"
+    if not video.is_file():
+        video = projeto.pastas.plano / "previa.mp4"
+    if not video.is_file():
+        raise HTTPException(status_code=404, detail="Vídeo final não encontrado")
+    return FileResponse(video, media_type="video/mp4", filename=f"{slug}.mp4")
+
+
+@app.get("/api/global/itens")
+def listar_itens_globais() -> dict[str, Any]:
+    pasta_global = load_settings().paths.projects.parent / "global_assets"
+    categorias: dict[str, list[dict[str, Any]]] = {
+        "imagens": [], "personagens": [], "mapas": [], "loops": [], "trilhas": [], "sfx": [],
+    }
+    if pasta_global.is_dir():
+        for cat in categorias:
+            sub = pasta_global / cat
+            if sub.is_dir():
+                for f in sorted(sub.glob("*.json")):
+                    try:
+                        dados = json.loads(f.read_text(encoding="utf-8"))
+                        categorias[cat].append(dados)
+                    except Exception:
+                        continue
+    return {"categorias": categorias, "total": sum(len(v) for v in categorias.values())}
+
+
+@app.get("/api/sistema/detalhes")
+def obter_detalhes_sistema() -> dict[str, Any]:
+    settings = load_settings()
+    return {
+        "gpu": semaforo_gpu.obter_status(),
+        "cotas": gerenciador_cotas.obter_resumo(),
+        "pastas": {
+            "projetos": str(settings.paths.projects),
+            "modelos": str(settings.paths.models),
+            "temp": str(settings.paths.temp),
+        },
+        "ambientes_python": settings.python_environments,
+        "adaptadores": {
+            "whisper": settings.alinhamento.modelo_asr,
+            "alinhador": settings.alinhamento.modelo_alinhador,
+        },
+    }
 
 
 @app.get("/api/eventos")

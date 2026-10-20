@@ -219,3 +219,71 @@ def test_api_plano_ui_leitura_local_e_pasta_manual(tmp_path, monkeypatch):
         headers={"Origin": "https://site-externo.example"},
     )
     assert "access-control-allow-origin" not in externo.headers
+
+
+def test_api_producao_e_saida_endpoints(tmp_path, monkeypatch):
+    mock_settings = lambda: type(  # noqa: E731
+        "Settings",
+        (),
+        {
+            "paths": type("Paths", (), {
+                "projects": tmp_path,
+                "models": tmp_path / "models",
+                "temp": tmp_path / "temp",
+            })(),
+            "python_environments": {"kokoro": "py311", "whisperx": "py311"},
+            "alinhamento": type("Alin", (), {
+                "modelo_asr": "whisper",
+                "modelo_alinhador": "wav2vec2",
+            })(),
+        },
+    )()
+    monkeypatch.setattr("docforja.api.load_settings", mock_settings)
+    monkeypatch.setattr("docforja.nucleo.projeto.load_settings", mock_settings)
+    client = TestClient(app)
+
+    proj = Projeto.criar(
+        nome="Projeto Producao",
+        roteiro="## B0\n\n**B0-S01**\nTexto.",
+        raiz_projetos=tmp_path,
+    )
+
+    # 1. Teste de aprovação de gate com código incorreto e correto
+    resp_bad = client.post(
+        f"/api/projetos/{proj.slug}/aprovar_gate",
+        json={"gate": "REVISAO", "codigo": "ERRADO"},
+    )
+    assert resp_bad.status_code == 400
+
+    resp_ok = client.post(
+        f"/api/projetos/{proj.slug}/aprovar_gate",
+        json={"gate": "REVISAO", "codigo": "PRODUZIR"},
+    )
+    assert resp_ok.status_code == 200
+    assert resp_ok.json()["status"] == "aprovado"
+
+    # 2. Teste do endpoint /producao
+    resp_prod = client.get(f"/api/projetos/{proj.slug}/producao")
+    assert resp_prod.status_code == 200
+    dados_prod = resp_prod.json()
+    assert "progresso_percent" in dados_prod
+    assert "tempo_restante_min" in dados_prod
+    assert "etapas" in dados_prod
+
+    # 3. Teste do endpoint /saida
+    resp_saida = client.get(f"/api/projetos/{proj.slug}/saida")
+    assert resp_saida.status_code == 200
+    dados_saida = resp_saida.json()
+    assert dados_saida["slug"] == proj.slug
+    assert "pronto" in dados_saida
+
+    # 4. Teste de endpoints globais e sistema
+    resp_global = client.get("/api/global/itens")
+    assert resp_global.status_code == 200
+    assert "categorias" in resp_global.json()
+
+    resp_sis = client.get("/api/sistema/detalhes")
+    assert resp_sis.status_code == 200
+    dados_sis = resp_sis.json()
+    assert "gpu" in dados_sis
+    assert "cotas" in dados_sis
