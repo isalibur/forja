@@ -8,9 +8,10 @@ import json
 import mimetypes
 import re
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,12 +20,13 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from docforja.audio.trilha import resolver_trilha_provisoria
-from docforja.esquemas import Ativo
+from docforja.esquemas import Ativo, Plano
 from docforja.global_assets import (
     avaliar_ativos_para_promocao,
     obter_pasta_global,
     promover_itens_para_global,
 )
+from docforja.io import atomic_write_json
 from docforja.midia.licenca import (
     carregar_ficha_licenca,
     classificar_licenca,
@@ -40,6 +42,13 @@ from docforja.nucleo.gpu import semaforo_gpu
 from docforja.nucleo.handlers import criar_executor_projeto
 from docforja.nucleo.projeto import Projeto
 from docforja.settings import load_settings
+from docforja.shorts.candidatos import (
+    aprovar_frase_ponte,
+    gerar_frases_ponte,
+    pontuar_candidatos_do_plano,
+)
+from docforja.shorts.modelos import CandidatoShort, FrasePonte
+from docforja.shorts.verticalizar import verticalizar_plano
 
 app = FastAPI(title="DocForja API", version="0.1.0")
 EXTENSOES_PREVIA = {".jpg", ".jpeg", ".png", ".webp"}
@@ -47,8 +56,10 @@ EXTENSOES_PREVIA = {".jpg", ".jpeg", ".png", ".webp"}
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://127.0.0.1:5173", "http://localhost:5173",
-        "http://127.0.0.1:7860", "http://localhost:7860",
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://127.0.0.1:7860",
+        "http://localhost:7860",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -81,6 +92,17 @@ class SelecionarCandidataPayload(BaseModel):
     hash_resolvidos: str
 
 
+class AprovarShortPayload(BaseModel):
+    indice_frase: int | None = Field(default=None, ge=0, le=2)
+    frase_personalizada: str | None = Field(default=None, min_length=1, max_length=240)
+
+
+class ManifestoShortPayload(BaseModel):
+    dimensoes: dict[str, tuple[int, int]]
+    focos: dict[str, tuple[float, float]] = Field(default_factory=dict)
+    estrategia: Literal["recorte", "fundo_desfocado"] = "recorte"
+
+
 def _projeto_da_interface(slug: str) -> Projeto:
     """Restringe leitura da UI aos projetos cadastrados na pasta configurada."""
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,99}", slug):
@@ -90,6 +112,57 @@ def _projeto_da_interface(slug: str) -> Projeto:
     if caminho.parent != raiz or not (caminho / "sistema" / "banco.db").is_file():
         raise HTTPException(status_code=404, detail="Projeto não encontrado")
     return Projeto(caminho, slug)
+
+
+def _dados_shorts(projeto: Projeto) -> tuple[Plano, list[dict[str, Any]], str]:
+    plano_path = projeto.pastas.plano / "plano.json"
+    idioma = projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR")
+    if not isinstance(idioma, str) or not re.fullmatch(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*", idioma):
+        raise HTTPException(status_code=422, detail="Idioma principal inválido")
+    segmentos_path = projeto.pastas.audio / idioma / "segmentos.json"
+    if not plano_path.is_file() or not segmentos_path.is_file():
+        raise HTTPException(status_code=409, detail="Plano e narração segmentada são necessários")
+    try:
+        plano = Plano.model_validate_json(plano_path.read_text(encoding="utf-8"))
+        segmentos = json.loads(segmentos_path.read_text(encoding="utf-8"))
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=422, detail="Artefatos do plano/narração inválidos"
+        ) from exc
+    if not isinstance(segmentos, list):
+        raise HTTPException(
+            status_code=422, detail="Lista de segmentos da narração inválida"
+        )
+    if plano.tipo != "longo":
+        raise HTTPException(status_code=400, detail="Shorts derivados exigem projeto longo")
+    fonte_hash = calcular_hash_dados(
+        {
+            "plano": calcular_hash_dados(plano_path),
+            "segmentos": calcular_hash_dados(segmentos_path),
+        }
+    )
+    return plano, segmentos, fonte_hash
+
+
+def _candidatos_shorts(projeto: Projeto) -> tuple[Plano, str, list[tuple[str, CandidatoShort]]]:
+    plano, segmentos, fonte_hash = _dados_shorts(projeto)
+    candidatos = pontuar_candidatos_do_plano(plano, segmentos, limite=5)
+    saida = []
+    for candidato in candidatos:
+        titulo = str(projeto.obter_opcoes().get("nome", plano.projeto))
+        candidato = candidato.model_copy(update={"frases_ponte": gerar_frases_ponte(titulo)})
+        referencia = calcular_hash_dados(
+            {
+                "fonte": fonte_hash,
+                "candidato": candidato.model_dump(mode="json"),
+            }
+        )[:24]
+        saida.append((referencia, candidato))
+    return plano, fonte_hash, saida
+
+
+def _pasta_short_derivado(projeto: Projeto, referencia: str) -> Path:
+    return projeto.pastas.montagem / "shorts" / "derivados" / referencia
 
 
 @lru_cache(maxsize=32)
@@ -109,15 +182,18 @@ def _manifesto_atual(projeto: Projeto) -> dict[str, Any] | None:
     idioma = projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR")
     entradas["hash_audio"] = projeto.pastas.audio / idioma / "narracao_completa.wav"
     entradas["hash_segmentos"] = projeto.pastas.audio / idioma / "segmentos.json"
-    if not meta.is_file() or not props.is_file() or any(
-        not caminho.is_file() for caminho in entradas.values()
+    if (
+        not meta.is_file()
+        or not props.is_file()
+        or any(not caminho.is_file() for caminho in entradas.values())
     ):
         return None
     dados = json.loads(meta.read_text(encoding="utf-8"))
     hashes_atuais = {
         chave: (
             _hash_audio_em_cache(caminho, caminho.stat().st_size, caminho.stat().st_mtime_ns)
-            if chave == "hash_audio" else calcular_hash_dados(caminho)
+            if chave == "hash_audio"
+            else calcular_hash_dados(caminho)
         )
         for chave, caminho in entradas.items()
     }
@@ -214,14 +290,16 @@ def _candidatas_publicas(projeto: Projeto, aid: str, ativo: Ativo) -> list[dict[
             continue
         ficha = _ficha_publica(projeto, ativo, arquivo)
         if ficha:
-            candidatas.append({
-                "nome": arquivo.name,
-                "imagem_url": (
-                    f"/api/projetos/{projeto.slug}/ativos/{aid}"
-                    f"/candidatas/{arquivo.name}/imagem"
-                ),
-                **ficha,
-            })
+            candidatas.append(
+                {
+                    "nome": arquivo.name,
+                    "imagem_url": (
+                        f"/api/projetos/{projeto.slug}/ativos/{aid}"
+                        f"/candidatas/{arquivo.name}/imagem"
+                    ),
+                    **ficha,
+                }
+            )
         if len(candidatas) >= 5:
             break
     return candidatas
@@ -238,14 +316,16 @@ def obter_plano_ui(slug: str) -> dict[str, Any]:
     resolvidos_path = pasta / "ativos_resolvidos.json"
     ativos_dados = (
         json.loads(resolvidos_path.read_text(encoding="utf-8")).get("ativos", {})
-        if resolvidos_path.is_file() else plano.get("ativos", {})
+        if resolvidos_path.is_file()
+        else plano.get("ativos", {})
     )
     ativos = {aid: Ativo.model_validate(item) for aid, item in ativos_dados.items()}
     imagens = _imagens_licenciadas(projeto, ativos)
     selecoes = {
         aid: selecao
         for aid, selecao in selecoes_atuais(projeto).items()
-        if aid in ativos and (
+        if aid in ativos
+        and (
             selecao.candidata is None
             or any(
                 item["nome"] == selecao.candidata
@@ -300,25 +380,24 @@ def obter_plano_ui(slug: str) -> dict[str, Any]:
                     _ficha_publica(projeto, ativo, imagens[aid]) if aid in imagens else None
                 ),
                 "candidatas": _candidatas_publicas(projeto, aid, ativo),
-                "candidata_selecionada": (
-                    selecoes[aid].candidata if aid in selecoes else None
-                ),
+                "candidata_selecionada": (selecoes[aid].candidata if aid in selecoes else None),
             }
             for aid, ativo in ativos.items()
         },
         "pedidos": pedidos,
         "verificacao": json.loads(verificacao.read_text(encoding="utf-8"))
-        if verificacao.is_file() else None,
+        if verificacao.is_file()
+        else None,
         "manifesto": _manifesto_atual(projeto),
         "imagens_por_shot": {
             shot_id: urls_imagens[aid]
-            for aid, ativo in ativos.items() if aid in imagens for shot_id in ativo.usado_em
+            for aid, ativo in ativos.items()
+            if aid in imagens
+            for shot_id in ativo.usado_em
         },
         "pasta_manual": str(manual),
         "hash_resolvidos": hash_resolvidos(projeto),
-        "previa_mp4_desatualizada": any(
-            selecao.candidata for selecao in selecoes.values()
-        ),
+        "previa_mp4_desatualizada": any(selecao.candidata for selecao in selecoes.values()),
     }
 
 
@@ -380,17 +459,172 @@ def selecionar_candidata(
         raise HTTPException(status_code=409, detail="O plano mudou; recarregue a página")
     ativo = Ativo.model_validate(dados[aid])
     if payload.candidata is not None and not any(
-        item["nome"] == payload.candidata
-        for item in _candidatas_publicas(projeto, aid, ativo)
+        item["nome"] == payload.candidata for item in _candidatas_publicas(projeto, aid, ativo)
     ):
         raise HTTPException(status_code=400, detail="Candidata sem licença confirmada")
     try:
-        selecao = registrar_selecao(
-            projeto, aid, payload.candidata, payload.hash_resolvidos
-        )
+        selecao = registrar_selecao(projeto, aid, payload.candidata, payload.hash_resolvidos)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return selecao.model_dump(mode="json")
+
+
+@app.get("/api/projetos/{slug}/shorts/derivados")
+def listar_shorts_derivados(slug: str) -> dict[str, Any]:
+    projeto = _projeto_da_interface(slug)
+    _, fonte_hash, candidatos = _candidatos_shorts(projeto)
+    saida = []
+    for referencia, candidato in candidatos:
+        pasta = _pasta_short_derivado(projeto, referencia)
+        atual_path = pasta / "aprovacao_atual.json"
+        aprovacao = None
+        if atual_path.is_file():
+            with contextlib.suppress(ValueError, OSError, KeyError, TypeError):
+                dados = json.loads(atual_path.read_text(encoding="utf-8"))
+                if not re.fullmatch(r"[a-f0-9]{64}", str(dados.get("versao", ""))):
+                    raise ValueError("Versão inválida")
+                versao = pasta / f"aprovacao-{dados['versao']}.json"
+                if dados.get("fonte_hash") == fonte_hash and versao.is_file():
+                    aprovacao = json.loads(versao.read_text(encoding="utf-8"))
+        saida.append(
+            {
+                "referencia": referencia,
+                "candidato": candidato.model_dump(mode="json"),
+                "aprovacao": aprovacao,
+            }
+        )
+    return {"slug": slug, "fonte_hash": fonte_hash, "candidatos": saida}
+
+
+@app.post("/api/projetos/{slug}/shorts/derivados/{referencia}/aprovar")
+def aprovar_short_derivado(
+    slug: str, referencia: str, payload: AprovarShortPayload
+) -> dict[str, Any]:
+    projeto = _projeto_da_interface(slug)
+    _, fonte_hash, candidatos = _candidatos_shorts(projeto)
+    if not re.fullmatch(r"[a-f0-9]{24}", referencia):
+        raise HTTPException(status_code=404, detail="Candidato não encontrado")
+    encontrado = next((item for ref, item in candidatos if ref == referencia), None)
+    if encontrado is None:
+        raise HTTPException(status_code=409, detail="O plano mudou; recarregue os candidatos")
+    if (payload.indice_frase is None) == (payload.frase_personalizada is None):
+        raise HTTPException(
+            status_code=400,
+            detail="Escolha uma frase sugerida ou informe uma frase personalizada.",
+        )
+    if payload.frase_personalizada is not None:
+        texto = " ".join(payload.frase_personalizada.split())
+        aprovado = encontrado.model_copy(
+            update={
+                "frases_ponte": [*encontrado.frases_ponte, FrasePonte(texto=texto, aprovada=True)],
+            }
+        )
+    else:
+        try:
+            aprovado = aprovar_frase_ponte(encontrado, payload.indice_frase or 0)
+        except IndexError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    pasta = _pasta_short_derivado(projeto, referencia)
+    conteudo = {
+        "referencia": referencia,
+        "fonte_hash": fonte_hash,
+        "candidato": aprovado.model_dump(mode="json"),
+        "aprovado_em": datetime.now(UTC).isoformat(),
+    }
+    versao = calcular_hash_dados(conteudo)
+    atomic_write_json(pasta / f"aprovacao-{versao}.json", conteudo)
+    atomic_write_json(
+        pasta / "aprovacao_atual.json",
+        {
+            "versao": versao,
+            "fonte_hash": fonte_hash,
+        },
+    )
+    return {"versao": versao, "aprovacao": conteudo}
+
+
+@app.post("/api/projetos/{slug}/shorts/derivados/{referencia}/manifesto-vertical")
+def criar_manifesto_vertical_short(
+    slug: str, referencia: str, payload: ManifestoShortPayload
+) -> dict[str, Any]:
+    projeto = _projeto_da_interface(slug)
+    plano, fonte_hash, candidatos = _candidatos_shorts(projeto)
+    encontrado = next((item for ref, item in candidatos if ref == referencia), None)
+    if encontrado is None:
+        raise HTTPException(status_code=409, detail="O plano mudou; recarregue os candidatos")
+    pasta = _pasta_short_derivado(projeto, referencia)
+    atual_path = pasta / "aprovacao_atual.json"
+    if not atual_path.is_file():
+        raise HTTPException(
+            status_code=409,
+            detail="Aprove uma frase-ponte antes da verticalização",
+        )
+    atual = json.loads(atual_path.read_text(encoding="utf-8"))
+    versao_aprovacao_id = str(atual.get("versao", ""))
+    if not re.fullmatch(r"[a-f0-9]{64}", versao_aprovacao_id):
+        raise HTTPException(status_code=409, detail="A aprovação está inválida")
+    versao_aprovacao = pasta / f"aprovacao-{versao_aprovacao_id}.json"
+    if atual.get("fonte_hash") != fonte_hash or not versao_aprovacao.is_file():
+        raise HTTPException(status_code=409, detail="A aprovação está desatualizada")
+    dados_aprovacao = json.loads(versao_aprovacao.read_text(encoding="utf-8"))
+    aprovado = CandidatoShort.model_validate(dados_aprovacao["candidato"])
+    if not any(frase.aprovada for frase in aprovado.frases_ponte):
+        raise HTTPException(status_code=409, detail="A frase-ponte não está aprovada")
+
+    ids_segmentos = set(encontrado.segmento_ids)
+    blocos = []
+    ativos_usados: set[str] = set()
+    for bloco in plano.blocos:
+        shots = []
+        for shot in bloco.shots:
+            if not ids_segmentos.intersection(shot.segmentos):
+                continue
+            inicio_shot = shot.inicio_s if shot.inicio_s is not None else encontrado.inicio_s
+            fim_shot = shot.fim_s if shot.fim_s is not None else inicio_shot + shot.duracao_s
+            inicio = max(inicio_shot, encontrado.inicio_s)
+            fim = min(fim_shot, encontrado.fim_s)
+            if fim <= inicio:
+                continue
+            shots.append(shot.model_copy(update={"inicio_s": inicio, "fim_s": fim}))
+            ativos_usados.update(shot.ativos)
+        if shots:
+            blocos.append(bloco.model_copy(update={"shots": shots}))
+    plano_derivado = plano.model_copy(
+        update={
+            "blocos": blocos,
+            "ativos": {aid: plano.ativos[aid] for aid in ativos_usados if aid in plano.ativos},
+        }
+    )
+    try:
+        manifesto = verticalizar_plano(
+            plano_derivado,
+            payload.dimensoes,
+            focos=payload.focos,
+            estrategia=payload.estrategia,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    manifesto = manifesto.model_copy(
+        update={
+            "hash_entrada": calcular_hash_dados(
+                {
+                    "fonte": fonte_hash,
+                    "aprovacao": atual["versao"],
+                    "manifesto": manifesto.model_dump(mode="json"),
+                }
+            ),
+        }
+    )
+    versao_manifesto = manifesto.hash_entrada
+    atomic_write_json(
+        pasta / f"manifesto-vertical-{versao_manifesto}.json", manifesto.model_dump(mode="json")
+    )
+    return {
+        "versao": versao_manifesto,
+        "manifesto": manifesto.model_dump(mode="json"),
+        "aprovacao_versao": atual["versao"],
+    }
 
 
 @app.get("/api/projetos/{slug}/narracao.wav")
@@ -463,11 +697,7 @@ def listar_projetos() -> list[dict[str, Any]]:
                         status_por_id[etapa] == "concluida" for etapa in gate_m3_m4
                     ):
                         ausentes = proj.artefatos_m3_m4_ausentes()
-                        etapa_atual = (
-                            "Saídas pendentes de M3/M4"
-                            if ausentes
-                            else "Concluído"
-                        )
+                        etapa_atual = "Saídas pendentes de M3/M4" if ausentes else "Concluído"
                     elif etapas and all(e["status"] == "concluida" for e in etapas):
                         etapa_atual = "Concluído"
 
@@ -559,10 +789,7 @@ def aprovar_gate(
     ):
         raise HTTPException(
             status_code=400,
-            detail=(
-                "Código de confirmação incorreto. "
-                "Digite PRODUZIR para confirmar a produção."
-            ),
+            detail=("Código de confirmação incorreto. Digite PRODUZIR para confirmar a produção."),
         )
 
     executor = criar_executor_projeto(projeto)
@@ -583,8 +810,16 @@ def obter_status_producao(slug: str) -> dict[str, Any]:
     status_map = {e["id"]: e["status"] for e in etapas}
 
     etapas_producao = [
-        "R1_imagens", "R2_tratamento", "R3_mapas", "R4_trilha_sfx",
-        "R5_montagem", "R6_mix", "R7_render", "R8_qa", "R9_pacote", "R10_biblioteca",
+        "R1_imagens",
+        "R2_tratamento",
+        "R3_mapas",
+        "R4_trilha_sfx",
+        "R5_montagem",
+        "R6_mix",
+        "R7_render",
+        "R8_qa",
+        "R9_pacote",
+        "R10_biblioteca",
     ]
     concluidas_prod = sum(1 for e in etapas_producao if status_map.get(e) == "concluida")
     em_execucao = [e for e in etapas if e["status"] == "executando"]
@@ -697,7 +932,12 @@ def obter_video_final(slug: str) -> FileResponse:
 def listar_itens_globais() -> dict[str, Any]:
     pasta_global = obter_pasta_global()
     categorias: dict[str, list[dict[str, Any]]] = {
-        "imagens": [], "personagens": [], "mapas": [], "loops": [], "trilhas": [], "sfx": [],
+        "imagens": [],
+        "personagens": [],
+        "mapas": [],
+        "loops": [],
+        "trilhas": [],
+        "sfx": [],
     }
     if pasta_global.is_dir():
         for cat in categorias:

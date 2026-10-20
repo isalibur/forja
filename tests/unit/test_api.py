@@ -89,6 +89,71 @@ def test_api_servir_web_dist():
     assert '<div id="root">' in resp.text
 
 
+def test_api_fluxo_short_derivado_versionado(tmp_path, monkeypatch):
+    mock_settings = lambda: type(  # noqa: E731
+        "Settings", (), {"paths": type("Paths", (), {"projects": tmp_path})()}
+    )()
+    monkeypatch.setattr("docforja.api.load_settings", mock_settings)
+    projeto = Projeto.criar(nome="Short API", roteiro="roteiro", raiz_projetos=tmp_path)
+    plano = {
+        "projeto": projeto.slug,
+        "tipo": "longo",
+        "blocos": [
+            {
+                "id": "B0",
+                "titulo": "Bloco",
+                "shots": [
+                    {
+                        "id": "B0-01",
+                        "segmentos": ["S01", "S02"],
+                        "duracao_s": 40,
+                        "inicio_s": 0,
+                        "fim_s": 40,
+                        "template": "T01",
+                    }
+                ],
+            }
+        ],
+        "ativos": {},
+    }
+    atomic_write_json(projeto.pastas.plano / "plano.json", plano)
+    pasta_audio = projeto.pastas.audio / "pt-BR"
+    atomic_write_json(
+        pasta_audio / "segmentos.json",
+        [
+            {"id": "S01", "inicio_s": 0, "fim_s": 20, "texto": "Primeira parte."},
+            {"id": "S02", "inicio_s": 20, "fim_s": 40, "texto": "Segunda parte."},
+        ],
+    )
+    client = TestClient(app)
+    plano_mestre_antes = (projeto.pastas.plano / "plano.json").read_bytes()
+    endpoint = f"/api/projetos/{projeto.slug}/shorts/derivados"
+    dados = client.get(endpoint)
+    assert dados.status_code == 200
+    candidatos = dados.json()["candidatos"]
+    assert len(candidatos) == 2
+    referencia = candidatos[0]["referencia"]
+    assert len(candidatos[0]["candidato"]["frases_ponte"]) == 3
+    aprovar_url = f"{endpoint}/{referencia}/aprovar"
+    aprovacao = client.post(aprovar_url, json={"indice_frase": 1})
+    assert aprovacao.status_code == 200
+    versao = aprovacao.json()["versao"]
+    assert (
+        projeto.pastas.montagem / "shorts" / "derivados" / referencia / f"aprovacao-{versao}.json"
+    ).is_file()
+    assert client.get(endpoint).json()["candidatos"][0]["aprovacao"] is not None
+    manifesto = client.post(
+        f"{endpoint}/{referencia}/manifesto-vertical",
+        json={"dimensoes": {}},
+    )
+    assert manifesto.status_code == 200
+    assert manifesto.json()["manifesto"]["proporcao"] == "9:16"
+    assert len(manifesto.json()["manifesto"]["shots"]) == 1
+    assert manifesto.json()["manifesto"]["shots"][0]["fim_s"] == 20
+    assert (projeto.pastas.plano / "plano.json").read_bytes() == plano_mestre_antes
+    assert client.post(aprovar_url, json={}).status_code == 400
+
+
 def test_api_plano_ui_leitura_local_e_pasta_manual(tmp_path, monkeypatch):
     mock_settings = lambda: type(  # noqa: E731
         "Settings", (), {"paths": type("Paths", (), {"projects": tmp_path})()}
@@ -102,8 +167,11 @@ def test_api_plano_ui_leitura_local_e_pasta_manual(tmp_path, monkeypatch):
         {"projeto": projeto.slug, "blocos": [], "ativos": {}},
     )
     ativo = {
-        "id": "A-001", "descricao": "Imagem histórica", "origem": "pedir_ao_usuario",
-        "nome_arquivo": "A-001.jpg", "usado_em": ["B0-01"],
+        "id": "A-001",
+        "descricao": "Imagem histórica",
+        "origem": "pedir_ao_usuario",
+        "nome_arquivo": "A-001.jpg",
+        "usado_em": ["B0-01"],
     }
     atomic_write_json(
         projeto.pastas.plano / "ativos_resolvidos.json",
@@ -140,7 +208,9 @@ def test_api_plano_ui_leitura_local_e_pasta_manual(tmp_path, monkeypatch):
     atomic_write_json(
         candidata.with_name("cand_wikimedia_1.jpg.licenca.json"),
         {
-            "licenca": "CC BY 4.0", "comercial": True, "autor": "Arquivo Exemplo",
+            "licenca": "CC BY 4.0",
+            "comercial": True,
+            "autor": "Arquivo Exemplo",
             "url_origem": "https://example.org/origem",
             "texto_credito": "Arquivo Exemplo / CC BY 4.0",
         },
@@ -158,20 +228,44 @@ def test_api_plano_ui_leitura_local_e_pasta_manual(tmp_path, monkeypatch):
     assert candidatas[0]["autor"] == "Arquivo Exemplo"
     assert candidatas[0]["fonte"] == "https://example.org/origem"
     assert client.get(candidatas[0]["imagem_url"]).content == b"candidata liberada"
-    assert client.get(
-        f"/api/projetos/{projeto.slug}/ativos/A-001/candidatas/cand_wikimedia_2.jpg/imagem"
-    ).status_code == 404
+    assert (
+        client.get(
+            f"/api/projetos/{projeto.slug}/ativos/A-001/candidatas/cand_wikimedia_2.jpg/imagem"
+        ).status_code
+        == 404
+    )
     endpoint_selecao = f"/api/projetos/{projeto.slug}/ativos/A-001/selecionar"
     hash_atual = dados["hash_resolvidos"]
-    assert client.post(endpoint_selecao, json={
-        "candidata": "cand_wikimedia_2.jpg", "hash_resolvidos": hash_atual,
-    }).status_code == 400
-    assert client.post(endpoint_selecao, json={
-        "candidata": "cand_wikimedia_1.jpg", "hash_resolvidos": "antigo",
-    }).status_code == 409
-    assert client.post(endpoint_selecao, json={
-        "candidata": "cand_wikimedia_1.jpg", "hash_resolvidos": hash_atual,
-    }).status_code == 200
+    assert (
+        client.post(
+            endpoint_selecao,
+            json={
+                "candidata": "cand_wikimedia_2.jpg",
+                "hash_resolvidos": hash_atual,
+            },
+        ).status_code
+        == 400
+    )
+    assert (
+        client.post(
+            endpoint_selecao,
+            json={
+                "candidata": "cand_wikimedia_1.jpg",
+                "hash_resolvidos": "antigo",
+            },
+        ).status_code
+        == 409
+    )
+    assert (
+        client.post(
+            endpoint_selecao,
+            json={
+                "candidata": "cand_wikimedia_1.jpg",
+                "hash_resolvidos": hash_atual,
+            },
+        ).status_code
+        == 200
+    )
     dados = client.get(f"/api/projetos/{projeto.slug}/plano").json()
     assert dados["ativos"]["A-001"]["candidata_selecionada"] == "cand_wikimedia_1.jpg"
     assert dados["previa_mp4_desatualizada"] is True
@@ -183,17 +277,27 @@ def test_api_plano_ui_leitura_local_e_pasta_manual(tmp_path, monkeypatch):
     dados = client.get(f"/api/projetos/{projeto.slug}/plano").json()
     assert dados["ativos"]["A-001"]["candidata_selecionada"] is None
     assert client.get(dados["ativos"]["A-001"]["imagem_url"]).content == b"imagem de teste"
-    assert client.post(endpoint_selecao, json={
-        "candidata": None, "hash_resolvidos": hash_atual,
-    }).status_code == 200
+    assert (
+        client.post(
+            endpoint_selecao,
+            json={
+                "candidata": None,
+                "hash_resolvidos": hash_atual,
+            },
+        ).status_code
+        == 200
+    )
     dados = client.get(f"/api/projetos/{projeto.slug}/plano").json()
     assert dados["ativos"]["A-001"]["candidata_selecionada"] is None
     assert dados["previa_mp4_desatualizada"] is False
     assert client.get(dados["ativos"]["A-001"]["imagem_url"]).content == b"imagem de teste"
     assert len(list((projeto.pastas.midias / "selecoes_ui").glob("*.json"))) == 2
-    assert json.loads(
-        (projeto.pastas.plano / "ativos_resolvidos.json").read_text(encoding="utf-8")
-    )["ativos"]["A-001"] == ativo
+    assert (
+        json.loads((projeto.pastas.plano / "ativos_resolvidos.json").read_text(encoding="utf-8"))[
+            "ativos"
+        ]["A-001"]
+        == ativo
+    )
     atomic_write_json(ficha, {"licenca": "CC BY-NC 4.0", "comercial": True})
     assert client.get(f"/api/projetos/{projeto.slug}/ativos/A-001/imagem").status_code == 404
     atomic_write_json(ficha, {"licenca": "manual_autorizado", "comercial": True})
@@ -226,16 +330,24 @@ def test_api_producao_e_saida_endpoints(tmp_path, monkeypatch):
         "Settings",
         (),
         {
-            "paths": type("Paths", (), {
-                "projects": tmp_path,
-                "models": tmp_path / "models",
-                "temp": tmp_path / "temp",
-            })(),
+            "paths": type(
+                "Paths",
+                (),
+                {
+                    "projects": tmp_path,
+                    "models": tmp_path / "models",
+                    "temp": tmp_path / "temp",
+                },
+            )(),
             "python_environments": {"kokoro": "py311", "whisperx": "py311"},
-            "alinhamento": type("Alin", (), {
-                "modelo_asr": "whisper",
-                "modelo_alinhador": "wav2vec2",
-            })(),
+            "alinhamento": type(
+                "Alin",
+                (),
+                {
+                    "modelo_asr": "whisper",
+                    "modelo_alinhador": "wav2vec2",
+                },
+            )(),
         },
     )()
     monkeypatch.setattr("docforja.api.load_settings", mock_settings)
