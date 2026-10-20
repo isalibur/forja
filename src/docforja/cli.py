@@ -244,3 +244,53 @@ def ui(
     if open_browser:
         webbrowser.open(url)
     uvicorn.run("docforja.api:app", host=host, port=port, log_level="info")
+
+
+@app.command()
+def promover(
+    projeto: Annotated[str, typer.Option("--projeto", "-p", help="Slug do projeto")] = "",
+    ativos: Annotated[
+        list[str] | None,
+        typer.Option("--ativo", "-a", help="IDs dos ativos a promover (opcional, default todos)"),
+    ] = None,
+) -> None:
+    """Promove ativos elegíveis do projeto para a Pasta Global após confirmação humana."""
+    import json
+
+    from docforja.esquemas import Ativo
+    from docforja.global_assets import (
+        avaliar_ativos_para_promocao,
+        obter_pasta_global,
+        promover_itens_para_global,
+    )
+    from docforja.nucleo.projeto import Projeto
+
+    if not projeto:
+        console.print("[red]Erro: informe o slug do projeto com --projeto <slug>[/red]")
+        raise typer.Exit(code=1)
+
+    proj = Projeto.carregar(projeto)
+    resolvidos_path = proj.pastas.plano / "ativos_resolvidos.json"
+    if not resolvidos_path.is_file():
+        console.print(f"[red]Ativos resolvidos não encontrados em {proj.slug}[/red]")
+        raise typer.Exit(code=1)
+
+    dados_res = json.loads(resolvidos_path.read_text(encoding="utf-8"))
+    mapa_ativos = {k: Ativo.model_validate(v) for k, v in dados_res.get("ativos", {}).items()}
+    itens_promo = avaliar_ativos_para_promocao(proj.slug, mapa_ativos)
+
+    if ativos:
+        itens_promo = [item for item in itens_promo if item.id in ativos]
+
+    if not itens_promo:
+        console.print("[yellow]Nenhum ativo elegível para promoção à Pasta Global.[/yellow]")
+        return
+
+    pasta_global = obter_pasta_global()
+    promovidos = promover_itens_para_global(itens_promo, pasta_global)
+    console.print(
+        f"[green][OK] {len(promovidos)} ativo(s) promovido(s) para a Pasta Global:[/green] "
+        f"{promovidos}"
+    )
+    console.print(f"Destino: [dim]{pasta_global}[/dim]")
+

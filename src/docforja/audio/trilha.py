@@ -102,12 +102,14 @@ def garantir_trilha_provisoria_kit(kit_dir: Path | None = None) -> Path:
 def resolver_trilha_provisoria(
     projeto: Projeto,
     kit_dir: Path | None = None,
+    pasta_global: Path | None = None,
 ) -> Path | None:
     """Resolve a trilha sonora provisória prioritária para a prévia.
 
     1. Trilha específica do projeto em 03_audio/trilha/ (se fornecida).
-    2. Trilha provisória do kit visual configurado.
-    3. Trilha padrão documental gerada e licenciada no kit.
+    2. Trilha na Pasta Global (global/trilhas ou global/musica com licença comercial).
+    3. Trilha provisória do kit visual configurado.
+    4. Trilha padrão documental gerada e licenciada no kit.
     """
     pasta_trilha_projeto = projeto.pastas.audio / "trilha"
     if pasta_trilha_projeto.is_dir():
@@ -120,6 +122,20 @@ def resolver_trilha_provisoria(
             candidato = pasta_trilha_projeto / nome
             if candidato.is_file():
                 return candidato
+
+    # 2. Pasta Global (se houver trilha licenciada ou solicitada nas opções)
+    try:
+        from docforja.global_assets.resolucao import buscar_trilha_global, obter_pasta_global
+
+        root_global = pasta_global or obter_pasta_global()
+        trilha_opt = projeto.obter_opcoes().get("audio", {}).get("trilha")
+        termo = str(trilha_opt) if trilha_opt else None
+        res_global = buscar_trilha_global(termo, pasta_global=root_global)
+        if res_global:
+            caminho_trilha, _ficha = res_global
+            return caminho_trilha
+    except Exception:
+        pass
 
     pasta_kit = kit_dir or KIT_PADRAO_DIR
     kit_trilhas = pasta_kit / "trilhas"

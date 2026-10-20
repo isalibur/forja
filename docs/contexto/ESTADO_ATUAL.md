@@ -66,15 +66,30 @@ Atualizado em 20 de outubro de 2026. Este arquivo registra somente o estado oper
   2. Limites estritos de segurança implementados: validação de slug e bloqueio de travessia de diretório (`..`, `/`, `\`); sem acesso a shell arbitrário; proteção inviolável do código de confirmação (`docforja_produzir` falha com `ValueError` se o código não for exatamente `"PRODUZIR"`); autorização de Telegram restrita a `TELEGRAM_CHAT_ID`.
   3. Barramento de notificação: `src/docforja/hermes/notificador.py` implementa `Notificador(Protocol)` com `NotificadorHermes`, `NotificadorTelegram` e `NotificadorNenhum`, formatando alertas de plano pronto, revisão pendente e produção concluída.
   4. Hermes opera via 9Router sem alocar VRAM nem disputar o semáforo de GPU; o pipeline DocForja acionado mantém acesso total e gerenciado à GPU.
-- Verificação automatizada: 149 testes unitários passaram sem GPU e sem rede (`pytest tests/unit`); Ruff 100% limpo em `src/`, `tests/`, `scripts/` e `hermes/`. Lint e checagem de tipos do kit Cinza e Brasa aprovados (`npm run lint`, `tsc --noEmit`); build de produção do frontend `web` aprovado (`npm run build`).
+- Invalidação Seletiva Multilíngue e Reaproveitamento da Pasta Global por ID (20/10/2026):
+  1. Invalidação seletiva por bloco (07 §1, 08 §M7):
+     - `_obter_plano_e_ativos` mescla escolhas confirmadas do usuário em `02_midias/escolhas.json`.
+     - `R2_tratamento` reprocessa e atualiza exclusivamente os arquivos tratados dos ativos cujo hash de origem mudou em `02_midias/tratadas/`.
+     - `R7_render` renderiza chunks de vídeo independentes por bloco (`04_sistema/render/<idioma>/blocos/<bloco_id>.mp4`) com cache por hash determinístico (`calcular_hash_bloco`). A alteração de uma imagem em `escolhas.json` invalida somente os chunks dos blocos que a utilizam nos idiomas ativos, preservando chunks de blocos intactos diretamente do cache.
+     - Concatenação final em `05_saida/<idioma>/video.mp4` via `concatenar_blocos_video` (com suporte a concat demuxer FFmpeg e fallback determinístico).
+     - Áudio (`03_audio/<idioma>/narracao_completa.wav`), `segmentos.json`, `palavras.json`, `plano.json`, `plano_retimado.json`, `timeline.otio` e metadados estratégicos permanecem 100% intocados.
+     - A prévia interativa em `02_midias/selecoes_ui/` não altera o `video.mp4` de produção até efetivação em `escolhas.json`.
+  2. Reaproveitamento de ativos da Pasta Global por ID (13 §3, 08 §M7):
+     - Módulo `src/docforja/global_assets/resolucao.py` com `obter_pasta_global`, `buscar_ativo_global` (suporte a prefixo `global:<cat>:<id>` e plain IDs), `buscar_mapa_global` (busca por região/palavras-chave) e `buscar_trilha_global`.
+     - Esquema `Ativo` expandido com `id_global: str | None = None`.
+     - Promoção estritamente condicionada a confirmação humana com ficha técnica e verificação de licença comercial (bloqueio de NC/ND e risco de patrimônio).
+     - Comando CLI `docforja promover --projeto <slug> [--ativo <id>]` implementado.
+     - `P7_resolucao` (`resolver_ativos_projeto`) consome ativos por ID global ou biblioteca, e busca mapas na pasta global antes de consultar acervos externos.
+     - `audio/trilha.py` (`resolver_trilha_provisoria`) resolve trilhas comerciais da pasta global com prioridade sobre kit e drone gerado.
+- Verificação automatizada: 156 testes unitários passaram sem GPU e sem rede (`pytest tests/unit`); Ruff 100% limpo em `src/`, `tests/`, `scripts/` e `hermes/`.
 
 ## Pendências e próxima tarefa
 
-- Próxima tarefa: Invalidação seletiva multilíngue e reaproveitamento da Pasta Global por ID (Marco M7):
-  1. Invalidação seletiva: alteração de uma imagem em `escolhas.json` invalida apenas os chunks de render do bloco afetado (`04_sistema/render/<idioma>/blocos/<bloco_id>.mp4`) e o vídeo final de cada idioma, preservando narrações, sincronismo, transições, QA e demais blocos; a seleção na prévia interativa em `selecoes_ui/`, por si só, não atualiza o MP4.
-  2. Reaproveitamento da Pasta Global: promoção estritamente condicionada a confirmação humana com ficha e licença comercial permissiva (`.licenca.json`), e consumo posterior em novos projetos via referência estável ao ID (`global:<categoria>:<id>`).
-- Pendências complementares do Marco M7:
-  - Adaptadores adicionais de TTS: `openai_compat` (HTTP `/v1/audio/speech`), VoiceStudio (com bloqueio de engines não-comerciais para projetos monetizados) e `arquivo_pronto` (narração por arquivo com tolerância a divergências de texto WER > 8%).
+- Próxima tarefa: Adaptadores adicionais de TTS do Marco M7:
+  1. `openai_compat`: consumo de endpoints HTTP `/v1/audio/speech` com retry, timeout e transcodificação FFmpeg para WAV 24 kHz mono.
+  2. `voicestudio`: integração com a API local do VoiceStudio, com trava obrigatória para bloquear engines não-comerciais (NC) em projetos monetizados.
+  3. `arquivo_pronto`: narração fornecida pelo usuário em `00_entrada/narracao_<idioma>.wav` com alinhamento WhisperX e tolerância a divergências de texto (WER > 8% adota a transcrição como verdade para tempos com aviso no plano).
+- Observações: manter escritas atômicas, cache por hash e não avançar para M8 ou M9. Teste assistivo manual com NVDA/VoiceOver a ser executado em ambiente com leitor instalado.
 - Observações: manter escritas atômicas, cache por hash e não avançar para M8 ou M9. Teste assistivo manual com NVDA/VoiceOver a ser executado em ambiente com leitor instalado.
 
 ## Entrega entre Codex e Antigravity

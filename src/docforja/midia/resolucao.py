@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import shutil
+from pathlib import Path
 from typing import Any
 
 from docforja.esquemas import Ativo, OrigemAtivo
@@ -34,6 +35,7 @@ def resolver_ativos_projeto(
     acervos: list[AcervoAdapter] | None = None,
     curador: CuradorImagens | None = None,
     usar_mock_se_sem_rede: bool = True,
+    pasta_global: Path | None = None,
 ) -> dict[str, Ativo]:
     """Executa a resolução completa de ativos para o projeto."""
     pasta_plano = projeto.pastas.plano
@@ -51,6 +53,15 @@ def resolver_ativos_projeto(
         raise ValueError("Nenhum ativo listado para resolução.")
 
     ativos = {aid: Ativo.model_validate(item) for aid, item in dados_ativos.items()}
+
+    # Resolução da pasta global
+    if pasta_global is None:
+        try:
+            from docforja.global_assets.resolucao import obter_pasta_global
+
+            pasta_global = obter_pasta_global()
+        except Exception:
+            pasta_global = None
 
     # Cria pastas de mídia do projeto
     pasta_midias = projeto.pastas.midias
@@ -107,6 +118,23 @@ def resolver_ativos_projeto(
             }
             continue
 
+        # Caso 1b: Ativo com referência global explícita (global:<categoria>:<id>)
+        if ativo.id_global and pasta_global:
+            from docforja.global_assets.resolucao import buscar_ativo_global
+
+            res_glob = buscar_ativo_global(ativo.id_global, pasta_global=pasta_global)
+            if res_glob:
+                caminho_glob, ficha_glob = res_glob
+                ativo.caminho = caminho_glob
+                ativo.licenca = ficha_glob
+                escolhas[aid] = {
+                    "origem": "global",
+                    "caminho": str(caminho_glob),
+                    "id_global": ativo.id_global,
+                    "aprovado": True,
+                }
+                continue
+
         # Caso 2: Ativo com origem BIBLIOTECA
         if ativo.origem == OrigemAtivo.BIBLIOTECA:
             # Procura em biblioteca local do canal
@@ -120,11 +148,52 @@ def resolver_ativos_projeto(
                     "aprovado": True,
                 }
                 continue
+
+            # Procura na pasta global compartilhada
+            if pasta_global:
+                from docforja.global_assets.resolucao import buscar_ativo_global
+
+                res_glob = buscar_ativo_global(aid, pasta_global=pasta_global)
+                if res_glob:
+                    caminho_glob, ficha_glob = res_glob
+                    ativo.caminho = caminho_glob
+                    ativo.licenca = ficha_glob
+                    ativo.id_global = ficha_glob.get("id_global", f"global:imagens:{aid}")
+                    escolhas[aid] = {
+                        "origem": "global",
+                        "caminho": str(caminho_glob),
+                        "id_global": ativo.id_global,
+                        "aprovado": True,
+                    }
+                    continue
+
             # Se não encontrar na biblioteca, converte para pesquisa
             ativo.origem = OrigemAtivo.PESQUISAR
 
         # Caso 3: Ativo com origem PESQUISAR
         if ativo.origem == OrigemAtivo.PESQUISAR:
+            # Verifica se é mapa e se há mapa correspondente na pasta global (08 M7)
+            if pasta_global and ("mapa" in aid.lower() or "mapa" in ativo.descricao.lower()):
+                from docforja.global_assets.resolucao import buscar_mapa_global
+
+                termo_mapa = ativo.descricao
+                if ativo.busca and "termos" in ativo.busca and ativo.busca["termos"]:
+                    termo_mapa = str(ativo.busca["termos"][0])
+                mapa_match = buscar_mapa_global(termo_mapa, pasta_global=pasta_global)
+                if mapa_match:
+                    caminho_mapa, ficha_mapa = mapa_match
+                    ativo.caminho = caminho_mapa
+                    ativo.licenca = ficha_mapa
+                    ativo.id_global = ficha_mapa.get(
+                        "id_global", f"global:mapas:{caminho_mapa.stem}"
+                    )
+                    escolhas[aid] = {
+                        "origem": "global",
+                        "caminho": str(caminho_mapa),
+                        "id_global": ativo.id_global,
+                        "aprovado": True,
+                    }
+                    continue
             pasta_ativo = pasta_pesquisadas / aid
             pasta_ativo.mkdir(parents=True, exist_ok=True)
             escolhida_existente = pasta_ativo / "escolhida.jpg"

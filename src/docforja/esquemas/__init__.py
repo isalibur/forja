@@ -82,6 +82,7 @@ class Ativo(BaseModel):
     plano_b: str | None = None
     caminho: Path | None = None
     licenca: dict[str, Any] | None = None
+    id_global: str | None = None
 
 
 class Credito(BaseModel):

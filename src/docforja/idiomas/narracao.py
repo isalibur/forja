@@ -111,6 +111,8 @@ def narracoes_extras_validas(projeto: Projeto) -> bool:
 
 def salvar_retime_se_disponivel(projeto: Projeto, idioma: str) -> Path | None:
     plano_path = projeto.pastas.plano / "plano_verificado.json"
+    if not plano_path.is_file():
+        plano_path = projeto.pastas.plano / "plano.json"
     principal = projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR")
     origem_path = projeto.pastas.audio / principal / "segmentos.json"
     destino_path = projeto.pastas.audio / idioma / "segmentos.json"

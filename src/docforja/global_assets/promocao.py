@@ -152,6 +152,7 @@ def promover_itens_para_global(
             "arquivo": destino_arquivo.name,
             "sha256": calcular_hash_dados(destino_arquivo),
             "projetos_usados": item.projetos_usados,
+            "id_global": f"global:{item.tipo}:{item.id}",
         }
         atomic_write_json(destino_ficha, dados_ficha)
         promovidos.append(item.id)

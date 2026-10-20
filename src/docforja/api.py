@@ -20,8 +20,9 @@ from pydantic import BaseModel, Field
 
 from docforja.audio.trilha import resolver_trilha_provisoria
 from docforja.esquemas import Ativo
-from docforja.global_assets.promocao import (
+from docforja.global_assets import (
     avaliar_ativos_para_promocao,
+    obter_pasta_global,
     promover_itens_para_global,
 )
 from docforja.midia.licenca import (
@@ -675,7 +676,7 @@ def promover_ativos_global(slug: str, payload: PromoverGlobalPayload) -> dict[st
     itens_promo = avaliar_ativos_para_promocao(slug, ativos)
     itens_filtrados = [item for item in itens_promo if item.id in payload.itens]
 
-    pasta_global = load_settings().paths.projects.parent / "global_assets"
+    pasta_global = obter_pasta_global()
     promovidos = promover_itens_para_global(itens_filtrados, pasta_global)
     return {"sucesso": True, "promovidos": promovidos}
 
@@ -694,7 +695,7 @@ def obter_video_final(slug: str) -> FileResponse:
 
 @app.get("/api/global/itens")
 def listar_itens_globais() -> dict[str, Any]:
-    pasta_global = load_settings().paths.projects.parent / "global_assets"
+    pasta_global = obter_pasta_global()
     categorias: dict[str, list[dict[str, Any]]] = {
         "imagens": [], "personagens": [], "mapas": [], "loops": [], "trilhas": [], "sfx": [],
     }

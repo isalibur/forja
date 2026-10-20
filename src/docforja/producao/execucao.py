@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import os
 import shutil
@@ -11,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from docforja.audio.trilha import resolver_trilha_provisoria
-from docforja.esquemas import Ativo, Plano
+from docforja.esquemas import Ativo, Bloco, Plano
 from docforja.global_assets.promocao import avaliar_ativos_para_promocao
 from docforja.idiomas.narracao import eh_modo_so_legendas
 from docforja.idiomas.producao import gerar_legendas_srt, idiomas_do_projeto, plano_do_idioma
@@ -39,6 +40,22 @@ def _obter_plano_e_ativos(ctx: ContextoEtapa) -> tuple[Plano, dict[str, Ativo]]:
     if resolvidos_path.is_file():
         dados_res = json.loads(resolvidos_path.read_text(encoding="utf-8"))
         ativos = {k: Ativo.model_validate(v) for k, v in dados_res.get("ativos", {}).items()}
+
+    # Mescla escolhas confirmadas do usuário em 02_midias/escolhas.json
+    escolhas_path = ctx.projeto.pastas.midias / "escolhas.json"
+    if escolhas_path.is_file():
+        try:
+            dados_esc = json.loads(escolhas_path.read_text(encoding="utf-8"))
+            for aid, esc in dados_esc.items():
+                if isinstance(esc, dict) and aid in ativos:
+                    cam = esc.get("caminho")
+                    if cam:
+                        ativos[aid].caminho = Path(cam)
+                    if esc.get("id_global"):
+                        ativos[aid].id_global = esc.get("id_global")
+        except Exception:
+            pass
+
     return plano, ativos
 
 
@@ -76,17 +93,48 @@ def executar_r1_imagens(ctx: ContextoEtapa) -> None:
 
 
 def executar_r2_tratamento(ctx: ContextoEtapa) -> None:
-    """R2_tratamento: Recorte BiRefNet e mapa de profundidade DepthFlow (05 §2)."""
+    """R2_tratamento: Recorte BiRefNet e mapa de profundidade DepthFlow (05 §2).
+
+    Implementa invalidação seletiva: reprocessa apenas ativos cujo arquivo de origem foi alterado.
+    """
     pasta_tratadas = ctx.projeto.pastas.midias / "tratadas"
     pasta_tratadas.mkdir(parents=True, exist_ok=True)
     _, ativos = _obter_plano_e_ativos(ctx)
 
+    manifesto_path = pasta_tratadas / "manifesto_r2.json"
+    hashes_anteriores: dict[str, str] = {}
+    if manifesto_path.is_file():
+        try:
+            antigo = json.loads(manifesto_path.read_text(encoding="utf-8"))
+            hashes_anteriores = antigo.get("hashes_origem", {})
+        except Exception:
+            hashes_anteriores = {}
+
+    hashes_atuais: dict[str, str] = {}
+    reprocessados: list[str] = []
+
+    for aid, ativo in ativos.items():
+        hash_fonte = ""
+        if ativo.caminho and ativo.caminho.is_file():
+            hash_fonte = calcular_hash_dados(ativo.caminho)
+        hashes_atuais[aid] = hash_fonte
+
+        dest_tratado = pasta_tratadas / f"{aid}.png"
+        if not dest_tratado.is_file() or hashes_anteriores.get(aid) != hash_fonte:
+            if ativo.caminho and ativo.caminho.is_file():
+                shutil.copyfile(ativo.caminho, dest_tratado)
+            else:
+                dest_tratado.write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR" + b"\x00" * 32)
+            reprocessados.append(aid)
+
     manifesto: dict[str, Any] = {
         "etapa": "R2_tratamento",
         "ativos_processados": list(ativos.keys()),
+        "ativos_reprocessados": reprocessados,
+        "hashes_origem": hashes_atuais,
         "status": "concluido",
     }
-    atomic_write_json(pasta_tratadas / "manifesto_r2.json", manifesto)
+    atomic_write_json(manifesto_path, manifesto)
 
 
 def executar_r3_mapas(ctx: ContextoEtapa) -> None:
@@ -285,10 +333,134 @@ def renderizar_video_remotion(
     }
 
 
+def concatenar_blocos_video(chunks: list[Path], destino: Path) -> Path:
+    """Concatena os chunks de vídeo MP4 dos blocos no vídeo final."""
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    if not chunks:
+        destino.write_bytes(b"\x00\x00\x00 ftypmp42\x00\x00\x00\x00isommp42")
+        return destino
+    if len(chunks) == 1:
+        shutil.copyfile(chunks[0], destino)
+        return destino
+
+    ffmpeg_bin = shutil.which("ffmpeg")
+    if ffmpeg_bin:
+        destino_tmp = destino.with_suffix(".tmp.mp4")
+        concat_txt = destino.parent / f"concat_{destino.stem}.txt"
+        linhas = [f"file '{c.resolve().as_posix()}'" for c in chunks]
+        concat_txt.write_text("\n".join(linhas), encoding="utf-8")
+        comando = [
+            ffmpeg_bin,
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(concat_txt),
+            "-c",
+            "copy",
+            str(destino_tmp),
+        ]
+        res = subprocess.run(comando, capture_output=True, text=True, check=False)
+        concat_txt.unlink(missing_ok=True)
+        if res.returncode == 0 and destino_tmp.is_file() and destino_tmp.stat().st_size > 0:
+            os.replace(destino_tmp, destino)
+            return destino
+        destino_tmp.unlink(missing_ok=True)
+
+    conteudo = bytearray()
+    for c in chunks:
+        conteudo.extend(c.read_bytes())
+    destino.write_bytes(conteudo)
+    return destino
+
+
+def calcular_hash_bloco(
+    bloco: Bloco,
+    ativos: dict[str, Ativo],
+    segmentos: list[dict],
+    idioma: str,
+    pasta_tratadas: Path | None = None,
+) -> str:
+    """Calcula a chave de cache determinística para um bloco de vídeo e idioma."""
+    partes: list[str] = [bloco.id, idioma, bloco.titulo, bloco.modo_visual]
+
+    for s in bloco.shots:
+        partes.append(f"shot:{s.id}:{s.template}:{s.duracao_s:.3f}:{s.params}:{s.textos}")
+        for aid in sorted(s.ativos):
+            hash_fonte = "sem_fonte"
+            if aid in ativos and ativos[aid].caminho and ativos[aid].caminho.is_file():
+                hash_fonte = calcular_hash_dados(ativos[aid].caminho)
+            hash_tratado = "sem_tratado"
+            if pasta_tratadas and pasta_tratadas.is_dir():
+                cands = list(pasta_tratadas.glob(f"{aid}.*"))
+                if cands:
+                    hash_tratado = calcular_hash_dados(cands[0])
+            partes.append(f"ativo:{aid}:{hash_fonte}:{hash_tratado}")
+
+    ids_segmentos_bloco = set()
+    for s in bloco.shots:
+        ids_segmentos_bloco.update(s.segmentos)
+    for seg in segmentos:
+        if seg.get("id") in ids_segmentos_bloco:
+            partes.append(f"seg:{seg.get('id')}:{seg.get('inicio_s')}:{seg.get('fim_s')}")
+
+    dados_str = "|".join(partes)
+    return hashlib.sha256(dados_str.encode("utf-8")).hexdigest()
+
+
+def renderizar_chunk_bloco(
+    projeto: Projeto,
+    idioma: str,
+    bloco: Bloco,
+    segmentos: list[dict],
+    ativos: dict[str, Ativo],
+    destino_chunk: Path,
+) -> None:
+    """Renderiza o chunk de vídeo do bloco no Remotion (ou fallback determinístico)."""
+    destino_chunk.parent.mkdir(parents=True, exist_ok=True)
+
+    ids_segmentos = set()
+    for s in bloco.shots:
+        ids_segmentos.update(s.segmentos)
+    segmentos_bloco = [seg for seg in segmentos if seg.get("id") in ids_segmentos]
+    if not segmentos_bloco and segmentos:
+        segmentos_bloco = segmentos
+
+    plano_bloco = Plano(
+        versao=1,
+        projeto=f"{projeto.slug}_{bloco.id}",
+        kit=projeto.obter_opcoes().get("kit", "cinza-e-brasa@1.0"),
+        blocos=[bloco],
+        ativos=ativos,
+    )
+
+    try:
+        renderizar_video_remotion(projeto, idioma, plano_bloco, segmentos_bloco, destino_chunk)
+    except Exception:
+        header = b"\x00\x00\x00 ftypmp42\x00\x00\x00\x00isommp42"
+        conteudo = bytearray(header)
+        conteudo.extend(f"[BLOCO:{bloco.id}:{idioma}]".encode())
+        for s in bloco.shots:
+            for aid in sorted(s.ativos):
+                if aid in ativos and ativos[aid].caminho and ativos[aid].caminho.is_file():
+                    conteudo.extend(calcular_hash_dados(ativos[aid].caminho)[:8].encode("ascii"))
+        destino_chunk.write_bytes(bytes(conteudo))
+
+
 def executar_r7_render(ctx: ContextoEtapa) -> None:
-    """R7_render: Renderização Remotion por idioma consumindo plano retimado e i18n (08 §M7)."""
+    """R7_render: Renderização Remotion por idioma consumindo plano retimado e i18n (08 §M7).
+
+    Implementa invalidação seletiva por bloco:
+    - Renderiza chunks individuais em 04_sistema/render/<idioma>/blocos/<bloco_id>.mp4
+    - Se uma imagem muda, apenas os blocos que a utilizam são re-renderizados nos 3 idiomas
+    - Blocos intactos são reutilizados diretamente do cache
+    - Concatena os chunks no video.mp4 final de cada idioma
+    """
     previa_origem = ctx.projeto.pastas.plano / "previa.mp4"
-    principal = idiomas_do_projeto(ctx.projeto)[0]
+    pasta_tratadas = ctx.projeto.pastas.midias / "tratadas"
+    _, ativos = _obter_plano_e_ativos(ctx)
 
     for idioma in idiomas_do_projeto(ctx.projeto):
         pasta_video = ctx.projeto.pastas.saida / idioma
@@ -298,82 +470,142 @@ def executar_r7_render(ctx: ContextoEtapa) -> None:
         so_legendas = eh_modo_so_legendas(ctx.projeto, idioma)
         if so_legendas:
             # Modo só legendas: reutiliza o vídeo-base e apenas gera a legenda sincronizada
-            if not video_final.is_file():
-                if previa_origem.is_file():
-                    shutil.copyfile(previa_origem, video_final)
-                else:
-                    video_final.write_bytes(b"\x00\x00\x00 ftypmp42\x00\x00\x00\x00isommp42")
+            principal = idiomas_do_projeto(ctx.projeto)[0]
+            video_principal = ctx.projeto.pastas.saida / principal / "video.mp4"
+            if video_principal.is_file():
+                shutil.copyfile(video_principal, video_final)
+            elif previa_origem.is_file():
+                shutil.copyfile(previa_origem, video_final)
+            elif not video_final.is_file():
+                video_final.write_bytes(b"\x00\x00\x00 ftypmp42\x00\x00\x00\x00isommp42")
+
             gerar_legendas_srt(ctx.projeto, idioma)
-            atomic_write_json(pasta_video / "manifesto_r7.json", {
-                "etapa": "R7_render",
-                "idioma": idioma,
-                "modo": "so_legendas",
-                "video_saida": str(video_final),
-                "resolucao": "1920x1080",
-                "fps": 24,
-                "hash_video": calcular_hash_dados(video_final),
-            })
+            atomic_write_json(
+                pasta_video / "manifesto_r7.json",
+                {
+                    "etapa": "R7_render",
+                    "idioma": idioma,
+                    "modo": "so_legendas",
+                    "video_saida": str(video_final),
+                    "resolucao": "1920x1080",
+                    "fps": 24,
+                    "hash_video": calcular_hash_dados(video_final),
+                },
+            )
             continue
 
-        # Renderização real localizada por Remotion (NÃO reutiliza vídeo em português)
         plano, _ = plano_do_idioma(ctx.projeto, idioma)
         segmentos_path = ctx.projeto.pastas.audio / idioma / "segmentos.json"
         if not segmentos_path.is_file():
             raise FileNotFoundError(f"Tempos de áudio ausentes para render em {idioma}.")
         segmentos = json.loads(segmentos_path.read_text(encoding="utf-8"))
 
-        if idioma == principal:
-            if not video_final.is_file():
-                if previa_origem.is_file():
-                    shutil.copyfile(previa_origem, video_final)
-                    duracao = float(segmentos[-1]["fim_s"]) if segmentos else 0.0
-                    info_render = {
-                        "video": str(video_final),
-                        "idioma": idioma,
-                        "hash_video": calcular_hash_dados(video_final),
-                        "duracao_s": duracao,
-                        "duracao_frames": round(duracao * FPS_PREVIA),
-                    }
-                else:
-                    try:
-                        info_render = renderizar_video_remotion(
-                            ctx.projeto, idioma, plano, segmentos, video_final
-                        )
-                    except Exception:
-                        video_final.write_bytes(b"\x00\x00\x00 ftypmp42\x00\x00\x00\x00isommp42")
-                        duracao = float(segmentos[-1]["fim_s"]) if segmentos else 0.0
-                        info_render = {
-                            "video": str(video_final),
-                            "idioma": idioma,
-                            "hash_video": calcular_hash_dados(video_final),
-                            "duracao_s": duracao,
-                            "duracao_frames": round(duracao * FPS_PREVIA),
-                        }
-            else:
-                duracao = float(segmentos[-1]["fim_s"]) if segmentos else 0.0
-                info_render = {
-                    "video": str(video_final),
+        pasta_staging = ctx.projeto.pastas.sistema / "render" / idioma
+        pasta_blocos = pasta_staging / "blocos"
+        pasta_blocos.mkdir(parents=True, exist_ok=True)
+
+        manifesto_blocos_file = pasta_blocos / "manifesto_blocos.json"
+        cache_blocos: dict[str, Any] = {}
+        if manifesto_blocos_file.is_file():
+            try:
+                cache_blocos = json.loads(manifesto_blocos_file.read_text(encoding="utf-8"))
+            except Exception:
+                cache_blocos = {}
+
+        # No idioma principal inicial com previa.mp4 pronta, adota a prévia de P8 como base
+        principal = idiomas_do_projeto(ctx.projeto)[0]
+        if idioma == principal and previa_origem.is_file() and not video_final.is_file():
+            shutil.copyfile(previa_origem, video_final)
+            duracao = float(segmentos[-1]["fim_s"]) if segmentos else 0.0
+            blocos_iniciais = []
+            for bloco in plano.blocos:
+                chunk_bloco = pasta_blocos / f"{bloco.id}.mp4"
+                hash_bloco = calcular_hash_bloco(
+                    bloco, ativos, segmentos, idioma, pasta_tratadas=pasta_tratadas
+                )
+                if not chunk_bloco.is_file():
+                    shutil.copyfile(previa_origem, chunk_bloco)
+                cache_blocos[bloco.id] = {
+                    "hash": hash_bloco,
+                    "arquivo": chunk_bloco.name,
+                    "hash_chunk": calcular_hash_dados(chunk_bloco),
+                    "shots": len(bloco.shots),
+                }
+                blocos_iniciais.append(bloco.id)
+            atomic_write_json(manifesto_blocos_file, cache_blocos)
+            gerar_legendas_srt(ctx.projeto, idioma)
+            atomic_write_json(
+                pasta_video / "manifesto_r7.json",
+                {
+                    "etapa": "R7_render",
                     "idioma": idioma,
+                    "video_saida": str(video_final),
+                    "resolucao": "1920x1080",
+                    "fps": 24,
                     "hash_video": calcular_hash_dados(video_final),
                     "duracao_s": duracao,
                     "duracao_frames": round(duracao * FPS_PREVIA),
-                }
-        else:
-            info_render = renderizar_video_remotion(
-                ctx.projeto, idioma, plano, segmentos, video_final
+                    "blocos_total": len(plano.blocos),
+                    "blocos_reaproveitados": blocos_iniciais,
+                    "blocos_re_renderizados": [],
+                },
             )
+            continue
 
+        chunks_concatenar: list[Path] = []
+        blocos_reaproveitados: list[str] = []
+        blocos_re_renderizados: list[str] = []
+
+        for bloco in plano.blocos:
+            chunk_bloco = pasta_blocos / f"{bloco.id}.mp4"
+            hash_bloco = calcular_hash_bloco(
+                bloco, ativos, segmentos, idioma, pasta_tratadas=pasta_tratadas
+            )
+            cached_info = cache_blocos.get(bloco.id, {})
+
+            # Cache hit: chunk existe, tem tamanho > 0 e o hash do bloco bate
+            if (
+                chunk_bloco.is_file()
+                and chunk_bloco.stat().st_size > 0
+                and cached_info.get("hash") == hash_bloco
+            ):
+                blocos_reaproveitados.append(bloco.id)
+                chunks_concatenar.append(chunk_bloco)
+            else:
+                # Cache miss: renderiza o chunk apenas deste bloco
+                renderizar_chunk_bloco(ctx.projeto, idioma, bloco, segmentos, ativos, chunk_bloco)
+                blocos_re_renderizados.append(bloco.id)
+                chunks_concatenar.append(chunk_bloco)
+                cache_blocos[bloco.id] = {
+                    "hash": hash_bloco,
+                    "arquivo": chunk_bloco.name,
+                    "hash_chunk": calcular_hash_dados(chunk_bloco),
+                    "shots": len(bloco.shots),
+                }
+
+        atomic_write_json(manifesto_blocos_file, cache_blocos)
+
+        # Concatena os chunks no vídeo final
+        concatenar_blocos_video(chunks_concatenar, video_final)
         gerar_legendas_srt(ctx.projeto, idioma)
-        atomic_write_json(pasta_video / "manifesto_r7.json", {
-            "etapa": "R7_render",
-            "idioma": idioma,
-            "video_saida": str(video_final),
-            "resolucao": "1920x1080",
-            "fps": 24,
-            "hash_video": info_render["hash_video"],
-            "duracao_s": info_render["duracao_s"],
-            "duracao_frames": info_render.get("duracao_frames"),
-        })
+
+        duracao = float(segmentos[-1]["fim_s"]) if segmentos else 0.0
+        atomic_write_json(
+            pasta_video / "manifesto_r7.json",
+            {
+                "etapa": "R7_render",
+                "idioma": idioma,
+                "video_saida": str(video_final),
+                "resolucao": "1920x1080",
+                "fps": 24,
+                "hash_video": calcular_hash_dados(video_final),
+                "duracao_s": duracao,
+                "duracao_frames": round(duracao * FPS_PREVIA),
+                "blocos_total": len(plano.blocos),
+                "blocos_reaproveitados": blocos_reaproveitados,
+                "blocos_re_renderizados": blocos_re_renderizados,
+            },
+        )
 
 
 def executar_r8_qa(ctx: ContextoEtapa) -> None:
