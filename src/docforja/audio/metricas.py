@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import re
 
-_NUMEROS_PT = {
+_UNIDADES_PT = {
     "zero": 0,
     "um": 1,
     "uma": 1,
     "dois": 2,
     "duas": 2,
     "três": 3,
+    "tres": 3,
     "quatro": 4,
     "cinco": 5,
     "seis": 6,
@@ -27,6 +28,9 @@ _NUMEROS_PT = {
     "dezessete": 17,
     "dezoito": 18,
     "dezenove": 19,
+}
+
+_DEZENAS_PT = {
     "vinte": 20,
     "trinta": 30,
     "quarenta": 40,
@@ -37,27 +41,110 @@ _NUMEROS_PT = {
     "noventa": 90,
 }
 
+_CENTENAS_PT = {
+    "cem": 100,
+    "cento": 100,
+    "duzentos": 200,
+    "duzentas": 200,
+    "trezentos": 300,
+    "trezentas": 300,
+    "quatrocentos": 400,
+    "quatrocentas": 400,
+    "quinhentos": 500,
+    "quinhentas": 500,
+    "seiscentos": 600,
+    "seiscentas": 600,
+    "setecentos": 700,
+    "setecentas": 700,
+    "oitocentos": 800,
+    "oitocentas": 800,
+    "novecentos": 900,
+    "novecentas": 900,
+}
+
+
+def _parse_numero_composto_pt(tokens: list[str], start_idx: int) -> tuple[int | None, int]:
+    """Converte sequência de palavras numéricas em português a partir de start_idx."""
+    idx = start_idx
+    total = 0
+    corrente = 0
+    stage = 0  # 0: init/mil, 1: centena, 2: dezena, 3: unidade
+    consumidas = 0
+
+    while idx < len(tokens):
+        w = tokens[idx]
+        if w == "e":
+            if idx + 1 < len(tokens):
+                prox = tokens[idx + 1]
+                if stage == 1 and (prox in _DEZENAS_PT or prox in _UNIDADES_PT):
+                    idx += 1
+                    continue
+                if stage == 2 and (prox in _UNIDADES_PT and _UNIDADES_PT[prox] <= 9):
+                    idx += 1
+                    continue
+                if (
+                    stage in (0, 1, 2, 3)
+                    and (prox in _CENTENAS_PT or prox in _DEZENAS_PT or prox in _UNIDADES_PT)
+                    and total > 0
+                    and corrente == 0
+                ):
+                    idx += 1
+                    continue
+            break
+
+        if w in _CENTENAS_PT and stage == 0:
+            corrente += _CENTENAS_PT[w]
+            stage = 1
+            consumidas += 1
+            idx += 1
+        elif w in _DEZENAS_PT and stage in (0, 1):
+            corrente += _DEZENAS_PT[w]
+            stage = 2
+            consumidas += 1
+            idx += 1
+        elif w in _UNIDADES_PT and stage in (0, 1, 2):
+            if stage == 2 and _UNIDADES_PT[w] > 9:
+                break
+            corrente += _UNIDADES_PT[w]
+            stage = 3
+            consumidas += 1
+            idx += 1
+        elif w == "mil":
+            if corrente == 0:
+                corrente = 1
+            total += corrente * 1000
+            corrente = 0
+            stage = 0
+            consumidas += 1
+            idx += 1
+        elif w in ("milhão", "milhao", "milhoes", "milhões"):
+            if corrente == 0:
+                corrente = 1
+            total += corrente * 1_000_000
+            corrente = 0
+            stage = 0
+            consumidas += 1
+            idx += 1
+        else:
+            break
+
+    if consumidas > 0:
+        return total + corrente, idx
+    return None, start_idx
+
 
 def _normalizar_numeros_pt(tokens: list[str]) -> list[str]:
     """Iguala grafias faladas e numéricas sem alterar as palavras originais."""
     normalizados: list[str] = []
-    indice = 0
-    while indice < len(tokens):
-        palavra = tokens[indice]
-        valor = _NUMEROS_PT.get(palavra)
+    idx = 0
+    while idx < len(tokens):
+        valor, next_idx = _parse_numero_composto_pt(tokens, idx)
         if valor is not None:
-            if (
-                valor >= 20
-                and indice + 2 < len(tokens)
-                and tokens[indice + 1] == "e"
-                and 1 <= _NUMEROS_PT.get(tokens[indice + 2], -1) <= 9
-            ):
-                valor += _NUMEROS_PT[tokens[indice + 2]]
-                indice += 2
             normalizados.append(str(valor))
+            idx = next_idx
         else:
-            normalizados.append(palavra)
-        indice += 1
+            normalizados.append(tokens[idx])
+            idx += 1
     return normalizados
 
 

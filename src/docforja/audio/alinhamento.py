@@ -8,10 +8,16 @@ from pathlib import Path
 class AlinhadorWhisperX:
     """Orquestrador do alinhamento fonetico palavra a palavra via WhisperX."""
 
-    def __init__(self, python_path: Path | None = None, modelo: str = "base") -> None:
+    def __init__(
+        self,
+        python_path: Path | None = None,
+        modelo: str = "base",
+        timeout: float = 900.0,
+    ) -> None:
         self.python_path = python_path or Path("envs/align/Scripts/python.exe")
         self.worker_path = Path("src/docforja/workers/whisperx_worker.py")
         self.modelo = modelo
+        self.timeout = timeout
 
     def disponivel(self) -> bool:
         return self.python_path.exists() and self.worker_path.exists()
@@ -25,7 +31,7 @@ class AlinhadorWhisperX:
         idioma: str = "pt",
         device: str | None = None,
         modelo: str | None = None,
-        timeout: float = 300,
+        timeout: float | None = None,
     ) -> tuple[Path, Path]:
         if not self.disponivel():
             raise RuntimeError(
@@ -59,12 +65,13 @@ class AlinhadorWhisperX:
                 json.dump(segmentos_info, f, ensure_ascii=False)
             cmd.extend(["--segmentos", str(arquivo_segmentos_temp.resolve())])
 
+        timeout_efetivo = timeout if timeout is not None else self.timeout
         try:
             res = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=timeout,
+                timeout=timeout_efetivo,
             )
             if res.returncode != 0:
                 raise RuntimeError(f"Erro ao executar alinhamento com WhisperX: {res.stderr}")

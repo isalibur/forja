@@ -15,9 +15,11 @@ def normalizar_palavras(texto: str) -> list[str]:
     # Remove marcas de sistema
     t = re.sub(r">>VISUAL:.*?<<", "", texto, flags=re.DOTALL)
     t = re.sub(r"\[F-[^\]]+\]", "", t)
-    t = re.sub(r"\[PAUSA-[CML]\]", "", t)
-    t = re.sub(r"\[SILÊNCIO[^\]]*\]", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"`?\[PAUSA-[CML]\]`?", "", t)
+    t = re.sub(r"`?\[SILÊNCIO[^\]]*\]`?", "", t, flags=re.IGNORECASE)
     t = re.sub(r"\{[^}]*\}", "", t)
+    t = re.sub(r"\*\*HUD:.*?\*\*", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\*\*END CARD.*?\*\*", "", t, flags=re.IGNORECASE)
     t = re.sub(r"\*\*B\d+-S\d+[^*]*\*\*", "", t)
     t = re.sub(r"^#{1,6}\s+.*$", "", t, flags=re.MULTILINE)
 
@@ -58,12 +60,15 @@ def limpar_texto_para_tts(texto: str) -> str:
     t = re.sub(r">>VISUAL:.*?<<", "", t, flags=re.DOTALL)
     # Remove anotacoes entre chaves
     t = re.sub(r"\{[^}]*\}", "", t)
+    # Remove diretivas de tela HUD e END CARD
+    t = re.sub(r"\*\*HUD:.*?\*\*", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\*\*END CARD.*?\*\*", "", t, flags=re.IGNORECASE)
     # Remove silêncios marcados (são tratados na cadeia de áudio)
-    t = re.sub(r"\[SILÊNCIO[^\]]*\]", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"`?\[SILÊNCIO[^\]]*\]`?", "", t, flags=re.IGNORECASE)
     # Substitui marcadores de pausa por virgulas ou reticencias suaves se nao houver pontuacao
-    t = t.replace("[PAUSA-C]", ",")
-    t = t.replace("[PAUSA-M]", "…")
-    t = t.replace("[PAUSA-L]", "…")
+    t = re.sub(r"`?\[PAUSA-C\]`?", ",", t)
+    t = re.sub(r"`?\[PAUSA-M\]`?", "…", t)
+    t = re.sub(r"`?\[PAUSA-L\]`?", "…", t)
     # Remove enfases em asterisco (*palavra* -> palavra)
     t = re.sub(r"\*([^*]+)\*", r"\1", t)
     # Limpa espacos duplicados
@@ -134,8 +139,8 @@ def ler_roteiro_formatado(conteudo: str) -> list[BlocoProcessado]:
             linhas_segmento = []
 
     for linha in linhas:
-        # Verifica se eh secao terminal (ex: ## FONTES)
-        if re.match(r"^#{1,3}\s+FONTES\b", linha, re.IGNORECASE):
+        # Verifica se eh secao terminal (ex: ## FONTES ou ## 7. Notas...)
+        if bloco_atual and re.match(r"^#{1,3}\s+(?!(?:B\d+|Bloco\s+\d+)\b)", linha, re.IGNORECASE):
             fechar_segmento_atual()
             break
 
@@ -206,6 +211,17 @@ def ler_roteiro_formatado(conteudo: str) -> list[BlocoProcessado]:
         if segmento_atual is not None:
             # Ignora separadores horizontais markdown '---'
             if linha.strip() == "---":
+                continue
+            # Ignora diretivas de tela HUD e END CARD
+            if re.match(r"^\s*\*\*(?:HUD:|END CARD\b)", linha, re.IGNORECASE):
+                continue
+            m_silencio_linha = re.search(
+                r"\[SILÊNCIO\s+(\d+(?:\.\d+)?)\s*s?\]", linha, re.IGNORECASE
+            )
+            if m_silencio_linha:
+                segmento_atual.silencio_apos_s = float(m_silencio_linha.group(1))
+                continue
+            if re.match(r"^\s*`\[PAUSA-[CML]\]`(?:\s*[-—].*)?$", linha):
                 continue
             linhas_segmento.append(linha)
 

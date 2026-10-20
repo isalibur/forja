@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from dataclasses import asdict
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from docforja.audio.narracao import OrquestradorNarracao, ResultadoSegmentoAudio
 from docforja.esquemas import Ativo, Bloco, Plano, Shot
 from docforja.io import atomic_write_json, atomic_write_text
 from docforja.llm.roteador import RoteadorLLM
+from docforja.midia.resolucao import resolver_ativos_projeto
 from docforja.nucleo.etapas import calcular_hash_dados
 from docforja.nucleo.executor import ContextoEtapa, ExecutorPipeline
 from docforja.nucleo.projeto import Projeto
@@ -58,6 +60,21 @@ def _segmentos_projeto(projeto: Projeto) -> list[SegmentoProcessado]:
 def _audio_idioma(projeto: Projeto) -> tuple[str, Path]:
     idioma = projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR")
     return idioma, projeto.pastas.audio / idioma
+
+
+def _localizar_audio_segmento(pasta_segs: Path, sid: str) -> Path:
+    candidatos: list[tuple[int, int, Path]] = []
+    for f in pasta_segs.glob(f"{sid}*.wav"):
+        if f.name.endswith(("_silence.wav", "_raw.wav")):
+            continue
+        m = re.search(r"_take(\d+)", f.name)
+        take_num = int(m.group(1)) if m else 1
+        is_final = 1 if f.name.endswith("_final.wav") else 0
+        candidatos.append((take_num, is_final, f))
+    if candidatos:
+        candidatos.sort(key=lambda x: (x[0], x[1]), reverse=True)
+        return candidatos[0][2]
+    return pasta_segs / f"{sid}.wav"
 
 
 def registrar_handlers_disponiveis(
@@ -305,6 +322,11 @@ def registrar_handlers_disponiveis(
         }
         atomic_write_json(pasta / "verificacao.json", relatorio_dados)
 
+    def resolver_ativos(ctx: ContextoEtapa) -> None:
+        if not dosagem_valida(ctx):
+            raise ValueError("Plano verificado e dosagem aprovada ausentes para resolver ativos.")
+        resolver_ativos_projeto(ctx.projeto)
+
     def obter_orquestrador() -> OrquestradorNarracao:
         nonlocal orquestrador
         if orquestrador is None:
@@ -392,11 +414,7 @@ def registrar_handlers_disponiveis(
             ResultadoSegmentoAudio(
                 id=item["id"],
                 texto=item["texto"],
-                arquivo_wav=(
-                    pasta_idioma / "segmentos" / f"{item['id']}_final.wav"
-                    if (pasta_idioma / "segmentos" / f"{item['id']}_final.wav").is_file()
-                    else pasta_idioma / "segmentos" / f"{item['id']}.wav"
-                ),
+                arquivo_wav=_localizar_audio_segmento(pasta_idioma / "segmentos", str(item["id"])),
                 duracao_s=float(item["fim_s"]) - float(item["inicio_s"]),
             )
             for item in segmentos_info
@@ -627,12 +645,30 @@ def registrar_handlers_disponiveis(
             and {item.get("segmento_id") for item in palavras} == ids_esperados
         )
 
+    def resolucao_valida(ctx: ContextoEtapa) -> bool:
+        pasta_plano = ctx.projeto.pastas.plano
+        arquivo_resolvidos = pasta_plano / "ativos_resolvidos.json"
+        arquivo_lista_busca = pasta_plano / "lista_de_busca.md"
+        arquivo_escolhas = ctx.projeto.pastas.midias / "escolhas.json"
+        if (
+            not arquivo_resolvidos.is_file()
+            or not arquivo_lista_busca.is_file()
+            or not arquivo_escolhas.is_file()
+        ):
+            return False
+        try:
+            dados = json.loads(arquivo_resolvidos.read_text(encoding="utf-8"))
+            return bool(dados.get("ativos")) and dados.get("total_ativos", 0) > 0
+        except Exception:
+            return False
+
     executor.registrar_handler("E00_entrada", validar_entrada)
     executor.registrar_handler("P1_leitura", ler_roteiro, validador=leitura_valida)
     executor.registrar_handler("P3_estrategia", planejar_estrategia, validador=estrategia_valida)
     executor.registrar_handler("P4_shots", gerar_shots, validador=shots_validos)
     executor.registrar_handler("P5_ativos", consolidar_ativos, validador=ativos_validos)
     executor.registrar_handler("P6_verificador", verificar_dosagem, validador=dosagem_valida)
+    executor.registrar_handler("P7_resolucao", resolver_ativos, validador=resolucao_valida)
     executor.registrar_handler("P2_narracao", gerar_narracao, validador=narracao_valida)
     executor.registrar_handler("P2b_alinhamento", alinhar_narracao, validador=alinhamento_valido)
     return executor

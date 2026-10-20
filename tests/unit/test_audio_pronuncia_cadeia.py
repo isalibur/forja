@@ -54,6 +54,32 @@ def test_wer_portugues_iguala_apenas_grafias_numericas():
     assert calcular_wer(referencia, hipotese, idioma="pt-BR") == 0.0
     assert calcular_wer("Uma anotação banal", "Uma notação banal", idioma="pt-BR") > 0
 
+    # Números compostos e anos históricos
+    assert (
+        calcular_wer(
+            "Em dois mil e vinte e quatro escavaram Pompeia.",
+            "Em 2024 escavaram Pompeia.",
+            idioma="pt-BR",
+        )
+        == 0.0
+    )
+    assert (
+        calcular_wer(
+            "Pompeia só em mil setecentos e quarenta e oito.",
+            "Pompeia só em 1748.",
+            idioma="pt-BR",
+        )
+        == 0.0
+    )
+    assert (
+        calcular_wer(
+            "Mais de trezentas pessoas em doze galpões.",
+            "Mais de 300 pessoas em 12 galpões.",
+            idioma="pt-BR",
+        )
+        == 0.0
+    )
+
 
 def test_duracoes_pausas_padrao():
     """Valida constantes de tempo das pausas do roteiro."""
