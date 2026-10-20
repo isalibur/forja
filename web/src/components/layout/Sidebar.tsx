@@ -64,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         {/* Seção do Projeto Ativo */}
-        <div className="pt-4 pb-1 px-3 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">
+        <div className="pt-4 pb-1 px-3 text-[11px] uppercase tracking-wider text-mut font-semibold">
           Projeto · {projetoAtivoSlug || "selecione um"}
         </div>
 
@@ -106,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         {/* Seção Biblioteca */}
-        <div className="pt-4 pb-1 px-3 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">
+        <div className="pt-4 pb-1 px-3 text-[11px] uppercase tracking-wider text-mut font-semibold">
           Biblioteca
         </div>
 
@@ -149,7 +149,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="w-2 h-2 rounded-full bg-ok" />
           <span className="font-medium text-tx">DocForja local</span>
         </div>
-        <div className="px-2 mt-1 font-mono text-[11px] text-zinc-500">
+        <div className="px-2 mt-1 font-mono text-[11px] text-mut">
           Dados locais
         </div>
       </div>
