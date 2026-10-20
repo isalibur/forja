@@ -24,6 +24,7 @@ from docforja.midia.licenca import (
     detectar_patrimonio_restrito,
 )
 from docforja.midia.pasta_manual import EXTENSOES_IMAGEM, identificar_ativo_por_nome
+from docforja.midia.selecoes import hash_resolvidos, registrar_selecao, selecoes_atuais
 from docforja.nucleo.banco import BancoProjeto
 from docforja.nucleo.cotas import gerenciador_cotas
 from docforja.nucleo.etapas import calcular_hash_dados
@@ -61,6 +62,11 @@ class CriarProjetoPayload(BaseModel):
 
 class AprovarGatePayload(BaseModel):
     gate: str = "REVISAO"
+
+
+class SelecionarCandidataPayload(BaseModel):
+    candidata: str | None
+    hash_resolvidos: str
 
 
 def _projeto_da_interface(slug: str) -> Projeto:
@@ -140,6 +146,14 @@ def _imagens_licenciadas(projeto: Projeto, ativos: dict[str, Ativo]) -> dict[str
                 continue
             aprovadas[aid] = caminho
             break
+    for aid, selecao in selecoes_atuais(projeto).items():
+        if aid not in ativos or not selecao.candidata:
+            continue
+        if any(
+            item["nome"] == selecao.candidata
+            for item in _candidatas_publicas(projeto, aid, ativos[aid])
+        ):
+            aprovadas[aid] = projeto.pastas.midias / "pesquisadas" / aid / selecao.candidata
     return aprovadas
 
 
@@ -216,6 +230,24 @@ def obter_plano_ui(slug: str) -> dict[str, Any]:
     )
     ativos = {aid: Ativo.model_validate(item) for aid, item in ativos_dados.items()}
     imagens = _imagens_licenciadas(projeto, ativos)
+    selecoes = {
+        aid: selecao
+        for aid, selecao in selecoes_atuais(projeto).items()
+        if aid in ativos and (
+            selecao.candidata is None
+            or any(
+                item["nome"] == selecao.candidata
+                for item in _candidatas_publicas(projeto, aid, ativos[aid])
+            )
+        )
+    }
+    urls_imagens = {
+        aid: (
+            f"/api/projetos/{slug}/ativos/{aid}/imagem"
+            + (f"?revisao={selecoes[aid].criada_em}" if aid in selecoes else "")
+        )
+        for aid in imagens
+    }
     mapa_shots = {shot_id: aid for aid, ativo in ativos.items() for shot_id in ativo.usado_em}
     recebidos: set[str] = set()
     manual = projeto.pastas.midias / "manual"
@@ -248,9 +280,7 @@ def obter_plano_ui(slug: str) -> dict[str, Any]:
         "ativos": {
             aid: {
                 **ativo.model_dump(mode="json"),
-                "imagem_url": (
-                    f"/api/projetos/{slug}/ativos/{aid}/imagem" if aid in imagens else None
-                ),
+                "imagem_url": urls_imagens.get(aid),
                 "licenca_previa": (
                     carregar_ficha_licenca(imagens[aid]).licenca if aid in imagens else None
                 ),
@@ -258,6 +288,9 @@ def obter_plano_ui(slug: str) -> dict[str, Any]:
                     _ficha_publica(projeto, ativo, imagens[aid]) if aid in imagens else None
                 ),
                 "candidatas": _candidatas_publicas(projeto, aid, ativo),
+                "candidata_selecionada": (
+                    selecoes[aid].candidata if aid in selecoes else None
+                ),
             }
             for aid, ativo in ativos.items()
         },
@@ -266,10 +299,14 @@ def obter_plano_ui(slug: str) -> dict[str, Any]:
         if verificacao.is_file() else None,
         "manifesto": _manifesto_atual(projeto),
         "imagens_por_shot": {
-            shot_id: f"/api/projetos/{slug}/ativos/{aid}/imagem"
+            shot_id: urls_imagens[aid]
             for aid, ativo in ativos.items() if aid in imagens for shot_id in ativo.usado_em
         },
         "pasta_manual": str(manual),
+        "hash_resolvidos": hash_resolvidos(projeto),
+        "previa_mp4_desatualizada": any(
+            selecao.candidata for selecao in selecoes.values()
+        ),
     }
 
 
@@ -314,6 +351,34 @@ def obter_imagem_candidata(slug: str, aid: str, nome: str) -> FileResponse:
         media_type=mimetypes.guess_type(nome)[0] or "application/octet-stream",
         headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
     )
+
+
+@app.post("/api/projetos/{slug}/ativos/{aid}/selecionar")
+def selecionar_candidata(
+    slug: str, aid: str, payload: SelecionarCandidataPayload
+) -> dict[str, Any]:
+    projeto = _projeto_da_interface(slug)
+    resolvidos = projeto.pastas.plano / "ativos_resolvidos.json"
+    if not resolvidos.is_file():
+        raise HTTPException(status_code=404, detail="Ativo não encontrado")
+    dados = json.loads(resolvidos.read_text(encoding="utf-8")).get("ativos", {})
+    if aid not in dados:
+        raise HTTPException(status_code=404, detail="Ativo não encontrado")
+    if payload.hash_resolvidos != hash_resolvidos(projeto):
+        raise HTTPException(status_code=409, detail="O plano mudou; recarregue a página")
+    ativo = Ativo.model_validate(dados[aid])
+    if payload.candidata is not None and not any(
+        item["nome"] == payload.candidata
+        for item in _candidatas_publicas(projeto, aid, ativo)
+    ):
+        raise HTTPException(status_code=400, detail="Candidata sem licença confirmada")
+    try:
+        selecao = registrar_selecao(
+            projeto, aid, payload.candidata, payload.hash_resolvidos
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return selecao.model_dump(mode="json")
 
 
 @app.get("/api/projetos/{slug}/narracao.wav")

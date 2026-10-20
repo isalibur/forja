@@ -1,3 +1,5 @@
+import json
+
 from fastapi.testclient import TestClient
 
 from docforja.api import app
@@ -159,6 +161,39 @@ def test_api_plano_ui_leitura_local_e_pasta_manual(tmp_path, monkeypatch):
     assert client.get(
         f"/api/projetos/{projeto.slug}/ativos/A-001/candidatas/cand_wikimedia_2.jpg/imagem"
     ).status_code == 404
+    endpoint_selecao = f"/api/projetos/{projeto.slug}/ativos/A-001/selecionar"
+    hash_atual = dados["hash_resolvidos"]
+    assert client.post(endpoint_selecao, json={
+        "candidata": "cand_wikimedia_2.jpg", "hash_resolvidos": hash_atual,
+    }).status_code == 400
+    assert client.post(endpoint_selecao, json={
+        "candidata": "cand_wikimedia_1.jpg", "hash_resolvidos": "antigo",
+    }).status_code == 409
+    assert client.post(endpoint_selecao, json={
+        "candidata": "cand_wikimedia_1.jpg", "hash_resolvidos": hash_atual,
+    }).status_code == 200
+    dados = client.get(f"/api/projetos/{projeto.slug}/plano").json()
+    assert dados["ativos"]["A-001"]["candidata_selecionada"] == "cand_wikimedia_1.jpg"
+    assert dados["previa_mp4_desatualizada"] is True
+    assert client.get(dados["ativos"]["A-001"]["imagem_url"]).content == b"candidata liberada"
+    atomic_write_json(
+        candidata.with_name("cand_wikimedia_1.jpg.licenca.json"),
+        {"licenca": "CC BY-NC 4.0", "comercial": True},
+    )
+    dados = client.get(f"/api/projetos/{projeto.slug}/plano").json()
+    assert dados["ativos"]["A-001"]["candidata_selecionada"] is None
+    assert client.get(dados["ativos"]["A-001"]["imagem_url"]).content == b"imagem de teste"
+    assert client.post(endpoint_selecao, json={
+        "candidata": None, "hash_resolvidos": hash_atual,
+    }).status_code == 200
+    dados = client.get(f"/api/projetos/{projeto.slug}/plano").json()
+    assert dados["ativos"]["A-001"]["candidata_selecionada"] is None
+    assert dados["previa_mp4_desatualizada"] is False
+    assert client.get(dados["ativos"]["A-001"]["imagem_url"]).content == b"imagem de teste"
+    assert len(list((projeto.pastas.midias / "selecoes_ui").glob("*.json"))) == 2
+    assert json.loads(
+        (projeto.pastas.plano / "ativos_resolvidos.json").read_text(encoding="utf-8")
+    )["ativos"]["A-001"] == ativo
     atomic_write_json(ficha, {"licenca": "CC BY-NC 4.0", "comercial": True})
     assert client.get(f"/api/projetos/{projeto.slug}/ativos/A-001/imagem").status_code == 404
     atomic_write_json(ficha, {"licenca": "manual_autorizado", "comercial": True})

@@ -22,6 +22,7 @@ export type Ativo = {
   licenca_previa?: string | null;
   credito_imagem?: CreditoImagem | null;
   candidatas?: (CreditoImagem & { nome: string; imagem_url: string })[];
+  candidata_selecionada?: string | null;
   usado_em: string[];
   nome_arquivo?: string | null;
 };
@@ -78,6 +79,8 @@ export type DadosPlano = {
   } | null;
   pasta_manual?: string;
   imagens_por_shot?: Record<string, string>;
+  hash_resolvidos?: string | null;
+  previa_mp4_desatualizada?: boolean;
 };
 
 export function usePlano(slug: string) {

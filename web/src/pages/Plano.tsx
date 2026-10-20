@@ -64,7 +64,7 @@ export const Plano: React.FC<{ slug: string; onNavegar: (tela: string) => void }
           {manifesto ? (
             <Player ref={player} component={PreviaInterativa} inputProps={{ manifesto, imagensPorShot: data.imagens_por_shot ?? {}, audioUrl: `/api/projetos/${encodeURIComponent(slug)}/narracao.wav` }} durationInFrames={manifesto.duracao_frames} compositionWidth={960} compositionHeight={540} fps={24} controls style={{ width: "100%", aspectRatio: "16 / 9" }} />
           ) : <div className="aspect-video flex flex-col items-center justify-center gap-3 text-mut"><Film className="w-9 h-9" /><span>A prévia ficará disponível após P8.</span></div>}
-          <div className="p-3 text-xs text-mut border-t border-line">Imagens com licença confirmada aparecem nesta prévia interativa; o MP4 de P8 continua sendo um animatic de planejamento.</div>
+          <div className="p-3 text-xs text-mut border-t border-line">Imagens com licença confirmada aparecem nesta prévia interativa; o MP4 de P8 continua sendo um animatic de planejamento.{data.previa_mp4_desatualizada && <span className="block mt-1 text-warn">Há escolhas manuais de imagem nesta prévia interativa. O MP4 existente não incorpora essas trocas.</span>}</div>
         </div>
         <div className="rounded-card border border-line bg-surf p-5 space-y-5">
           <h2 className="font-semibold">Saúde do plano</h2>
