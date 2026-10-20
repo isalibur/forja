@@ -131,6 +131,34 @@ def test_api_plano_ui_leitura_local_e_pasta_manual(tmp_path, monkeypatch):
     assert resposta_imagem.status_code == 200
     assert resposta_imagem.content == b"imagem de teste"
     assert resposta_imagem.headers["cache-control"] == "no-store"
+    pasta_candidatas = projeto.pastas.midias / "pesquisadas" / "A-001"
+    pasta_candidatas.mkdir(parents=True)
+    candidata = pasta_candidatas / "cand_wikimedia_1.jpg"
+    candidata.write_bytes(b"candidata liberada")
+    atomic_write_json(
+        candidata.with_name("cand_wikimedia_1.jpg.licenca.json"),
+        {
+            "licenca": "CC BY 4.0", "comercial": True, "autor": "Arquivo Exemplo",
+            "url_origem": "https://example.org/origem",
+            "texto_credito": "Arquivo Exemplo / CC BY 4.0",
+        },
+    )
+    bloqueada = pasta_candidatas / "cand_wikimedia_2.jpg"
+    bloqueada.write_bytes(b"candidata bloqueada")
+    atomic_write_json(
+        bloqueada.with_name("cand_wikimedia_2.jpg.licenca.json"),
+        {"licenca": "CC BY-NC 4.0", "comercial": True},
+    )
+    dados = client.get(f"/api/projetos/{projeto.slug}/plano").json()
+    assert dados["ativos"]["A-001"]["credito_imagem"]["licenca"] == "CC BY 4.0"
+    candidatas = dados["ativos"]["A-001"]["candidatas"]
+    assert len(candidatas) == 1
+    assert candidatas[0]["autor"] == "Arquivo Exemplo"
+    assert candidatas[0]["fonte"] == "https://example.org/origem"
+    assert client.get(candidatas[0]["imagem_url"]).content == b"candidata liberada"
+    assert client.get(
+        f"/api/projetos/{projeto.slug}/ativos/A-001/candidatas/cand_wikimedia_2.jpg/imagem"
+    ).status_code == 404
     atomic_write_json(ficha, {"licenca": "CC BY-NC 4.0", "comercial": True})
     assert client.get(f"/api/projetos/{projeto.slug}/ativos/A-001/imagem").status_code == 404
     atomic_write_json(ficha, {"licenca": "manual_autorizado", "comercial": True})

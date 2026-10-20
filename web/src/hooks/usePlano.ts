@@ -20,8 +20,19 @@ export type Ativo = {
   licenca?: Record<string, unknown> | null;
   imagem_url?: string | null;
   licenca_previa?: string | null;
+  credito_imagem?: CreditoImagem | null;
+  candidatas?: (CreditoImagem & { nome: string; imagem_url: string })[];
   usado_em: string[];
   nome_arquivo?: string | null;
+};
+
+export type CreditoImagem = {
+  autor?: string | null;
+  licenca: string;
+  credito?: string | null;
+  fonte?: string | null;
+  nota?: number | null;
+  motivo?: string | null;
 };
 
 export type Pedido = {

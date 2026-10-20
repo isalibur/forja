@@ -143,6 +143,64 @@ def _imagens_licenciadas(projeto: Projeto, ativos: dict[str, Ativo]) -> dict[str
     return aprovadas
 
 
+def _ficha_publica(projeto: Projeto, ativo: Ativo, caminho: Path) -> dict[str, Any] | None:
+    """Dados de crédito de imagem interna cuja licença permite a prévia."""
+    arquivo = caminho.resolve()
+    if not arquivo.is_relative_to(projeto.raiz.resolve()) or not arquivo.is_file():
+        return None
+    if arquivo.suffix.lower() not in EXTENSOES_PREVIA:
+        return None
+    ficha = carregar_ficha_licenca(arquivo)
+    if not ficha or not ficha.comercial or ficha.patrimonio_restrito:
+        return None
+    if not classificar_licenca(ficha.licenca)[0]:
+        return None
+    if detectar_patrimonio_restrito(ficha.url_origem, ativo.descricao):
+        return None
+    nota = ficha.detalhes.get("nota_curador")
+    nota_publica = (
+        float(nota) if isinstance(nota, (int, float)) and not isinstance(nota, bool) else None
+    )
+    motivo = ficha.detalhes.get("motivo_curador")
+    return {
+        "autor": ficha.autor,
+        "licenca": ficha.licenca,
+        "credito": ficha.texto_credito,
+        "fonte": ficha.url_origem if ficha.url_origem.startswith(("https://", "http://")) else None,
+        "nota": nota_publica,
+        "motivo": motivo if isinstance(motivo, str) else None,
+    }
+
+
+def _candidatas_publicas(projeto: Projeto, aid: str, ativo: Ativo) -> list[dict[str, Any]]:
+    """Lista apenas candidatas de pesquisa com ficha válida e caminho fixo."""
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,99}", aid):
+        return []
+    pasta = projeto.pastas.midias / "pesquisadas" / aid
+    if not pasta.is_dir():
+        return []
+    candidatas = []
+    for arquivo in sorted(pasta.glob("cand_*")):
+        nome_valido = re.fullmatch(
+            r"cand_[A-Za-z0-9_-]+_[1-9][0-9]*\.(jpg|jpeg|png|webp)", arquivo.name
+        )
+        if not arquivo.is_file() or not nome_valido:
+            continue
+        ficha = _ficha_publica(projeto, ativo, arquivo)
+        if ficha:
+            candidatas.append({
+                "nome": arquivo.name,
+                "imagem_url": (
+                    f"/api/projetos/{projeto.slug}/ativos/{aid}"
+                    f"/candidatas/{arquivo.name}/imagem"
+                ),
+                **ficha,
+            })
+        if len(candidatas) >= 5:
+            break
+    return candidatas
+
+
 @app.get("/api/projetos/{slug}/plano")
 def obter_plano_ui(slug: str) -> dict[str, Any]:
     projeto = _projeto_da_interface(slug)
@@ -196,6 +254,10 @@ def obter_plano_ui(slug: str) -> dict[str, Any]:
                 "licenca_previa": (
                     carregar_ficha_licenca(imagens[aid]).licenca if aid in imagens else None
                 ),
+                "credito_imagem": (
+                    _ficha_publica(projeto, ativo, imagens[aid]) if aid in imagens else None
+                ),
+                "candidatas": _candidatas_publicas(projeto, aid, ativo),
             }
             for aid, ativo in ativos.items()
         },
@@ -226,6 +288,30 @@ def obter_imagem_ativo(slug: str, aid: str) -> FileResponse:
     return FileResponse(
         caminho,
         media_type=mimetypes.guess_type(caminho.name)[0] or "application/octet-stream",
+        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+    )
+
+
+@app.get("/api/projetos/{slug}/ativos/{aid}/candidatas/{nome}/imagem")
+def obter_imagem_candidata(slug: str, aid: str, nome: str) -> FileResponse:
+    projeto = _projeto_da_interface(slug)
+    resolvidos = projeto.pastas.plano / "ativos_resolvidos.json"
+    if not resolvidos.is_file():
+        raise HTTPException(status_code=404, detail="Candidata não disponível")
+    dados = json.loads(resolvidos.read_text(encoding="utf-8")).get("ativos", {})
+    if aid not in dados:
+        raise HTTPException(status_code=404, detail="Candidata não disponível")
+    ativo = Ativo.model_validate(dados[aid])
+    candidata = next(
+        (item for item in _candidatas_publicas(projeto, aid, ativo) if item["nome"] == nome),
+        None,
+    )
+    if candidata is None:
+        raise HTTPException(status_code=404, detail="Candidata sem licença confirmada")
+    caminho = projeto.pastas.midias / "pesquisadas" / aid / nome
+    return FileResponse(
+        caminho,
+        media_type=mimetypes.guess_type(nome)[0] or "application/octet-stream",
         headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
     )
 
