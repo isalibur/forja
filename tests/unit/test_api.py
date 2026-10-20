@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from docforja.api import app
+from docforja.io import atomic_write_json
 from docforja.nucleo.banco import BancoProjeto
 from docforja.nucleo.projeto import Projeto
 
@@ -84,3 +85,44 @@ def test_api_servir_web_dist():
     assert resp.status_code == 200
     assert "DocForja" in resp.text
     assert '<div id="root">' in resp.text
+
+
+def test_api_plano_ui_leitura_local_e_pasta_manual(tmp_path, monkeypatch):
+    mock_settings = lambda: type(  # noqa: E731
+        "Settings", (), {"paths": type("Paths", (), {"projects": tmp_path})()}
+    )()
+    monkeypatch.setattr("docforja.api.load_settings", mock_settings)
+    projeto = Projeto.criar(
+        nome="Teste Plano", roteiro="## B0\n\n**B0-S01**\nTeste.", raiz_projetos=tmp_path
+    )
+    atomic_write_json(
+        projeto.pastas.plano / "plano.json",
+        {"projeto": projeto.slug, "blocos": [], "ativos": {}},
+    )
+    ativo = {
+        "id": "A-001", "descricao": "Imagem histórica", "origem": "pedir_ao_usuario",
+        "nome_arquivo": "A-001.jpg", "usado_em": ["B0-01"],
+    }
+    atomic_write_json(
+        projeto.pastas.plano / "ativos_resolvidos.json",
+        {"ativos": {"A-001": ativo}},
+    )
+    client = TestClient(app)
+    dados = client.get(f"/api/projetos/{projeto.slug}/plano").json()
+    assert dados["pronto"] is True
+    assert dados["pedidos"][0]["recebido"] is False
+    assert dados["manifesto"] is None
+
+    imagem = projeto.pastas.midias / "manual" / "A-001.jpg"
+    imagem.write_bytes(b"imagem de teste")
+    dados = client.get(f"/api/projetos/{projeto.slug}/plano").json()
+    assert dados["pedidos"][0]["recebido"] is True
+    assert imagem.read_bytes() == b"imagem de teste"
+    assert not imagem.with_name("A-001.jpg.licenca.json").exists()
+    assert client.get(f"/api/projetos/{projeto.slug}/narracao.wav").status_code == 404
+    assert client.get("/api/projetos/%2E%2E/plano").status_code == 404
+    externo = client.get(
+        f"/api/projetos/{projeto.slug}/plano",
+        headers={"Origin": "https://site-externo.example"},
+    )
+    assert "access-control-allow-origin" not in externo.headers

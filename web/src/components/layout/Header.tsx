@@ -44,15 +44,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCommand }) => {
         ) : (
           <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surf border border-line text-mut whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-ok" />
-            GPU · ociosa (RTX 3060)
+            GPU · ociosa
           </span>
         )}
 
-        {/* Pílula de LLM */}
-        <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surf border border-line text-mut whitespace-nowrap">
-          LLM <strong className="text-tx">9Router</strong>
-          <span className="text-ok text-[10px]">●</span>
-        </span>
+        {/* O estado da LLM só aparece quando houver telemetria real. */}
 
         {/* Notificações */}
         <button

@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import re
 from collections.abc import AsyncIterator
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -13,8 +16,11 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from docforja.esquemas import Ativo
+from docforja.midia.pasta_manual import EXTENSOES_IMAGEM, identificar_ativo_por_nome
 from docforja.nucleo.banco import BancoProjeto
 from docforja.nucleo.cotas import gerenciador_cotas
+from docforja.nucleo.etapas import calcular_hash_dados
 from docforja.nucleo.eventos import barramento_global
 from docforja.nucleo.gpu import semaforo_gpu
 from docforja.nucleo.handlers import criar_executor_projeto
@@ -25,7 +31,10 @@ app = FastAPI(title="DocForja API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://127.0.0.1:5173", "http://localhost:5173",
+        "http://127.0.0.1:7860", "http://localhost:7860",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,6 +54,115 @@ class CriarProjetoPayload(BaseModel):
 
 class AprovarGatePayload(BaseModel):
     gate: str = "REVISAO"
+
+
+def _projeto_da_interface(slug: str) -> Projeto:
+    """Restringe leitura da UI aos projetos cadastrados na pasta configurada."""
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,99}", slug):
+        raise HTTPException(status_code=404, detail="Projeto não encontrado")
+    raiz = load_settings().paths.projects.resolve()
+    caminho = (raiz / slug).resolve()
+    if caminho.parent != raiz or not (caminho / "sistema" / "banco.db").is_file():
+        raise HTTPException(status_code=404, detail="Projeto não encontrado")
+    return Projeto(caminho, slug)
+
+
+@lru_cache(maxsize=32)
+def _hash_audio_em_cache(caminho: Path, tamanho: int, modificado_ns: int) -> str:
+    """Evita reler todo o WAV a cada atualização da tela."""
+    return calcular_hash_dados(caminho)
+
+
+def _manifesto_atual(projeto: Projeto) -> dict[str, Any] | None:
+    plano = projeto.pastas.plano
+    meta = plano / "previa.json"
+    props = projeto.pastas.sistema / "previa" / "props.json"
+    entradas = {
+        "hash_verificacao": plano / "verificacao.json",
+        "hash_resolvidos": plano / "ativos_resolvidos.json",
+    }
+    idioma = projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR")
+    entradas["hash_audio"] = projeto.pastas.audio / idioma / "narracao_completa.wav"
+    entradas["hash_segmentos"] = projeto.pastas.audio / idioma / "segmentos.json"
+    if not meta.is_file() or not props.is_file() or any(
+        not caminho.is_file() for caminho in entradas.values()
+    ):
+        return None
+    dados = json.loads(meta.read_text(encoding="utf-8"))
+    hashes_atuais = {
+        chave: (
+            _hash_audio_em_cache(caminho, caminho.stat().st_size, caminho.stat().st_mtime_ns)
+            if chave == "hash_audio" else calcular_hash_dados(caminho)
+        )
+        for chave, caminho in entradas.items()
+    }
+    if any(dados.get(chave) != hash_atual for chave, hash_atual in hashes_atuais.items()):
+        return None
+    return json.loads(props.read_text(encoding="utf-8"))
+
+
+@app.get("/api/projetos/{slug}/plano")
+def obter_plano_ui(slug: str) -> dict[str, Any]:
+    projeto = _projeto_da_interface(slug)
+    pasta = projeto.pastas.plano
+    plano_path = pasta / "plano.json"
+    if not plano_path.is_file():
+        return {"pronto": False, "slug": slug}
+    plano = json.loads(plano_path.read_text(encoding="utf-8"))
+    resolvidos_path = pasta / "ativos_resolvidos.json"
+    ativos_dados = (
+        json.loads(resolvidos_path.read_text(encoding="utf-8")).get("ativos", {})
+        if resolvidos_path.is_file() else plano.get("ativos", {})
+    )
+    ativos = {aid: Ativo.model_validate(item) for aid, item in ativos_dados.items()}
+    mapa_shots = {shot_id: aid for aid, ativo in ativos.items() for shot_id in ativo.usado_em}
+    recebidos: set[str] = set()
+    manual = projeto.pastas.midias / "manual"
+    if manual.is_dir():
+        for arquivo in manual.iterdir():
+            if arquivo.is_file() and arquivo.suffix.lower() in EXTENSOES_IMAGEM:
+                aid = identificar_ativo_por_nome(arquivo.name, ativos, mapa_shots)
+                if aid:
+                    recebidos.add(aid)
+    pedidos = [
+        {
+            "id": aid,
+            "descricao": ativo.descricao,
+            "motivo": ativo.motivo,
+            "busca": ativo.busca or {},
+            "nome_arquivo": ativo.nome_arquivo or f"{aid}.jpg",
+            "plano_b": ativo.plano_b,
+            "usado_em": ativo.usado_em,
+            "recebido": aid in recebidos,
+            "resolvido": bool(ativo.caminho and ativo.caminho.is_file()),
+        }
+        for aid, ativo in sorted(ativos.items())
+        if str(ativo.origem) == "pedir_ao_usuario"
+    ]
+    verificacao = pasta / "verificacao.json"
+    return {
+        "pronto": True,
+        "slug": slug,
+        "plano": plano,
+        "ativos": {aid: ativo.model_dump(mode="json") for aid, ativo in ativos.items()},
+        "pedidos": pedidos,
+        "verificacao": json.loads(verificacao.read_text(encoding="utf-8"))
+        if verificacao.is_file() else None,
+        "manifesto": _manifesto_atual(projeto),
+        "pasta_manual": str(manual),
+    }
+
+
+@app.get("/api/projetos/{slug}/narracao.wav")
+def obter_audio_previa(slug: str) -> FileResponse:
+    projeto = _projeto_da_interface(slug)
+    if _manifesto_atual(projeto) is None:
+        raise HTTPException(status_code=404, detail="Prévia ainda não disponível")
+    idioma = projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR")
+    audio = projeto.pastas.audio / idioma / "narracao_completa.wav"
+    if not audio.is_file():
+        raise HTTPException(status_code=404, detail="Narração não encontrada")
+    return FileResponse(audio, media_type="audio/wav", filename="narracao.wav")
 
 
 @app.get("/api/saude")

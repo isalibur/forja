@@ -12,10 +12,11 @@ import {
 
 interface InicioProps {
   onNavegar: (tela: string) => void;
+  onSelecionarProjeto: (slug: string) => void;
 }
 
-export const Inicio: React.FC<InicioProps> = ({ onNavegar }) => {
-  const { data: projetos, isLoading } = useQuery({
+export const Inicio: React.FC<InicioProps> = ({ onNavegar, onSelecionarProjeto }) => {
+  const { data: projetos, isLoading } = useQuery<{ slug: string; nome: string; tipo: string; etapa_atual: string }[]>({
     queryKey: ["projetos"],
     queryFn: async () => {
       const res = await fetch("/api/projetos");
@@ -32,25 +33,26 @@ export const Inicio: React.FC<InicioProps> = ({ onNavegar }) => {
       return res.json();
     },
   });
+  const destaque = projetos?.[0];
 
   return (
     <div className="p-8 max-w-[1400px] mx-auto space-y-8 animate-in fade-in duration-200">
       {/* Header Boas-vindas */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-tx">
-          Boa tarde, Gabriel
+          Bem-vindo ao DocForja
         </h1>
         <p className="text-mut mt-1">
           Você tem{" "}
           <strong className="text-warn font-semibold">
-            {projetos?.length || 1} projeto(s)
+            {projetos?.length ?? 0} projeto(s)
           </strong>{" "}
           no seu workspace local.
         </p>
       </div>
 
       {/* Cartão de Projeto em Destaque ("Continuar de onde parou") */}
-      <div className="bg-surf border border-line rounded-card p-6 flex flex-col md:flex-row items-start md:items-center gap-6 shadow-xl relative overflow-hidden">
+      {destaque && <div className="bg-surf border border-line rounded-card p-6 flex flex-col md:flex-row items-start md:items-center gap-6 shadow-xl relative overflow-hidden">
         <div className="w-40 h-24 rounded-lg bg-gradient-to-tr from-stone-900 to-amber-950/60 border border-line flex items-center justify-center shrink-0">
           <Video className="w-8 h-8 text-brasa" />
         </div>
@@ -60,31 +62,27 @@ export const Inicio: React.FC<InicioProps> = ({ onNavegar }) => {
             <span className="text-xs px-2 py-0.5 rounded bg-brasa/10 text-brasa font-medium">
               Vídeo Longo
             </span>
-            <span className="text-xs text-mut font-mono">Kit Cinza e Brasa</span>
+            <span className="text-xs text-mut font-mono">{destaque.tipo}</span>
           </div>
           <h2 className="text-lg font-bold text-tx">
-            Vesúvio: 24 Horas que Mudaram a História
+            {destaque.nome}
           </h2>
           <p className="text-sm text-mut">
-            Etapa atual: <strong className="text-tx">P8_estimativa_previa</strong> · 116 segmentos analisados
+            Etapa atual: <strong className="text-tx">{destaque.etapa_atual}</strong>
           </p>
 
-          {/* Barra de Progresso */}
-          <div className="w-full bg-line rounded-full h-2 mt-3 overflow-hidden">
-            <div className="bg-brasa h-2 rounded-full w-[65%]" />
-          </div>
         </div>
 
         <div className="shrink-0 flex items-center gap-3">
           <button
-            onClick={() => onNavegar("plano")}
+            onClick={() => { onSelecionarProjeto(destaque.slug); onNavegar("plano"); }}
             className="px-4 py-2 rounded-btn bg-brasa hover:bg-orange-600 text-white font-medium text-sm flex items-center gap-2 transition-colors cursor-pointer shadow-lg shadow-brasa/20"
           >
             <span>Revisar plano</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-      </div>
+      </div>}
 
       {/* Seção Criar Rápido */}
       <div>
@@ -143,7 +141,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavegar }) => {
               Saúde do Sistema
             </h3>
             <span className="text-[11px] px-2 py-0.5 rounded bg-ok/10 text-ok font-medium">
-              100% Operacional
+              {saude?.status === "online" ? "Servidor online" : "Verificando"}
             </span>
           </div>
 
@@ -151,21 +149,21 @@ export const Inicio: React.FC<InicioProps> = ({ onNavegar }) => {
             <div className="flex items-center justify-between py-1.5 border-b border-line/50">
               <span className="text-mut">GPU / VRAM</span>
               <span className="font-mono text-tx font-medium">
-                RTX 3060 · 12 GB
+                {saude?.gpu?.modelo_atual || (saude?.gpu?.ocupada ? "Em uso" : "Ociosa")}
               </span>
             </div>
             <div className="flex items-center justify-between py-1.5 border-b border-line/50">
               <span className="text-mut">Serviços Ativos</span>
               <span className="text-tx flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-ok" />
-                ComfyUI · Ollama · 9Router
+                Não verificados nesta tela
               </span>
             </div>
             <div className="flex items-center justify-between py-1.5 border-b border-line/50">
               <span className="text-mut">Espaço em Disco</span>
               <span className="font-mono text-tx font-medium flex items-center gap-1">
                 <HardDrive className="w-3.5 h-3.5 text-zinc-400" />
-                &gt; 200 GB livres em E:
+                Não verificado nesta tela
               </span>
             </div>
             <div className="flex items-center justify-between py-1.5">
@@ -193,7 +191,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavegar }) => {
             {isLoading ? (
               <p className="text-xs text-mut py-4 text-center">Carregando projetos…</p>
             ) : projetos && projetos.length > 0 ? (
-              projetos.map((proj: any) => (
+              projetos.map((proj) => (
                 <div
                   key={proj.slug}
                   className="py-3 flex items-center justify-between hover:bg-elev/40 px-2 rounded transition-colors"
@@ -205,7 +203,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavegar }) => {
                     </p>
                   </div>
                   <button
-                    onClick={() => onNavegar("plano")}
+                    onClick={() => { onSelecionarProjeto(proj.slug); onNavegar("plano"); }}
                     className="p-1.5 rounded-btn hover:bg-elev text-mut hover:text-tx transition-colors cursor-pointer"
                     title="Ver projeto"
                   >

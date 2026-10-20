@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React, { useEffect, useState } from "react";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
@@ -7,6 +7,10 @@ import { CommandPalette } from "./components/CommandPalette";
 import { Inicio } from "./pages/Inicio";
 import { Criar } from "./pages/Criar";
 import { useEventosSSE } from "./hooks/useEventosSSE";
+
+const Plano = React.lazy(() => import("./pages/Plano").then((modulo) => ({ default: modulo.Plano })));
+const Ativos = React.lazy(() => import("./pages/Ativos").then((modulo) => ({ default: modulo.Ativos })));
+const ListaBusca = React.lazy(() => import("./pages/ListaBusca").then((modulo) => ({ default: modulo.ListaBusca })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,8 +23,20 @@ const queryClient = new QueryClient({
 
 const AppContent: React.FC = () => {
   const [telaAtiva, setTelaAtiva] = useState<string>("inicio");
-  const [projetoAtivo, setProjetoAtivo] = useState<string>("vesuvio");
+  const [projetoAtivo, setProjetoAtivo] = useState<string>("");
   const [commandOpen, setCommandOpen] = useState<boolean>(false);
+  const { data: projetos } = useQuery<{ slug: string }[]>({
+    queryKey: ["projetos"],
+    queryFn: async () => {
+      const resposta = await fetch("/api/projetos");
+      if (!resposta.ok) return [];
+      return resposta.json();
+    },
+  });
+
+  useEffect(() => {
+    if (!projetoAtivo && projetos?.[0]?.slug) setProjetoAtivo(projetos[0].slug);
+  }, [projetoAtivo, projetos]);
 
   // Conecta ao fluxo de eventos SSE do backend
   useEventosSSE();
@@ -39,35 +55,17 @@ const AppContent: React.FC = () => {
         <Header onOpenCommand={() => setCommandOpen(true)} />
 
         <main className="flex-1 overflow-y-auto">
-          {telaAtiva === "inicio" && <Inicio onNavegar={setTelaAtiva} />}
+          <React.Suspense fallback={<div className="p-8 text-mut">Abrindo tela…</div>}>
+          {telaAtiva === "inicio" && <Inicio onNavegar={setTelaAtiva} onSelecionarProjeto={setProjetoAtivo} />}
           {telaAtiva === "criar" && (
             <Criar
               onNavegar={setTelaAtiva}
               onProjetoCriado={(slug) => setProjetoAtivo(slug)}
             />
           )}
-          {telaAtiva === "plano" && (
-            <div className="p-8 max-w-[1200px] mx-auto text-center py-24 space-y-4">
-              <h2 className="text-xl font-bold text-tx">Plano de Vídeo · {projetoAtivo}</h2>
-              <p className="text-sm text-mut">
-                A visualização detalhada do Plano com prévia ao vivo @remotion/player e tabela de shots está programada para o Marco 5 (M5).
-              </p>
-              <button
-                onClick={() => setTelaAtiva("inicio")}
-                className="px-4 py-2 rounded-btn bg-surf border border-line text-xs font-medium text-mut hover:text-tx"
-              >
-                Voltar para Início
-              </button>
-            </div>
-          )}
-          {telaAtiva === "busca" && (
-            <div className="p-8 max-w-[1200px] mx-auto text-center py-24 space-y-4">
-              <h2 className="text-xl font-bold text-tx">Lista de Busca · {projetoAtivo}</h2>
-              <p className="text-sm text-mut">
-                A interface com upload de imagens e sugestões da pasta manual integra-se no Marco 5 (M5).
-              </p>
-            </div>
-          )}
+          {telaAtiva === "plano" && <Plano slug={projetoAtivo} onNavegar={setTelaAtiva} />}
+          {telaAtiva === "ativos" && <Ativos slug={projetoAtivo} onNavegar={setTelaAtiva} />}
+          {telaAtiva === "busca" && <ListaBusca slug={projetoAtivo} />}
           {telaAtiva === "producao" && (
             <div className="p-8 max-w-[1200px] mx-auto text-center py-24 space-y-4">
               <h2 className="text-xl font-bold text-tx">Acompanhamento de Produção · {projetoAtivo}</h2>
@@ -84,6 +82,7 @@ const AppContent: React.FC = () => {
               </p>
             </div>
           )}
+          </React.Suspense>
         </main>
       </div>
 
