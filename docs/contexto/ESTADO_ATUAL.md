@@ -65,8 +65,14 @@ Atualizado em 20 de outubro de 2026. Este arquivo registra somente o estado oper
 
 ## Pendências e próxima tarefa
 
-- Próxima tarefa: preparar a integração opcional do Hermes Agent como operador conversacional (final do Marco M7, conforme `docs/construtor/07-arquitetura-e-integracoes.md §6`, `08 §M7` e `09 §7`), atuando exclusivamente como interface sobre a CLI/API local do DocForja (criar projeto, consultar status, avisar sobre plano/lista de busca e produzir apenas sob código de confirmação), sem substituir o pipeline, planejador, Remotion, Kokoro ou 9Router.
-- Observações: manter cache por hash e validação estrita sem avançar para M8 ou M9. Teste assistivo manual com NVDA/VoiceOver a ser executado em ambiente com leitor instalado.
+- Próxima tarefa: Integração opcional do Hermes Agent como operador conversacional do Marco M7 (`docs/construtor/07-arquitetura-e-integracoes.md §6`, `08 §M7`, `09 §7`), atuando estritamente sobre a CLI/API local do DocForja:
+  1. Funções no escopo: criar projetos, consultar status, avisar quando o plano estiver pronto com resumo da lista de busca (`lista_de_busca.md`), perguntar sobre imagens não atribuídas (`02_midias/manual/nao_atribuidas/`), iniciar produção somente mediante código de confirmação digitado pelo usuário (`PRODUZIR`) e avisar quando a produção terminar.
+  2. Limites de segurança: comandos permitidos explicitamente (whitelist fechada), projetos acessíveis restritos à pasta configurada, sem shell irrestrito do SO, proteção inviolável do código de confirmação e Telegram limitado ao chat autorizado. O Hermes usa 9Router e não concorre pelo semáforo de GPU; o pipeline DocForja acionado por ele mantém acesso total e gerenciado à GPU.
+- Pendências modulares complementares do Marco M7 (não bloqueantes para o Hermes):
+  1. Invalidação seletiva multilíngue: definir que a alteração de uma imagem em `escolhas.json` invalida apenas os chunks de render do bloco afetado (`04_sistema/render/<idioma>/blocos/<bloco_id>.mp4`) e o vídeo final de cada idioma, preservando narrações, sincronismo, transições, QA e demais blocos; a troca na prévia interativa em `selecoes_ui/`, por si só, não atualiza o MP4.
+  2. Reaproveitamento da Pasta Global: promoção estritamente condicionada a confirmação humana com ficha e licença comercial permissiva (`.licenca.json`), e consumo posterior em novos projetos via referência estável ao ID (`global:<categoria>:<id>`).
+  3. Adaptadores adicionais de TTS: `openai_compat` (HTTP `/v1/audio/speech`), VoiceStudio (com bloqueio de engines não-comerciais para projetos monetizados) e `arquivo_pronto` (narração por arquivo com tolerância a divergências de texto WER > 8%).
+- Observações: manter escritas atômicas, cache por hash e não avançar para M8 ou M9. Teste assistivo manual com NVDA/VoiceOver a ser executado em ambiente com leitor instalado.
 
 ## Entrega entre Codex e Antigravity
 
