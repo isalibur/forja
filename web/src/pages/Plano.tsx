@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Player, type PlayerRef } from "@remotion/player";
-import { AlertTriangle, Film, List, Play, Search } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Film, List, Play, Search, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 import { PreviaInterativa } from "../components/PreviaInterativa";
 import { ErroCarregamento } from "../components/ErroCarregamento";
 import { usePlano, type Shot } from "../hooks/usePlano";
@@ -15,6 +16,9 @@ export const Plano: React.FC<{ slug: string; onNavegar: (tela: string) => void }
   const [filtro, setFiltro] = useState("");
   const [limite, setLimite] = useState(50);
   const [visao, setVisao] = useState<"storyboard" | "tabela">("storyboard");
+  const [modalProduzirAberto, setModalProduzirAberto] = useState(false);
+  const [codigoConfirmacao, setCodigoConfirmacao] = useState("");
+  const [enviandoProducao, setEnviandoProducao] = useState(false);
   const shots = useMemo(() => data?.plano?.blocos.flatMap((bloco) => bloco.shots.map((shot) => ({ ...shot, bloco: bloco.titulo }))) ?? [], [data]);
   const filtrados = shots.filter((shot) => `${shot.id} ${shot.template} ${shot.bloco} ${shot.textos.join(" ")}`.toLowerCase().includes(filtro.toLowerCase()));
 
@@ -56,8 +60,28 @@ export const Plano: React.FC<{ slug: string; onNavegar: (tela: string) => void }
   return (
     <div className="p-6 xl:p-8 max-w-[1700px] mx-auto space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div><p className="text-xs uppercase tracking-widest text-brasa">Projeto · Plano</p><h1 className="text-2xl font-bold mt-1">{data.plano.projeto}</h1><p className="text-sm text-mut mt-1">{data.plano.blocos.length} blocos · {shots.length} shots · prévia de planejamento</p></div>
-        <button onClick={() => onNavegar("busca")} className="rounded-btn bg-warn/15 text-warn px-4 py-2 text-sm font-medium hover:bg-warn/25">{data.pedidos?.filter((item) => !item.recebido).length ?? 0} imagens precisam de você</button>
+        <div>
+          <p className="text-xs uppercase tracking-widest text-brasa">Projeto · Plano</p>
+          <h1 className="text-2xl font-bold mt-1">{data.plano.projeto}</h1>
+          <p className="text-sm text-mut mt-1">
+            {data.plano.blocos.length} blocos · {shots.length} shots · prévia de planejamento
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => onNavegar("busca")}
+            className="rounded-btn bg-warn/15 text-warn px-4 py-2 text-sm font-medium hover:bg-warn/25 transition-colors"
+          >
+            {data.pedidos?.filter((item) => !item.recebido).length ?? 0} imagens precisam de você
+          </button>
+          <button
+            onClick={() => setModalProduzirAberto(true)}
+            className="flex items-center gap-2 rounded-btn bg-brasa px-5 py-2 text-sm font-semibold text-white shadow-md hover:bg-orange-600 transition-colors cursor-pointer"
+          >
+            <Play className="w-4 h-4 fill-white" />
+            Produzir ▸
+          </button>
+        </div>
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.65fr)_minmax(290px,1fr)] gap-5">
         <div className="rounded-card border border-line bg-surf overflow-hidden">
@@ -99,6 +123,125 @@ export const Plano: React.FC<{ slug: string; onNavegar: (tela: string) => void }
         {limite < filtrados.length && <button onClick={() => setLimite((n) => n + 50)} className="text-sm text-brasa hover:underline">Mostrar mais {Math.min(50, filtrados.length - limite)} shots</button>}
       </div>
       {selecionado && <div role="dialog" aria-modal="true" aria-label={`Shot ${selecionado.id}`} className="fixed inset-0 z-40 bg-black/60 flex justify-end" onClick={() => setSelecionado(null)}><div className="w-full max-w-md bg-surf border-l border-line p-6 overflow-y-auto" onClick={(e) => e.stopPropagation()} onKeyDown={manterFocoNoPainel}><button ref={botaoFechar} onClick={() => setSelecionado(null)} className="text-sm text-mut hover:text-tx float-right">Fechar ×</button><h2 className="text-xl font-bold">Shot {selecionado.id}</h2><p className="text-sm text-mut mt-2">{selecionado.template} · {selecionado.duracao_s.toFixed(1)} s</p><div className="mt-6 space-y-4 text-sm"><div><span className="text-mut">Narração</span><p>{selecionado.segmentos.join(", ") || "Cartão visual"}</p></div><div><span className="text-mut">Texto na tela</span><p>{selecionado.textos.join(" · ") || "Sem texto"}</p></div><div><span className="text-mut">Ativos</span><p>{selecionado.ativos.join(", ") || "Nenhum"}</p></div><div><span className="text-mut">Motivo</span><p>{selecionado.motivo || "—"}</p></div></div>{manifesto && <button onClick={() => { if (selecionado.inicio_s != null) player.current?.seekTo(Math.round(selecionado.inicio_s * 24)); player.current?.play(); }} className="mt-6 flex gap-2 items-center text-brasa"><Play className="w-4 h-4" />Tocar trecho</button>}<p className="mt-8 text-xs text-warn flex gap-2"><AlertTriangle className="w-4 h-4 shrink-0" />Edição de shots com versionamento e verificação automática ainda não está disponível.</p></div></div>}
+
+      {/* Modal de Confirmação de Produção (Gate REVISAO) */}
+      {modalProduzirAberto && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-produzir-titulo"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs"
+          onClick={() => { if (!enviandoProducao) setModalProduzirAberto(false); }}
+        >
+          <div
+            className="w-full max-w-lg rounded-card border border-line bg-surf p-6 shadow-2xl space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-brasa/15 text-brasa grid place-items-center">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 id="modal-produzir-titulo" className="text-lg font-bold">
+                  Autorizar Produção Final
+                </h2>
+                <p className="text-xs text-mut">
+                  Marco M6 · Pipeline de renderização, trilha, mix e entrega
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-btn border border-line bg-elev/60 p-4 space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-mut">Projeto:</span>
+                <strong>{data.plano.projeto}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-mut">Estrutura:</span>
+                <span>{data.plano.blocos.length} blocos · {shots.length} shots</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-mut">Estimativa vs Orçamento:</span>
+                <span className="text-brasa font-semibold">
+                  {estimativa} min / {orcamento} min
+                </span>
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-line text-xs text-tx">
+                <CheckCircle2 className="w-4 h-4 text-ok shrink-0" />
+                <span>
+                  Licenciamento e dosagem aprovados. Mídia NC/ND e não autorizada bloqueadas.
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-btn bg-elev/40 border border-line/80 p-3 text-xs text-mut space-y-1">
+              <p className="font-semibold text-tx">Aviso de Transparência Obrigatório:</p>
+              <p>
+                Este vídeo incluirá a identificação visual de <strong>RECONSTITUIÇÃO ARTÍSTICA</strong> em
+                todas as sequências históricas ilustradas.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="codigo-produzir" className="block text-xs font-medium text-tx">
+                Para confirmar a autorização, digite <span className="font-mono text-brasa font-bold">PRODUZIR</span>:
+              </label>
+              <input
+                id="codigo-produzir"
+                type="text"
+                value={codigoConfirmacao}
+                onChange={(e) => setCodigoConfirmacao(e.target.value)}
+                placeholder="PRODUZIR"
+                className="w-full rounded-btn border border-line bg-elev px-3 py-2 text-sm font-mono tracking-widest uppercase outline-none focus:border-brasa"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={enviandoProducao}
+                onClick={() => setModalProduzirAberto(false)}
+                className="px-4 py-2 rounded-btn border border-line text-sm text-mut hover:text-tx hover:bg-elev transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={codigoConfirmacao.trim().toUpperCase() !== "PRODUZIR" || enviandoProducao}
+                onClick={async () => {
+                  setEnviandoProducao(true);
+                  try {
+                    const res = await fetch(`/api/projetos/${encodeURIComponent(slug)}/aprovar_gate`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ gate: "REVISAO", codigo: "PRODUZIR" }),
+                    });
+                    if (!res.ok) {
+                      const err = await res.json().catch(() => ({}));
+                      throw new Error(err.detail || "Erro ao aprovar produção.");
+                    }
+                    toast.success("Produção iniciada com sucesso!");
+                    setModalProduzirAberto(false);
+                    onNavegar("producao");
+                  } catch (err: any) {
+                    toast.error(err.message || "Falha ao iniciar produção.");
+                  } finally {
+                    setEnviandoProducao(false);
+                  }
+                }}
+                className={`px-5 py-2 rounded-btn text-sm font-semibold text-white transition-all cursor-pointer ${
+                  codigoConfirmacao.trim().toUpperCase() === "PRODUZIR" && !enviandoProducao
+                    ? "bg-brasa shadow-md hover:bg-orange-600"
+                    : "bg-line text-mut cursor-not-allowed opacity-50"
+                }`}
+              >
+                {enviandoProducao ? "Iniciando…" : "Confirmar e Produzir ▸"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

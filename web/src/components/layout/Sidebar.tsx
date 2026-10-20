@@ -12,6 +12,7 @@ import {
   FolderSync,
   Palette,
   Flame,
+  Settings,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -140,6 +141,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <Palette className={`w-4 h-4 ${telaAtiva === "kits" ? "text-brasa" : ""}`} />
           Kits
+        </button>
+
+        <button
+          onClick={() => onNavegar("sistema")}
+          className={`w-full ${linkClass("sistema")}`}
+        >
+          <Settings className={`w-4 h-4 ${telaAtiva === "sistema" ? "text-brasa" : ""}`} />
+          Sistema
         </button>
       </nav>
 

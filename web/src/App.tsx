@@ -11,6 +11,11 @@ import { useEventosSSE } from "./hooks/useEventosSSE";
 const Plano = React.lazy(() => import("./pages/Plano").then((modulo) => ({ default: modulo.Plano })));
 const Ativos = React.lazy(() => import("./pages/Ativos").then((modulo) => ({ default: modulo.Ativos })));
 const ListaBusca = React.lazy(() => import("./pages/ListaBusca").then((modulo) => ({ default: modulo.ListaBusca })));
+const Producao = React.lazy(() => import("./pages/Producao").then((modulo) => ({ default: modulo.Producao })));
+const Resultado = React.lazy(() => import("./pages/Resultado").then((modulo) => ({ default: modulo.Resultado })));
+const PastaGlobal = React.lazy(() => import("./pages/PastaGlobal").then((modulo) => ({ default: modulo.PastaGlobal })));
+const Kits = React.lazy(() => import("./pages/Kits").then((modulo) => ({ default: modulo.Kits })));
+const Sistema = React.lazy(() => import("./pages/Sistema").then((modulo) => ({ default: modulo.Sistema })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -109,22 +114,11 @@ const AppContent: React.FC = () => {
           {telaAtiva === "plano" && <Plano slug={projetoAtivo} onNavegar={setTelaAtiva} />}
           {telaAtiva === "ativos" && <Ativos slug={projetoAtivo} onNavegar={setTelaAtiva} />}
           {telaAtiva === "busca" && <ListaBusca slug={projetoAtivo} />}
-          {telaAtiva === "producao" && (
-            <div className="p-8 max-w-[1200px] mx-auto text-center py-24 space-y-4">
-              <h2 className="text-xl font-bold text-tx">Acompanhamento de Produção · {projetoAtivo}</h2>
-              <p className="text-sm text-mut">
-                Renderização de vídeo final, tratamento e trilha sonora completos no Marco 6 (M6).
-              </p>
-            </div>
-          )}
-          {telaAtiva === "resultado" && (
-            <div className="p-8 max-w-[1200px] mx-auto text-center py-24 space-y-4">
-              <h2 className="text-xl font-bold text-tx">Resultado Final · {projetoAtivo}</h2>
-              <p className="text-sm text-mut">
-                Player final por idioma, legendas e pacote estratégico no Marco 6 (M6).
-              </p>
-            </div>
-          )}
+          {telaAtiva === "producao" && <Producao slug={projetoAtivo} onNavegar={setTelaAtiva} />}
+          {telaAtiva === "resultado" && <Resultado slug={projetoAtivo} onNavegar={setTelaAtiva} />}
+          {telaAtiva === "global" && <PastaGlobal />}
+          {telaAtiva === "kits" && <Kits />}
+          {telaAtiva === "sistema" && <Sistema />}
           </React.Suspense>
         </main>
       </div>
