@@ -70,6 +70,37 @@ def test_d1_duracao_intensidade():
     assert plano.blocos[0].shots[0].duracao_s <= 4.0
 
 
+def test_d1_nao_trunca_narracao_com_tempo_real():
+    verificador = VerificadorDosagem()
+    plano = criar_plano_base()
+    shot = plano.blocos[0].shots[0]
+    shot.duracao_s = 7.0
+    segmento = SegmentoProcessado(
+        id="B1-S01", texto_original="Texto", texto_limpo="Texto", intensidade=8.0
+    )
+    bloco = BlocoProcessado(id="B1", nome="Bloco de Teste", segmentos=[segmento])
+
+    resultado = verificador.verificar_e_corrigir(
+        plano, blocos_processados=[bloco], tempos_reais={"B1-S01": 7.0}
+    )
+
+    assert not resultado.aprovado
+    assert shot.duracao_s == 7.0
+    assert any(v.regra == "D1" and not v.corrigida for v in resultado.violacoes)
+    assert not any(v.regra == "D14" for v in resultado.violacoes)
+
+
+def test_d14_detecta_duracao_cortada_mesmo_com_segmento_presente():
+    verificador = VerificadorDosagem()
+    plano = criar_plano_base()
+    resultado = verificador.verificar_e_corrigir(
+        plano, tempos_reais={"B1-S01": 7.0}, autocorrige=False
+    )
+
+    assert not resultado.aprovado
+    assert any(v.regra == "D14" for v in resultado.violacoes)
+
+
 def test_d2_movimento_max_estatico():
     """Valida D2: Shot estático por mais de 4s é detectado e recebe push_in 2%."""
     verificador = VerificadorDosagem()

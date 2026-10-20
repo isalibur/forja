@@ -65,6 +65,7 @@ class VerificadorDosagem:
         plano: Plano,
         blocos_processados: list[BlocoProcessado] | None = None,
         autocorrige: bool = True,
+        tempos_reais: dict[str, float] | None = None,
     ) -> ResultadoVerificacao:
         """Executa a verificação de D1 a D17 no plano e aplica autocorreções se solicitado."""
         violacoes: list[Violacao] = []
@@ -153,6 +154,24 @@ class VerificadorDosagem:
                 if shot.transicao == "dissolve":
                     dissolves_total += 1
 
+                if autocorrige and tempos_reais and len(shot.segmentos) == 1:
+                    sid = shot.segmentos[0]
+                    duracao_audio = tempos_reais.get(sid)
+                    if duracao_audio is not None and abs(shot.duracao_s - duracao_audio) > 0.05:
+                        anterior = shot.duracao_s
+                        shot.duracao_s = duracao_audio
+                        v = Violacao(
+                            regra="D14",
+                            descricao="Duração do shot ajustada à narração real",
+                            bloco_id=b.id,
+                            shot_id=shot.id,
+                            detalhes=f"Plano: {anterior:.3f}s; áudio: {duracao_audio:.3f}s",
+                            corrigida=True,
+                            acao_correcao=f"{shot.id}: duração sincronizada ao áudio real",
+                        )
+                        violacoes.append(v)
+                        ajustes.append(v.acao_correcao)
+
                 # D1: Duração por intensidade
                 # Identifica intensidade aproximada pelo segmento
                 intensidade = 5
@@ -185,7 +204,25 @@ class VerificadorDosagem:
                             f"[{min_s:.1f}s, {max_s:.1f}s] (intensidade {intensidade})"
                         ),
                     )
-                    if autocorrige:
+                    # A fala é imutável: D1 precisa de nova decupagem quando
+                    # existem tempos reais, nunca de truncamento numérico.
+                    tem_audio_real = tempos_reais is not None and any(
+                        sid in tempos_reais for sid in shot.segmentos
+                    )
+                    if (
+                        autocorrige
+                        and tem_audio_real
+                        and shot.duracao_s < min_s
+                        and self._regra("D1_duracao_intensidade").get(
+                            "permitir_excecao_fala_curta", False
+                        )
+                    ):
+                        v.corrigida = True
+                        v.acao_correcao = (
+                            f"{shot.id}: exceção D1 para fala curta de {shot.duracao_s:.3f}s"
+                        )
+                        ajustes.append(v.acao_correcao)
+                    elif autocorrige and not tem_audio_real:
                         shot.duracao_s = max(min_s, min(max_s, shot.duracao_s))
                         v.corrigida = True
                         v.acao_correcao = (
@@ -777,6 +814,31 @@ class VerificadorDosagem:
                     v.acao_correcao = f"Criado ativo alternativo {aid}_b para usos excedentes"
                     ajustes.append(v.acao_correcao)
                 violacoes.append(v)
+
+        # D14 também cobre a duração, não apenas a presença dos IDs. A
+        # autocorreção de outras regras não pode deslocar a narração real.
+        if tempos_reais is not None:
+            duracoes_por_segmento: dict[str, float] = {}
+            for bloco in plano.blocos:
+                for shot in bloco.shots:
+                    if len(shot.segmentos) == 1:
+                        sid = shot.segmentos[0]
+                        duracoes_por_segmento[sid] = (
+                            duracoes_por_segmento.get(sid, 0.0) + shot.duracao_s
+                        )
+            divergentes = {
+                sid: (round(duracoes_por_segmento.get(sid, 0.0), 3), round(duracao, 3))
+                for sid, duracao in tempos_reais.items()
+                if abs(duracoes_por_segmento.get(sid, 0.0) - duracao) > 0.05
+            }
+            if divergentes:
+                violacoes.append(
+                    Violacao(
+                        regra="D14",
+                        descricao="Duração dos shots diverge da narração real",
+                        detalhes=f"Durações (plano, áudio): {divergentes}",
+                    )
+                )
 
         # D12: Proporção de dissolve (máx 15%)
         limite_dissolve = float(

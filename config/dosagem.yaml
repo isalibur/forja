@@ -35,6 +35,7 @@ fatores_densidade:
 regras:
   D1_duracao_intensidade:
     descricao: "Duração do shot por intensidade"
+    permitir_excecao_fala_curta: true
     faixas:
       "1-3":
         min_s: 4.0

@@ -592,7 +592,7 @@ async def test_pipeline_p6_reenvia_ao_llm_bloco_reprovado(tmp_path, monkeypatch)
     chamadas_verif = 0
     orig_verificar = VerificadorDosagem.verificar_e_corrigir
 
-    def mock_verificar(self, plano, blocos_processados=None, autocorrige=True):
+    def mock_verificar(self, plano, blocos_processados=None, autocorrige=True, **kwargs):
         nonlocal chamadas_verif
         chamadas_verif += 1
         if chamadas_verif == 1:
@@ -612,7 +612,8 @@ async def test_pipeline_p6_reenvia_ao_llm_bloco_reprovado(tmp_path, monkeypatch)
                 ajustes=[],
             )
         return orig_verificar(
-            self, plano, blocos_processados=blocos_processados, autocorrige=autocorrige
+            self, plano, blocos_processados=blocos_processados, autocorrige=autocorrige,
+            **kwargs,
         )
 
     monkeypatch.setattr(VerificadorDosagem, "verificar_e_corrigir", mock_verificar)

@@ -246,8 +246,19 @@ def registrar_handlers_disponiveis(
             musica=[{"bloco": b.id, "clima": b.clima_musical, "faixa": None} for b in blocos],
         )
         blocos_processados = ler_roteiro_formatado(ctx.projeto.obter_roteiro())
+        _, pasta_audio = _audio_idioma(ctx.projeto)
+        segmentos_audio = json.loads(
+            (pasta_audio / "segmentos.json").read_text(encoding="utf-8")
+        )
+        tempos_reais = {
+            item["id"]: float(item["fim_s"]) - float(item["inicio_s"])
+            for item in segmentos_audio
+        }
         resultado = verificador.verificar_e_corrigir(
-            plano, blocos_processados=blocos_processados, autocorrige=True
+            plano,
+            blocos_processados=blocos_processados,
+            autocorrige=True,
+            tempos_reais=tempos_reais,
         )
 
         # Loop de reenvio ao LLM só dos blocos reprovados (máx. 3 voltas)
@@ -291,7 +302,10 @@ def registrar_handlers_disponiveis(
 
             plano.ativos = consolidar_ativos_plano(plano.blocos, preset=preset)
             resultado = verificador.verificar_e_corrigir(
-                plano, blocos_processados=blocos_processados, autocorrige=True
+                plano,
+                blocos_processados=blocos_processados,
+                autocorrige=True,
+                tempos_reais=tempos_reais,
             )
 
         plano.verificacao["fase"] = "pre_resolucao_ativos"
@@ -573,6 +587,7 @@ def registrar_handlers_disponiveis(
             "ativos": ctx.projeto.pastas.plano / "ativos.json",
             "qualidade": pasta_audio / "qualidade.json",
             "palavras": pasta_audio / "palavras.json",
+            "segmentos": pasta_audio / "segmentos.json",
         }
         return {nome: calcular_hash_dados(caminho) for nome, caminho in caminhos.items()}
 
@@ -604,6 +619,23 @@ def registrar_handlers_disponiveis(
         segmentos_cobertos = [
             sid for bloco in plano.blocos for shot in bloco.shots for sid in shot.segmentos
         ]
+        _, pasta_audio = _audio_idioma(ctx.projeto)
+        duracoes_audio = {
+            item["id"]: float(item["fim_s"]) - float(item["inicio_s"])
+            for item in json.loads(
+                (pasta_audio / "segmentos.json").read_text(encoding="utf-8")
+            )
+        }
+        duracoes_plano: dict[str, float] = {}
+        for bloco in plano.blocos:
+            for shot in bloco.shots:
+                if len(shot.segmentos) == 1:
+                    sid = shot.segmentos[0]
+                    duracoes_plano[sid] = duracoes_plano.get(sid, 0.0) + shot.duracao_s
+        tempos_conferem = all(
+            abs(duracoes_plano.get(sid, 0.0) - duracao) <= 0.05
+            for sid, duracao in duracoes_audio.items()
+        )
         meta_previa = pasta / "previa.json"
         hashes_relatorios = {
             nome: calcular_hash_dados(pasta / nome) for nome in nomes_relatorios
@@ -627,6 +659,7 @@ def registrar_handlers_disponiveis(
         return (
             plano.projeto == ctx.projeto.slug
             and segmentos_cobertos == segmentos_esperados
+            and tempos_conferem
             and relatorio.get("hash_plano") == calcular_hash_dados(plano_dados)
             and relatorio.get("hash_entradas") == hashes_entradas_p6(ctx)
             and relatorios_validos
