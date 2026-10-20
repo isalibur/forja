@@ -16,6 +16,7 @@ import yaml
 from docforja.esquemas import Ativo, OrigemAtivo, Plano, Shot
 from docforja.planejamento.entidades import BlocoProcessado
 from docforja.planejamento.estimativa import estimar_tempo_plano
+from docforja.planejamento.tempos import intervalos_narrados
 
 
 @dataclass
@@ -60,6 +61,17 @@ class VerificadorDosagem:
     def _regra(self, nome: str) -> dict[str, Any]:
         return self.config.get("regras", {}).get(nome, {})
 
+    def limites_d1(self, intensidade: int) -> tuple[float, float]:
+        faixas = self._regra("D1_duracao_intensidade").get("faixas", {})
+        faixa = next(
+            (
+                cfg for intervalo, cfg in faixas.items()
+                if int(intervalo.split("-")[0]) <= intensidade <= int(intervalo.split("-")[1])
+            ),
+            faixas.get("4-6", {"min_s": 3.0, "max_s": 6.0}),
+        )
+        return float(faixa["min_s"]), float(faixa["max_s"])
+
     def verificar_e_corrigir(
         self,
         plano: Plano,
@@ -93,7 +105,7 @@ class VerificadorDosagem:
                     descricao="Cobertura incompleta da narração",
                     detalhes=f"Segmentos faltantes: {sorted(faltantes)}",
                 )
-                if autocorrige:
+                if autocorrige and tempos_reais is None:
                     # Anexa segmentos faltantes aos shots mais próximos do bloco respectivo
                     for f_id in sorted(faltantes):
                         b_id = f_id.split("-")[0]
@@ -157,6 +169,12 @@ class VerificadorDosagem:
                 if autocorrige and tempos_reais and len(shot.segmentos) == 1:
                     sid = shot.segmentos[0]
                     duracao_audio = tempos_reais.get(sid)
+                    if (
+                        duracao_audio is not None
+                        and shot.inicio_segmento_s is not None
+                        and shot.fim_segmento_s is not None
+                    ):
+                        duracao_audio = shot.fim_segmento_s - shot.inicio_segmento_s
                     if duracao_audio is not None and abs(shot.duracao_s - duracao_audio) > 0.05:
                         anterior = shot.duracao_s
                         shot.duracao_s = duracao_audio
@@ -178,19 +196,7 @@ class VerificadorDosagem:
                 if shot.segmentos and shot.segmentos[0] in segmentos_map:
                     intensidade = int(segmentos_map[shot.segmentos[0]].intensidade or 5)
 
-                faixas_d1 = self._regra("D1_duracao_intensidade").get("faixas", {})
-                faixa_d1 = next(
-                    (
-                        faixa_cfg
-                        for intervalo, faixa_cfg in faixas_d1.items()
-                        if int(intervalo.split("-")[0])
-                        <= intensidade
-                        <= int(intervalo.split("-")[1])
-                    ),
-                    faixas_d1.get("4-6", {"min_s": 3.0, "max_s": 6.0}),
-                )
-                min_s = float(faixa_d1["min_s"])
-                max_s = float(faixa_d1["max_s"])
+                min_s, max_s = self.limites_d1(intensidade)
 
                 # D1 só avalia shots vinculados à fala (ignora encerramento T14 ou capítulo)
                 if shot.segmentos and (shot.duracao_s < min_s or shot.duracao_s > max_s):
@@ -818,25 +824,18 @@ class VerificadorDosagem:
         # D14 também cobre a duração, não apenas a presença dos IDs. A
         # autocorreção de outras regras não pode deslocar a narração real.
         if tempos_reais is not None:
-            duracoes_por_segmento: dict[str, float] = {}
-            for bloco in plano.blocos:
-                for shot in bloco.shots:
-                    if len(shot.segmentos) == 1:
-                        sid = shot.segmentos[0]
-                        duracoes_por_segmento[sid] = (
-                            duracoes_por_segmento.get(sid, 0.0) + shot.duracao_s
-                        )
-            divergentes = {
-                sid: (round(duracoes_por_segmento.get(sid, 0.0), 3), round(duracao, 3))
-                for sid, duracao in tempos_reais.items()
-                if abs(duracoes_por_segmento.get(sid, 0.0) - duracao) > 0.05
-            }
-            if divergentes:
+            try:
+                intervalos_narrados(
+                    (shot for bloco in plano.blocos for shot in bloco.shots),
+                    [{"id": sid, "inicio_s": 0.0, "fim_s": duracao}
+                     for sid, duracao in tempos_reais.items()],
+                )
+            except ValueError as erro:
                 violacoes.append(
                     Violacao(
                         regra="D14",
                         descricao="Duração dos shots diverge da narração real",
-                        detalhes=f"Durações (plano, áudio): {divergentes}",
+                        detalhes=str(erro),
                     )
                 )
 

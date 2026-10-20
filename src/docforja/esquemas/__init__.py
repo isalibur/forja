@@ -105,6 +105,8 @@ class Shot(BaseModel):
     duracao_s: float
     inicio_s: float | None = None
     fim_s: float | None = None
+    inicio_segmento_s: float | None = None
+    fim_segmento_s: float | None = None
     template: str
     params: dict[str, Any] = Field(default_factory=dict)
     sobreposicoes: list[dict[str, Any]] = Field(default_factory=list)

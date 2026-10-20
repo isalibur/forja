@@ -7,12 +7,14 @@ e sobreposições O1-O4, garantindo 100% de cobertura da narração.
 from __future__ import annotations
 
 import json
+import math
 import re
 from typing import Any
 
 from pydantic import BaseModel
 
 from docforja.esquemas import BatidaSegmento, Bloco, Shot
+from docforja.planejamento.dosagem import VerificadorDosagem
 from docforja.planejamento.entidades import BlocoProcessado, SegmentoProcessado
 from docforja.planejamento.estrategia import EstrategiaBloco
 
@@ -127,6 +129,7 @@ def gerar_shots_bloco(
 
     ultimo_template = shots[-1].template if shots else None
     repeticoes_template = 1
+    verificador = VerificadorDosagem()
 
     for seg in bloco.segmentos:
         duracao = (
@@ -244,6 +247,38 @@ def gerar_shots_bloco(
                 motivo=f"Segmento {seg.id} ({batida_str})",
             )
         )
+        if tempos_reais is not None and seg.id in tempos_reais:
+            intensidade = int(seg.intensidade or 5)
+            _, max_s = verificador.limites_d1(intensidade)
+            if duracao > max_s:
+                original = shots[-1]
+                partes = math.ceil(duracao / max_s)
+                for parte in range(partes):
+                    inicio = round(duracao * parte / partes, 3)
+                    fim = round(duracao * (parte + 1) / partes, 3)
+                    if parte == 0:
+                        original.inicio_segmento_s = inicio
+                        original.fim_segmento_s = fim
+                        original.duracao_s = round(fim - inicio, 3)
+                    else:
+                        shots.append(
+                            original.model_copy(
+                                deep=True,
+                                update={
+                                    "id": f"{original.id}-p{parte + 1}",
+                                    "inicio_segmento_s": inicio,
+                                    "fim_segmento_s": fim,
+                                    "duracao_s": round(fim - inicio, 3),
+                                    "sobreposicoes": [],
+                                    "sfx": [],
+                                    "transicao": "corte",
+                                    "motivo": (
+                                        f"Continuação visual de {seg.id} "
+                                        f"({parte + 1}/{partes})"
+                                    ),
+                                },
+                            )
+                        )
         shot_idx += 1
 
     # Se for o último bloco (B8), insere Encerramento T14

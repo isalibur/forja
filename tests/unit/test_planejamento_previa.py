@@ -19,8 +19,8 @@ def _plano() -> Plano:
                 titulo="Abertura",
                 shots=[
                     Shot(id="B0-00", duracao_s=1, template="T00"),
-                    Shot(id="B0-01", segmentos=["B0-S01"], duracao_s=1, template="T01"),
-                    Shot(id="B0-02", segmentos=["B0-S02"], duracao_s=1, template="T06"),
+                    Shot(id="B0-01", segmentos=["B0-S01"], duracao_s=4, template="T01"),
+                    Shot(id="B0-02", segmentos=["B0-S02"], duracao_s=5, template="T06"),
                 ],
             )
         ],

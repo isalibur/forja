@@ -19,6 +19,7 @@ from docforja.planejamento.dosagem import VerificadorDosagem
 from docforja.planejamento.estimativa import estimar_tempo_plano
 from docforja.planejamento.leitura import ler_roteiro_formatado
 from docforja.planejamento.relatorios import gerar_estimativa_md, gerar_plano_md
+from docforja.planejamento.tempos import intervalos_narrados
 
 FPS_PREVIA = 24
 KIT_REMOTION = Path(__file__).resolve().parents[3] / "kits" / "cinza-e-brasa"
@@ -35,13 +36,9 @@ def montar_manifesto_previa(
     """Usa os intervalos reais; cartões sem segmento aparecem sobre a narração."""
     if not segmentos_audio:
         raise ValueError("Tempos reais da narração ausentes.")
-    tempos = {item["id"]: item for item in segmentos_audio}
-    ids_audio = [item["id"] for item in segmentos_audio]
-    ids_plano = [
-        sid for bloco in plano.blocos for shot in bloco.shots for sid in shot.segmentos
-    ]
-    if ids_plano != ids_audio or len(tempos) != len(ids_audio):
-        raise ValueError("A ordem ou cobertura dos segmentos do plano difere do áudio.")
+    intervalos = intervalos_narrados(
+        (shot for bloco in plano.blocos for shot in bloco.shots), segmentos_audio
+    )
     if abs(float(segmentos_audio[0]["inicio_s"])) > 0.05:
         raise ValueError("A narração não começa em zero.")
     for anterior, atual in pairwise(segmentos_audio):
@@ -60,15 +57,14 @@ def montar_manifesto_previa(
             )
             texto = " · ".join(shot.textos) or str(shot.params.get("texto", ""))
             if shot.segmentos:
-                inicio = float(tempos[shot.segmentos[0]]["inicio_s"])
-                fim = float(tempos[shot.segmentos[-1]]["fim_s"])
+                inicio, fim = intervalos[shot.id]
             else:
                 proximo = next(
                     (s for s in bloco.shots[indice + 1 :] if s.segmentos), None
                 )
                 if proximo:
-                    inicio = float(tempos[proximo.segmentos[0]]["inicio_s"])
-                    fim = min(inicio + shot.duracao_s, float(tempos[proximo.segmentos[0]]["fim_s"]))
+                    inicio = intervalos[proximo.id][0]
+                    fim = min(inicio + shot.duracao_s, intervalos[proximo.id][1])
                 else:
                     ultimo = segmentos_audio[-1]
                     fim = float(ultimo["fim_s"])

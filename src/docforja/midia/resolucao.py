@@ -37,7 +37,12 @@ def resolver_ativos_projeto(
 ) -> dict[str, Ativo]:
     """Executa a resolução completa de ativos para o projeto."""
     pasta_plano = projeto.pastas.plano
-    arquivo_ativos = pasta_plano / "ativos.json"
+    # P6 pode criar ou substituir ativos (D10/D11). P7 resolve o plano
+    # verificado, que é a fonte de verdade após a dosagem.
+    arquivo_verificado = pasta_plano / "plano_verificado.json"
+    arquivo_ativos = (
+        arquivo_verificado if arquivo_verificado.is_file() else pasta_plano / "ativos.json"
+    )
     if not arquivo_ativos.is_file():
         raise FileNotFoundError(f"Arquivo de ativos ausente: {arquivo_ativos}")
 

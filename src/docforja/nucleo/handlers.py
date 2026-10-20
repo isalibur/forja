@@ -37,6 +37,7 @@ from docforja.planejamento.shots import (
     gerar_shots_bloco,
     reparar_shots_bloco_via_llm,
 )
+from docforja.planejamento.tempos import intervalos_narrados, segmentos_em_ordem
 from docforja.settings import load_settings
 
 
@@ -139,6 +140,7 @@ def registrar_handlers_disponiveis(
         _, pasta_audio = _audio_idioma(ctx.projeto)
         segmentos_audio_path = pasta_audio / "segmentos.json"
         tempos_reais = None
+        segs_audio: list[dict] = []
         modo_tempos = "estimados"
         if segmentos_audio_path.is_file():
             try:
@@ -166,9 +168,13 @@ def registrar_handlers_disponiveis(
                 ativo_counter=ativo_counter,
             )
             ids_roteiro = [segmento.id for segmento in bloco.segmentos]
-            ids_cobertos = [sid for shot in shots for sid in shot.segmentos]
+            ids_cobertos = segmentos_em_ordem(shots)
             if ids_cobertos != ids_roteiro:
                 raise ValueError(f"Shots do bloco {bloco.id} não cobrem o roteiro exatamente.")
+            if tempos_reais is not None:
+                intervalos_narrados(
+                    shots, [item for item in segs_audio if item["id"] in ids_roteiro]
+                )
             saidas.append({"bloco_id": bloco.id, "shots": [shot.model_dump() for shot in shots]})
         atomic_write_json(
             ctx.projeto.pastas.plano / "shots.json",
@@ -538,6 +544,7 @@ def registrar_handlers_disponiveis(
             return False
 
         ids_shots: set[str] = set()
+        verificador_d1 = VerificadorDosagem()
         for bloco, saida in zip(blocos, saidas, strict=True):
             if saida.get("bloco_id") != bloco.id:
                 return False
@@ -547,10 +554,29 @@ def registrar_handlers_disponiveis(
                 for shot in shots
             ):
                 return False
-            if [sid for shot in shots for sid in shot.segmentos] != [
+            if segmentos_em_ordem(shots) != [
                 segmento.id for segmento in bloco.segmentos
             ]:
                 return False
+            if dados.get("tempos") == "reais":
+                intensidades = {seg.id: int(seg.intensidade or 5) for seg in bloco.segmentos}
+                if any(
+                    shot.segmentos
+                    and shot.duracao_s > verificador_d1.limites_d1(
+                        intensidades[shot.segmentos[0]]
+                    )[1] + 0.05
+                    for shot in shots
+                ):
+                    return False
+                audio_bloco = [
+                    item for item in json.loads(
+                        (pasta_audio / "segmentos.json").read_text(encoding="utf-8")
+                    ) if item["id"] in {seg.id for seg in bloco.segmentos}
+                ]
+                try:
+                    intervalos_narrados(shots, audio_bloco)
+                except ValueError:
+                    return False
             for shot in shots:
                 if shot.id in ids_shots:
                     return False
@@ -616,9 +642,8 @@ def registrar_handlers_disponiveis(
             for bloco in ler_roteiro_formatado(ctx.projeto.obter_roteiro())
             for segmento in bloco.segmentos
         ]
-        segmentos_cobertos = [
-            sid for bloco in plano.blocos for shot in bloco.shots for sid in shot.segmentos
-        ]
+        todos_shots = [shot for bloco in plano.blocos for shot in bloco.shots]
+        segmentos_cobertos = segmentos_em_ordem(todos_shots)
         _, pasta_audio = _audio_idioma(ctx.projeto)
         duracoes_audio = {
             item["id"]: float(item["fim_s"]) - float(item["inicio_s"])
@@ -626,23 +651,22 @@ def registrar_handlers_disponiveis(
                 (pasta_audio / "segmentos.json").read_text(encoding="utf-8")
             )
         }
-        duracoes_plano: dict[str, float] = {}
-        for bloco in plano.blocos:
-            for shot in bloco.shots:
-                if len(shot.segmentos) == 1:
-                    sid = shot.segmentos[0]
-                    duracoes_plano[sid] = duracoes_plano.get(sid, 0.0) + shot.duracao_s
-        tempos_conferem = all(
-            abs(duracoes_plano.get(sid, 0.0) - duracao) <= 0.05
-            for sid, duracao in duracoes_audio.items()
-        )
+        try:
+            intervalos_narrados(
+                todos_shots,
+                [{"id": sid, "inicio_s": 0.0, "fim_s": duracao}
+                 for sid, duracao in duracoes_audio.items()],
+            )
+            tempos_conferem = True
+        except ValueError:
+            tempos_conferem = False
         meta_previa = pasta / "previa.json"
         hashes_relatorios = {
             nome: calcular_hash_dados(pasta / nome) for nome in nomes_relatorios
         }
         if meta_previa.is_file():
             dados_previa = json.loads(meta_previa.read_text(encoding="utf-8"))
-            relatorios_validos = (
+            relatorios_previa_validos = (
                 dados_previa.get("hash_verificacao")
                 == calcular_hash_dados(pasta / "verificacao.json")
                 and all(
@@ -653,6 +677,11 @@ def registrar_handlers_disponiveis(
                     relatorio.get("hash_relatorios", {}).get(nome) == hashes_relatorios[nome]
                     for nome in ["verificacao.md", "numeros_na_tela.md"]
                 )
+            )
+            # Uma prévia antiga pode permanecer no disco após refazer P6.
+            # Nesse intervalo, os relatórios recém-gerados de P6 são a fonte válida.
+            relatorios_validos = relatorios_previa_validos or (
+                relatorio.get("hash_relatorios") == hashes_relatorios
             )
         else:
             relatorios_validos = relatorio.get("hash_relatorios") == hashes_relatorios
@@ -716,7 +745,15 @@ def registrar_handlers_disponiveis(
             return False
         try:
             dados = json.loads(arquivo_resolvidos.read_text(encoding="utf-8"))
-            return bool(dados.get("ativos")) and dados.get("total_ativos", 0) > 0
+            valido = (
+                bool(dados.get("ativos"))
+                and dados.get("total_ativos") == len(dados["ativos"])
+            )
+            plano_verificado = pasta_plano / "plano_verificado.json"
+            if plano_verificado.is_file():
+                verificado = json.loads(plano_verificado.read_text(encoding="utf-8"))
+                valido = valido and set(dados["ativos"]) == set(verificado["ativos"])
+            return valido
         except Exception:
             return False
 

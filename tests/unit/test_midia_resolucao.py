@@ -26,6 +26,32 @@ from docforja.nucleo.handlers import criar_executor_projeto
 from docforja.nucleo.projeto import Projeto
 
 
+def test_p7_resolve_ativos_criados_pelo_verificador(tmp_path: Path):
+    projeto = Projeto.criar(
+        nome="ativos_p6", roteiro="## B0\n\n**B0-S01**\nTeste.", raiz_projetos=tmp_path
+    )
+    base = Ativo(
+        id="A-001", descricao="Imagem de teste", origem=OrigemAtivo.PEDIR_AO_USUARIO,
+        usado_em=["B0-01"],
+    )
+    alternativo = base.model_copy(update={"id": "A-001_b", "usado_em": ["B0-01-p2"]})
+    atomic_write_json(
+        projeto.pastas.plano / "ativos.json",
+        {"ativos": {"A-001": base.model_dump(mode="json")}},
+    )
+    atomic_write_json(
+        projeto.pastas.plano / "plano_verificado.json",
+        {"ativos": {
+            "A-001": base.model_dump(mode="json"),
+            "A-001_b": alternativo.model_dump(mode="json"),
+        }},
+    )
+
+    resolvidos = resolver_ativos_projeto(projeto)
+
+    assert set(resolvidos) == {"A-001", "A-001_b"}
+
+
 def test_classificar_licenca():
     """Valida bloqueio de licenças NC/ND e liberação de PD/CC BY comercial."""
     # Proibidos em comercial

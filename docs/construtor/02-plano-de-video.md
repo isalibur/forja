@@ -149,6 +149,7 @@ Novos templates entram no catálogo **só** pelo kit (`03 §3`), com versão, nu
 **Regras do formato:**
 - Textos na tela ficam em `textos[]`/`params` do plano no idioma principal e são traduzidos para `i18n/<idioma>.json` (`05 §3`) — os templates leem as strings dali.
 - `duracao_s` é derivada da narração **do idioma principal**; cada idioma recalcula por proporção dentro do segmento (`05 §3`).
+- Quando uma fala exige mais de um shot, os shots repetem o ID em `segmentos[]` e usam `inicio_segmento_s`/`fim_segmento_s` (segundos relativos ao começo da fala). As fatias devem ser contíguas, sem lacunas nem sobreposição, e somar a duração real do segmento. `inicio_s`/`fim_s` continuam sendo os tempos absolutos da prévia final.
 - `ativos` é a lista consolidada: uma imagem, vários usos.
 
 ## 5. Verificador de dosagem (regras)
