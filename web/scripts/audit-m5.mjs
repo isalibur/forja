@@ -89,7 +89,7 @@ try {
           alvos: auditoria.details?.items?.slice(0, 3).map((item) => item.node?.selector).filter(Boolean),
         }));
       console.log(JSON.stringify({ tema: largura.tema, tela: telas[indice].botao, largura: largura.nome, pontuacao, falhas }));
-      if (pontuacao < 90) abaixoDaMeta = true;
+      if (pontuacao < 90 || falhas.some((falha) => falha.id === "color-contrast")) abaixoDaMeta = true;
     }
     await page.close();
   }

@@ -138,4 +138,4 @@ if __name__ == "__main__":
         projeto_teste = _criar_amostra(raiz)
         api.load_settings = lambda: SimpleNamespace(paths=SimpleNamespace(projects=raiz))
         print(f"Amostra descartável: {projeto_teste.raiz}")
-        uvicorn.run(api.app, host="127.0.0.1", port=7862)
+        uvicorn.run(api.app, host="127.0.0.1", port=7862, access_log=False)

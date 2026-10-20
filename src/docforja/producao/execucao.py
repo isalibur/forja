@@ -219,5 +219,10 @@ def executar_r10_biblioteca(ctx: ContextoEtapa) -> None:
 
 
 def executar_noop_idioma_extra(ctx: ContextoEtapa) -> None:
-    """Etapa no-op para quando o projeto não possui idiomas adicionais (Marco M7)."""
+    """Não declara traduções/narrações concluídas antes da implementação M7."""
+    extras = ctx.projeto.obter_opcoes().get("idiomas", {}).get("extras", [])
+    if extras:
+        raise NotImplementedError(
+            f"{ctx.etapa.id} ainda não implementa idiomas extras: {', '.join(extras)}"
+        )
     return None

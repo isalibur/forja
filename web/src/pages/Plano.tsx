@@ -76,9 +76,9 @@ export const Plano: React.FC<{ slug: string; onNavegar: (tela: string) => void }
           </button>
           <button
             onClick={() => setModalProduzirAberto(true)}
-            className="flex items-center gap-2 rounded-btn bg-brasa px-5 py-2 text-sm font-semibold text-white shadow-md hover:bg-orange-600 transition-colors cursor-pointer"
+            className="flex items-center gap-2 rounded-btn bg-brasa px-5 py-2 text-sm font-semibold text-bg shadow-md hover:bg-orange-600 transition-colors cursor-pointer"
           >
-            <Play className="w-4 h-4 fill-white" />
+            <Play className="w-4 h-4 fill-current" />
             Produzir ▸
           </button>
         </div>

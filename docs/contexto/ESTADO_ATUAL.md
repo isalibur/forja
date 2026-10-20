@@ -46,11 +46,13 @@ Atualizado em 20 de outubro de 2026. Este arquivo registra somente o estado oper
      - `PastaGlobal.tsx`: Navegação e busca do acervo reutilizável por categoria (imagens, personagens, mapas, loops, trilhas, sfx).
      - `Kits.tsx`: Visualização de paleta de cores, tipografia e catálogo de templates Remotion do kit Cinza e Brasa.
      - `Sistema.tsx`: Painel de telemetria de semáforo de GPU, cotas diárias, modelos fixados no lockfile e ambientes Python isolados.
-- Verificação automatizada: 128 testes unitários passando (`uv run pytest tests/unit`) sem GPU e sem rede; Ruff 100% limpo; compilação completa TypeScript/Vite do frontend web gerando bundle em `web_dist/` com 0 erros.
+- Revisão de contraste após M6 (20/10/2026): o novo botão “Produzir” na tela Plano introduziu texto branco sobre brasa no tema escuro (Lighthouse 96). O texto/ícone agora usam o token de fundo; as 20 combinações de 5 telas × 2 temas × 2 larguras voltaram a 100/100, sem achados de contraste. `audit:a11y` passa a falhar também se houver achado `color-contrast`, mesmo com pontuação ≥90.
+- Primeiro bloqueio seguro M7 (20/10/2026): T1 e T2 continuam sem tradução/narração extras implementadas. O handler de ausência de idiomas só é válido quando `extras` está vazio; com `en`/`es`, falha explicitamente em vez de marcar as etapas como concluídas sem criar saídas. Testes cobrem ambas as etapas e o caso sem extras.
+- Verificação automatizada: 131 testes unitários passando (`uv run pytest tests/unit`) sem GPU e sem rede; Ruff 100% limpo; compilação completa TypeScript/Vite do frontend web gerando bundle em `web_dist/` com 0 erros.
 
 ## Pendências e próxima tarefa
 
-- Próxima tarefa: validação do Marco M7 (Multi-idioma, integrações e reaproveitamento — tradução automática/manual/arquivo, narração por idioma, retime proporcional e pacote por idioma) conforme `docs/construtor/08-marcos-de-construcao.md §M7`.
+- Próxima tarefa: implementar T1 de tradução por segmentos com IDs preservados e glossário (modos `automatico`, `gemini_manual` e `arquivo`), depois T2 de narração por idioma, retime proporcional e pacote por idioma conforme `docs/construtor/08-marcos-de-construcao.md §M7`. Até lá, projetos com idiomas extras falham explicitamente, sem saída falsa.
 - Observações M6: integração com hardware real (ComfyUI ativo, GPU local e renderizador Remotion de produção) validada via adaptadores e fallbacks determinísticos testáveis. Teste assistivo manual com NVDA/VoiceOver a ser executado em ambiente com leitor instalado.
 
 ## Entrega entre Codex e Antigravity
