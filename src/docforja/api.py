@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import mimetypes
 import re
 from collections.abc import AsyncIterator
 from functools import lru_cache
@@ -17,6 +18,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from docforja.esquemas import Ativo
+from docforja.midia.licenca import (
+    carregar_ficha_licenca,
+    classificar_licenca,
+    detectar_patrimonio_restrito,
+)
 from docforja.midia.pasta_manual import EXTENSOES_IMAGEM, identificar_ativo_por_nome
 from docforja.nucleo.banco import BancoProjeto
 from docforja.nucleo.cotas import gerenciador_cotas
@@ -28,6 +34,7 @@ from docforja.nucleo.projeto import Projeto
 from docforja.settings import load_settings
 
 app = FastAPI(title="DocForja API", version="0.1.0")
+EXTENSOES_PREVIA = {".jpg", ".jpeg", ".png", ".webp"}
 
 app.add_middleware(
     CORSMiddleware,
@@ -101,6 +108,41 @@ def _manifesto_atual(projeto: Projeto) -> dict[str, Any] | None:
     return json.loads(props.read_text(encoding="utf-8"))
 
 
+def _imagens_licenciadas(projeto: Projeto, ativos: dict[str, Ativo]) -> dict[str, Path]:
+    """Seleciona somente imagens internas com ficha explicitamente permissiva."""
+    raiz = projeto.raiz.resolve()
+    mapa_shots = {shot_id: aid for aid, ativo in ativos.items() for shot_id in ativo.usado_em}
+    manual = projeto.pastas.midias / "manual"
+    manuais: dict[str, Path] = {}
+    if manual.is_dir():
+        for arquivo in sorted(manual.iterdir()):
+            if arquivo.is_file() and arquivo.suffix.lower() in EXTENSOES_IMAGEM:
+                aid = identificar_ativo_por_nome(arquivo.name, ativos, mapa_shots)
+                if aid:
+                    manuais[aid] = arquivo
+    aprovadas: dict[str, Path] = {}
+    for aid, ativo in ativos.items():
+        candidatos = [manuais[aid]] if aid in manuais else []
+        if ativo.caminho:
+            candidatos.append(ativo.caminho)
+        for candidato in candidatos:
+            caminho = candidato.resolve()
+            if not caminho.is_relative_to(raiz) or not caminho.is_file():
+                continue
+            if caminho.suffix.lower() not in EXTENSOES_PREVIA:
+                continue
+            ficha = carregar_ficha_licenca(caminho)
+            if not ficha or not ficha.comercial or ficha.patrimonio_restrito:
+                continue
+            if detectar_patrimonio_restrito(ficha.url_origem, ativo.descricao):
+                continue
+            if not classificar_licenca(ficha.licenca)[0]:
+                continue
+            aprovadas[aid] = caminho
+            break
+    return aprovadas
+
+
 @app.get("/api/projetos/{slug}/plano")
 def obter_plano_ui(slug: str) -> dict[str, Any]:
     projeto = _projeto_da_interface(slug)
@@ -115,6 +157,7 @@ def obter_plano_ui(slug: str) -> dict[str, Any]:
         if resolvidos_path.is_file() else plano.get("ativos", {})
     )
     ativos = {aid: Ativo.model_validate(item) for aid, item in ativos_dados.items()}
+    imagens = _imagens_licenciadas(projeto, ativos)
     mapa_shots = {shot_id: aid for aid, ativo in ativos.items() for shot_id in ativo.usado_em}
     recebidos: set[str] = set()
     manual = projeto.pastas.midias / "manual"
@@ -144,13 +187,47 @@ def obter_plano_ui(slug: str) -> dict[str, Any]:
         "pronto": True,
         "slug": slug,
         "plano": plano,
-        "ativos": {aid: ativo.model_dump(mode="json") for aid, ativo in ativos.items()},
+        "ativos": {
+            aid: {
+                **ativo.model_dump(mode="json"),
+                "imagem_url": (
+                    f"/api/projetos/{slug}/ativos/{aid}/imagem" if aid in imagens else None
+                ),
+                "licenca_previa": (
+                    carregar_ficha_licenca(imagens[aid]).licenca if aid in imagens else None
+                ),
+            }
+            for aid, ativo in ativos.items()
+        },
         "pedidos": pedidos,
         "verificacao": json.loads(verificacao.read_text(encoding="utf-8"))
         if verificacao.is_file() else None,
         "manifesto": _manifesto_atual(projeto),
+        "imagens_por_shot": {
+            shot_id: f"/api/projetos/{slug}/ativos/{aid}/imagem"
+            for aid, ativo in ativos.items() if aid in imagens for shot_id in ativo.usado_em
+        },
         "pasta_manual": str(manual),
     }
+
+
+@app.get("/api/projetos/{slug}/ativos/{aid}/imagem")
+def obter_imagem_ativo(slug: str, aid: str) -> FileResponse:
+    projeto = _projeto_da_interface(slug)
+    resolvidos = projeto.pastas.plano / "ativos_resolvidos.json"
+    if not resolvidos.is_file():
+        raise HTTPException(status_code=404, detail="Imagem não disponível")
+    dados = json.loads(resolvidos.read_text(encoding="utf-8")).get("ativos", {})
+    if aid not in dados:
+        raise HTTPException(status_code=404, detail="Imagem não disponível")
+    caminho = _imagens_licenciadas(projeto, {aid: Ativo.model_validate(dados[aid])}).get(aid)
+    if caminho is None:
+        raise HTTPException(status_code=404, detail="Imagem sem licença confirmada")
+    return FileResponse(
+        caminho,
+        media_type=mimetypes.guess_type(caminho.name)[0] or "application/octet-stream",
+        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+    )
 
 
 @app.get("/api/projetos/{slug}/narracao.wav")

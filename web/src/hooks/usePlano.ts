@@ -18,6 +18,8 @@ export type Ativo = {
   origem: string;
   caminho?: string | null;
   licenca?: Record<string, unknown> | null;
+  imagem_url?: string | null;
+  licenca_previa?: string | null;
   usado_em: string[];
   nome_arquivo?: string | null;
 };
@@ -64,6 +66,7 @@ export type DadosPlano = {
     duracao_frames: number;
   } | null;
   pasta_manual?: string;
+  imagens_por_shot?: Record<string, string>;
 };
 
 export function usePlano(slug: string) {

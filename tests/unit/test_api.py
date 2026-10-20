@@ -117,8 +117,33 @@ def test_api_plano_ui_leitura_local_e_pasta_manual(tmp_path, monkeypatch):
     imagem.write_bytes(b"imagem de teste")
     dados = client.get(f"/api/projetos/{projeto.slug}/plano").json()
     assert dados["pedidos"][0]["recebido"] is True
+    assert dados["ativos"]["A-001"]["imagem_url"] is None
+    assert client.get(f"/api/projetos/{projeto.slug}/ativos/A-001/imagem").status_code == 404
     assert imagem.read_bytes() == b"imagem de teste"
     assert not imagem.with_name("A-001.jpg.licenca.json").exists()
+    ficha = imagem.with_name("A-001.jpg.licenca.json")
+    atomic_write_json(ficha, {"licenca": "CC BY 4.0", "comercial": True})
+    dados = client.get(f"/api/projetos/{projeto.slug}/plano").json()
+    assert dados["ativos"]["A-001"]["imagem_url"].endswith("/ativos/A-001/imagem")
+    assert dados["ativos"]["A-001"]["licenca_previa"] == "CC BY 4.0"
+    assert dados["imagens_por_shot"]["B0-01"].endswith("/ativos/A-001/imagem")
+    resposta_imagem = client.get(f"/api/projetos/{projeto.slug}/ativos/A-001/imagem")
+    assert resposta_imagem.status_code == 200
+    assert resposta_imagem.content == b"imagem de teste"
+    assert resposta_imagem.headers["cache-control"] == "no-store"
+    atomic_write_json(ficha, {"licenca": "CC BY-NC 4.0", "comercial": True})
+    assert client.get(f"/api/projetos/{projeto.slug}/ativos/A-001/imagem").status_code == 404
+    atomic_write_json(ficha, {"licenca": "manual_autorizado", "comercial": True})
+    assert client.get(f"/api/projetos/{projeto.slug}/ativos/A-001/imagem").status_code == 404
+    atomic_write_json(ficha, {"licenca": "CC BY 4.0", "patrimonio_restrito": True})
+    assert client.get(f"/api/projetos/{projeto.slug}/ativos/A-001/imagem").status_code == 404
+    externo_imagem = tmp_path / "fora.jpg"
+    externo_imagem.write_bytes(b"fora")
+    atomic_write_json(externo_imagem.with_name("fora.jpg.licenca.json"), {"licenca": "CC0"})
+    ativo["caminho"] = str(externo_imagem)
+    atomic_write_json(projeto.pastas.plano / "ativos_resolvidos.json", {"ativos": {"A-001": ativo}})
+    assert client.get(f"/api/projetos/{projeto.slug}/ativos/A-001/imagem").status_code == 404
+    assert client.get(f"/api/projetos/{projeto.slug}/ativos/A-999/imagem").status_code == 404
     assert client.get(f"/api/projetos/{projeto.slug}/narracao.wav").status_code == 404
     assert client.get("/api/projetos/%2E%2E/plano").status_code == 404
     externo = client.get(
