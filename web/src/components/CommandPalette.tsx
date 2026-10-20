@@ -48,7 +48,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               Nenhum resultado encontrado.
             </Command.Empty>
 
-            <Command.Group heading="Navegação" className="text-[11px] font-semibold text-zinc-500 uppercase px-2 py-1">
+            <Command.Group heading="Navegação" className="text-[11px] font-semibold text-mut uppercase px-2 py-1">
               <Command.Item
                 onSelect={() => {
                   onNavegar("inicio");
@@ -56,7 +56,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 }}
                 className="flex items-center gap-3 px-3 py-2 text-sm text-mut rounded-btn hover:bg-elev hover:text-tx cursor-pointer aria-selected:bg-elev aria-selected:text-tx"
               >
-                <Home className="w-4 h-4 text-zinc-400" />
+                <Home className="w-4 h-4 text-mut" />
                 <span>Ir para Início</span>
               </Command.Item>
 
@@ -72,7 +72,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               </Command.Item>
             </Command.Group>
 
-            <Command.Group heading="Projeto Vesúvio" className="text-[11px] font-semibold text-zinc-500 uppercase px-2 py-1">
+            <Command.Group heading="Projeto Vesúvio" className="text-[11px] font-semibold text-mut uppercase px-2 py-1">
               <Command.Item
                 onSelect={() => {
                   onNavegar("plano");
@@ -80,7 +80,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 }}
                 className="flex items-center gap-3 px-3 py-2 text-sm text-mut rounded-btn hover:bg-elev hover:text-tx cursor-pointer aria-selected:bg-elev aria-selected:text-tx"
               >
-                <LayoutTemplate className="w-4 h-4 text-zinc-400" />
+                <LayoutTemplate className="w-4 h-4 text-mut" />
                 <span>Abrir Plano do Vídeo</span>
               </Command.Item>
 
@@ -91,12 +91,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 }}
                 className="flex items-center gap-3 px-3 py-2 text-sm text-mut rounded-btn hover:bg-elev hover:text-tx cursor-pointer aria-selected:bg-elev aria-selected:text-tx"
               >
-                <PlaySquare className="w-4 h-4 text-zinc-400" />
+                <PlaySquare className="w-4 h-4 text-mut" />
                 <span>Acompanhar Produção</span>
               </Command.Item>
             </Command.Group>
 
-            <Command.Group heading="Ações Rápidas" className="text-[11px] font-semibold text-zinc-500 uppercase px-2 py-1">
+            <Command.Group heading="Ações Rápidas" className="text-[11px] font-semibold text-mut uppercase px-2 py-1">
               <Command.Item
                 onSelect={() => {
                   window.location.reload();

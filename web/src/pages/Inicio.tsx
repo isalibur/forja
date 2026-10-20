@@ -76,7 +76,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavegar, onSelecionarProjeto }
         <div className="shrink-0 flex items-center gap-3">
           <button
             onClick={() => { onSelecionarProjeto(destaque.slug); onNavegar("plano"); }}
-            className="px-4 py-2 rounded-btn bg-brasa hover:bg-orange-600 text-white font-medium text-sm flex items-center gap-2 transition-colors cursor-pointer shadow-lg shadow-brasa/20"
+            className="px-4 py-2 rounded-btn bg-brasa hover:bg-orange-600 text-bg font-medium text-sm flex items-center gap-2 transition-colors cursor-pointer shadow-lg shadow-brasa/20"
           >
             <span>Revisar plano</span>
             <ArrowRight className="w-4 h-4" />
@@ -86,7 +86,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavegar, onSelecionarProjeto }
 
       {/* Seção Criar Rápido */}
       <div>
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500 mb-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-mut mb-3">
           Criar Rápido
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -137,10 +137,10 @@ export const Inicio: React.FC<InicioProps> = ({ onNavegar, onSelecionarProjeto }
         <div className="bg-surf border border-line rounded-card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-tx text-sm flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-zinc-400" />
+              <Cpu className="w-4 h-4 text-mut" />
               Saúde do Sistema
             </h3>
-            <span className="text-[11px] px-2 py-0.5 rounded bg-ok/10 text-ok font-medium">
+            <span className="text-xs px-2 py-0.5 rounded bg-ok/10 text-ok font-semibold">
               {saude?.status === "online" ? "Servidor online" : "Verificando"}
             </span>
           </div>
@@ -162,7 +162,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavegar, onSelecionarProjeto }
             <div className="flex items-center justify-between py-1.5 border-b border-line/50">
               <span className="text-mut">Espaço em Disco</span>
               <span className="font-mono text-tx font-medium flex items-center gap-1">
-                <HardDrive className="w-3.5 h-3.5 text-zinc-400" />
+                <HardDrive className="w-3.5 h-3.5 text-mut" />
                 Não verificado nesta tela
               </span>
             </div>
@@ -179,7 +179,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavegar, onSelecionarProjeto }
         <div className="lg:col-span-2 bg-surf border border-line rounded-card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-tx text-sm flex items-center gap-2">
-              <Clock className="w-4 h-4 text-zinc-400" />
+              <Clock className="w-4 h-4 text-mut" />
               Projetos no Workspace
             </h3>
             <span className="text-xs text-mut">

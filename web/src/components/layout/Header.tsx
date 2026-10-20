@@ -1,14 +1,16 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Bell, Menu } from "lucide-react";
+import { Search, Bell, Menu, Moon, Sun } from "lucide-react";
 
 interface HeaderProps {
   onOpenCommand: () => void;
   onOpenMenu: () => void;
   menuButtonRef: React.RefObject<HTMLButtonElement>;
+  tema: "dark" | "light";
+  onAlternarTema: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenCommand, onOpenMenu, menuButtonRef }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenCommand, onOpenMenu, menuButtonRef, tema, onAlternarTema }) => {
   const { data: saude } = useQuery({
     queryKey: ["saude"],
     queryFn: async () => {
@@ -30,7 +32,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCommand, onOpenMenu, menuB
       </button>
       <button
         onClick={onOpenCommand}
-        className="flex min-w-0 flex-1 max-w-80 items-center gap-2 bg-surf border border-line rounded-btn px-3 py-1.5 text-sm text-mut hover:border-zinc-600 transition-colors cursor-pointer text-left"
+        className="flex min-w-0 flex-1 max-w-80 items-center gap-2 bg-surf border border-line rounded-btn px-3 py-1.5 text-sm text-mut hover:border-brasa transition-colors cursor-pointer text-left"
       >
         <Search className="w-4 h-4 shrink-0" />
         <span className="truncate">Buscar projetos, ativos, ações…</span>
@@ -40,6 +42,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCommand, onOpenMenu, menuB
       </button>
 
       <div className="ml-auto flex items-center gap-2 text-xs">
+        <button onClick={onAlternarTema} aria-label={tema === "dark" ? "Ativar tema claro" : "Ativar tema escuro"} title={tema === "dark" ? "Tema claro" : "Tema escuro"} className="w-8 h-8 grid place-items-center rounded-btn text-mut hover:text-tx focus-visible:outline-2 focus-visible:outline-brasa">
+          {tema === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
         {/* Pílula de GPU */}
         {gpuOcupada ? (
           <span className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-info/10 text-info border border-info/20 whitespace-nowrap">

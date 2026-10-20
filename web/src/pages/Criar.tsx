@@ -106,7 +106,7 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
               key={s.n}
               className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
                 passo === s.n
-                  ? "bg-brasa text-white"
+                  ? "bg-brasa text-bg"
                   : passo > s.n
                   ? "bg-elev text-ok border border-ok/20"
                   : "bg-surf text-mut border border-line"
@@ -161,11 +161,11 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
                   className={`p-5 rounded-card border text-left cursor-pointer transition-all ${
                     sel
                       ? "bg-surf border-brasa shadow-lg shadow-brasa/10"
-                      : "bg-surf/60 border-line hover:border-zinc-600"
+                      : "bg-surf/60 border-line hover:border-brasa"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <div className={`w-9 h-9 rounded-lg grid place-items-center ${sel ? "bg-brasa text-white" : "bg-elev text-mut"}`}>
+                    <div className={`w-9 h-9 rounded-lg grid place-items-center ${sel ? "bg-brasa text-bg" : "bg-elev text-mut"}`}>
                       <Icon className="w-5 h-5" />
                     </div>
                     {sel && <Check className="w-5 h-5 text-brasa" />}
@@ -183,7 +183,7 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
       {passo === 2 && (
         <div className="space-y-6">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-mut mb-2">
               Tema ou Título do Vídeo
             </label>
             <input
@@ -197,7 +197,7 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              <label className="text-xs font-semibold uppercase tracking-wider text-mut">
                 Roteiro (Cole ou digite em Markdown)
               </label>
               <div className="text-xs text-mut font-mono flex items-center gap-3">
@@ -215,7 +215,7 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-mut mb-2">
               Idiomas da Produção
             </label>
             <div className="flex flex-wrap items-center gap-2">
@@ -236,7 +236,7 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
                     className={`px-3 py-1.5 rounded-btn text-xs font-medium border transition-colors cursor-pointer ${
                       ativo
                         ? "bg-elev border-info text-info"
-                        : "bg-surf border-line text-mut hover:border-zinc-500"
+                        : "bg-surf border-line text-mut hover:border-brasa"
                     }`}
                   >
                     {lang.label} {ativo && "✓"}
@@ -252,7 +252,7 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
       {passo === 3 && (
         <div className="space-y-6">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-mut mb-2">
               Kit Visual
             </label>
             <div className="p-4 rounded-card bg-surf border border-brasa flex items-center justify-between">
@@ -269,7 +269,7 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-mut mb-2">
               Preset de Produção
             </label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -284,12 +284,12 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
                     key={p.id}
                     onClick={() => setPreset(p.id)}
                     className={`p-4 rounded-card border cursor-pointer transition-all ${
-                      sel ? "bg-surf border-brasa" : "bg-surf/60 border-line hover:border-zinc-600"
+                      sel ? "bg-surf border-brasa" : "bg-surf/60 border-line hover:border-brasa"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-semibold text-tx text-sm">{p.titulo}</span>
-                      <span className="text-[11px] font-mono text-zinc-400">{p.tempo}</span>
+                      <span className="text-[11px] font-mono text-mut">{p.tempo}</span>
                     </div>
                     <p className="text-xs text-mut">{p.desc}</p>
                   </div>
@@ -299,7 +299,7 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-mut mb-2">
               Voz Padrão da Narração
             </label>
             <div className="p-3 bg-surf border border-line rounded-btn flex items-center justify-between">
@@ -312,7 +312,7 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-mut mb-2">
               Densidade de Motion (Animações de Câmera)
             </label>
             <div className="flex gap-3">
@@ -324,7 +324,7 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
                   className={`px-4 py-2 rounded-btn text-xs font-medium border capitalize transition-colors ${
                     densidadeMotion === d
                       ? "bg-surf border-brasa text-tx"
-                      : "bg-surf/60 border-line text-mut hover:border-zinc-500"
+                      : "bg-surf/60 border-line text-mut hover:border-brasa"
                   }`}
                 >
                   {d} {densidadeMotion === d && "✓"}
@@ -394,7 +394,7 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
         {passo < 4 ? (
           <button
             onClick={() => setPasso(passo + 1)}
-            className="px-5 py-2 rounded-btn bg-brasa hover:bg-orange-600 text-white text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer shadow-lg shadow-brasa/20"
+            className="px-5 py-2 rounded-btn bg-brasa hover:bg-orange-600 text-bg text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer shadow-lg shadow-brasa/20"
           >
             Avançar
             <ChevronRight className="w-4 h-4" />
@@ -403,7 +403,7 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
           <button
             disabled={carregando}
             onClick={handleCriarProjeto}
-            className="px-6 py-2.5 rounded-btn bg-gradient-to-r from-brasa to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer shadow-xl shadow-brasa/25 disabled:opacity-50"
+            className="px-6 py-2.5 rounded-btn bg-gradient-to-r from-brasa to-orange-600 hover:from-orange-600 hover:to-orange-700 text-bg text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer shadow-xl shadow-brasa/25 disabled:opacity-50"
           >
             {carregando ? "Criando projeto…" : "Começar planejamento"}
             <Sparkles className="w-4 h-4" />

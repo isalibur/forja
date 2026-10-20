@@ -26,6 +26,10 @@ const AppContent: React.FC = () => {
   const [projetoAtivo, setProjetoAtivo] = useState<string>("");
   const [commandOpen, setCommandOpen] = useState<boolean>(false);
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
+  const [tema, setTema] = useState<"dark" | "light">(() => {
+    try { return localStorage.getItem("docforja-tema") === "light" ? "light" : "dark"; }
+    catch { return "dark"; }
+  });
   const botaoMenu = useRef<HTMLButtonElement>(null);
   const botaoFecharMenu = useRef<HTMLButtonElement>(null);
   const { data: projetos } = useQuery<{ slug: string }[]>({
@@ -40,6 +44,11 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (!projetoAtivo && projetos?.[0]?.slug) setProjetoAtivo(projetos[0].slug);
   }, [projetoAtivo, projetos]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = tema;
+    try { localStorage.setItem("docforja-tema", tema); } catch { /* modo privado */ }
+  }, [tema]);
 
   useEffect(() => {
     if (!menuMobileAberto) return;
@@ -86,7 +95,7 @@ const AppContent: React.FC = () => {
 
       {/* Conteúdo Principal */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header onOpenCommand={() => setCommandOpen(true)} onOpenMenu={() => setMenuMobileAberto(true)} menuButtonRef={botaoMenu} />
+        <Header onOpenCommand={() => setCommandOpen(true)} onOpenMenu={() => setMenuMobileAberto(true)} menuButtonRef={botaoMenu} tema={tema} onAlternarTema={() => setTema((atual) => atual === "dark" ? "light" : "dark")} />
 
         <main className="flex-1 overflow-y-auto">
           <React.Suspense fallback={<div className="p-8 text-mut">Abrindo tela…</div>}>
@@ -128,7 +137,7 @@ const AppContent: React.FC = () => {
       />
 
       {/* Notificações discretas Sonner */}
-      <Toaster position="bottom-right" theme="dark" richColors />
+      <Toaster position="bottom-right" theme={tema} richColors />
     </div>
   );
 };

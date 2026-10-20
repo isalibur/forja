@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import puppeteer from "puppeteer-core";
 import { desktopConfig, startFlow } from "lighthouse";
 
@@ -12,22 +12,28 @@ const executablePath = chromeCandidates.find((path) => existsSync(path));
 if (!executablePath) throw new Error("Chrome ou Edge não encontrado; defina CHROME_PATH.");
 
 const telas = [
+  { botao: "Início", titulo: "Bem-vindo ao DocForja" },
+  { botao: "Criar", titulo: "Criar Novo Projeto" },
   { botao: "Plano", titulo: "amostra-m5" },
   { botao: "Ativos", titulo: "Imagens do plano" },
   { botao: "Lista de busca", titulo: "O que precisa de você" },
 ];
-const larguras = [
-  { nome: "desktop", width: 1440, height: 900 },
-  { nome: "móvel", width: 390, height: 844 },
-];
+const cenarios = ["dark", "light"].flatMap((tema) => [
+  { tema, nome: "desktop", width: 1440, height: 900 },
+  { tema, nome: "móvel", width: 390, height: 844 },
+]);
 
 const browser = await puppeteer.launch({ executablePath, headless: true });
 let abaixoDaMeta = false;
 try {
-  for (const largura of larguras) {
+  for (const largura of cenarios) {
     const page = await browser.newPage();
     await page.setViewport({ width: largura.width, height: largura.height });
     await page.goto(url, { waitUntil: "networkidle2" });
+    if (await page.evaluate(() => document.documentElement.dataset.theme) !== largura.tema) {
+      await page.click('button[aria-label="Ativar tema claro"]');
+    }
+    await page.waitForFunction((tema) => document.documentElement.dataset.theme === tema, {}, largura.tema);
     const flow = await startFlow(page, {
       config: desktopConfig,
       flags: { screenEmulation: { disabled: true } },
@@ -54,14 +60,19 @@ try {
       );
       if (larguraConteudo < Math.min(largura.width, 320)) {
         abaixoDaMeta = true;
-        console.log(JSON.stringify({ tela: tela.botao, largura: largura.nome, problema: "conteúdo estreito", larguraConteudo }));
+        console.log(JSON.stringify({ tema: largura.tema, tela: tela.botao, largura: largura.nome, problema: "conteúdo estreito", larguraConteudo }));
       }
       const transbordamento = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
       if (transbordamento) {
         abaixoDaMeta = true;
-        console.log(JSON.stringify({ tela: tela.botao, largura: largura.nome, problema: "transbordamento horizontal" }));
+        console.log(JSON.stringify({ tema: largura.tema, tela: tela.botao, largura: largura.nome, problema: "transbordamento horizontal" }));
       }
-      await flow.snapshot({ stepName: `${largura.nome} · ${tela.botao}` });
+      await flow.snapshot({ stepName: `${largura.tema} · ${largura.nome} · ${tela.botao}` });
+      if (largura.tema === "light" && tela.botao === "Plano") {
+        mkdirSync("../.pytest_tmp", { recursive: true });
+        const nomeArquivo = largura.nome === "móvel" ? "movel" : largura.nome;
+        await page.screenshot({ path: `../.pytest_tmp/m5-tema-claro-${nomeArquivo}.png` });
+      }
     }
 
     const resultado = await flow.createFlowResult();
@@ -77,7 +88,7 @@ try {
           titulo: auditoria.title,
           alvos: auditoria.details?.items?.slice(0, 3).map((item) => item.node?.selector).filter(Boolean),
         }));
-      console.log(JSON.stringify({ tela: telas[indice].botao, largura: largura.nome, pontuacao, falhas }));
+      console.log(JSON.stringify({ tema: largura.tema, tela: telas[indice].botao, largura: largura.nome, pontuacao, falhas }));
       if (pontuacao < 90) abaixoDaMeta = true;
     }
     await page.close();

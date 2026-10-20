@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: dark;
+  --color-bg: 11 11 14;
+  --color-surf: 20 20 24;
+  --color-elev: 28 28 34;
+  --color-line: 42 42 51;
+  --color-tx: 237 237 239;
+  --color-mut: 161 161 170;
+  --color-brasa: 255 106 43;
+  --color-info: 56 189 248;
+  --color-ok: 34 197 94;
+  --color-warn: 245 158 11;
+  --color-err: 239 68 68;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: 247 247 248;
+  --color-surf: 255 255 255;
+  --color-elev: 244 244 245;
+  --color-line: 212 212 216;
+  --color-tx: 24 24 27;
+  --color-mut: 82 82 91;
+  --color-brasa: 180 61 16;
+  --color-info: 3 105 161;
+  --color-ok: 22 101 52;
+  --color-warn: 146 64 14;
+  --color-err: 185 28 28;
+}
+
 @layer base {
   body {
     @apply bg-bg text-tx font-sans antialiased;
@@ -14,42 +44,38 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #141418;
+  background: rgb(var(--color-surf));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2A2A33;
+  background: rgb(var(--color-line));
   border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f4e;
+  background: rgb(var(--color-mut));
 }
 
 @keyframes pulse2 {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  50% { opacity: 0.3; }
 }
 
-.live {
-  animation: pulse2 1.6s ease-in-out infinite;
+.animate-pulse-slow {
+  animation: pulse2 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@keyframes bar {
-  from { background-position: 0 0; }
-  to { background-position: 40px 0; }
-}
-
-.striped {
-  background-image: linear-gradient(
-    45deg,
-    rgba(255, 255, 255, 0.12) 25%,
-    transparent 25%,
-    transparent 50%,
-    rgba(255, 255, 255, 0.12) 50%,
-    rgba(255, 255, 255, 0.12) 75%,
-    transparent 75%
-  );
-  background-size: 40px 40px;
-  animation: bar 1s linear infinite;
+@layer utilities {
+  .text-glow-brasa {
+    text-shadow: 0 0 20px rgba(255, 106, 43, 0.45);
+  }
+  .box-glow-brasa {
+    box-shadow: 0 0 25px rgba(255, 106, 43, 0.25);
+  }
+  .box-glow-info {
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.2);
+  }
+  .mask-radial {
+    mask-image: radial-gradient(circle at center, black, transparent 80%);
+  }
 }
