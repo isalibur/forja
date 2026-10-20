@@ -27,6 +27,10 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
   const [roteiro, setRoteiro] = useState<string>("");
   const idiomaPrincipal = "pt-BR";
   const [idiomasExtras, setIdiomasExtras] = useState<string[]>(["en", "es"]);
+  const [modosTraducao, setModosTraducao] = useState<Record<string, string>>({
+    en: "automatico",
+    es: "automatico",
+  });
   const [preset, setPreset] = useState<string>("padrao");
   const kit = "cinza-e-brasa@1.0";
   const [densidadeMotion, setDensidadeMotion] = useState<string>("media");
@@ -62,7 +66,10 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
           idiomas_extras: idiomasExtras,
           preset,
           kit,
-          opcoes_adicionais: { densidade_motion: densidadeMotion },
+          opcoes_adicionais: {
+            densidade_motion: densidadeMotion,
+            traducao: { modos: modosTraducao },
+          },
         }),
       });
 
@@ -244,6 +251,26 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
                 );
               })}
             </div>
+            {idiomasExtras.length > 0 && (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {idiomasExtras.map((idioma) => (
+                  <label key={idioma} className="text-xs text-mut">
+                    Tradução para {idioma}
+                    <select
+                      value={modosTraducao[idioma] ?? "automatico"}
+                      onChange={(e) =>
+                        setModosTraducao({ ...modosTraducao, [idioma]: e.target.value })
+                      }
+                      className="mt-1 w-full bg-surf border border-line rounded-btn px-3 py-2 text-sm text-tx outline-none focus:border-brasa"
+                    >
+                      <option value="automatico">Automática (9Router/local)</option>
+                      <option value="gemini_manual">Gemini manual</option>
+                      <option value="arquivo">Arquivo já traduzido</option>
+                    </select>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -356,7 +383,12 @@ export const Criar: React.FC<CriarProps> = ({ onNavegar, onProjetoCriado }) => {
               </div>
               <div className="py-2 border-b border-line/50">
                 <span className="text-mut block">Idiomas</span>
-                <span className="font-medium text-tx">{idiomaPrincipal}, {idiomasExtras.join(", ")}</span>
+                <span className="font-medium text-tx">
+                  {idiomaPrincipal}
+                  {idiomasExtras.map((idioma) =>
+                    `, ${idioma} (${modosTraducao[idioma] ?? "automatico"})`
+                  )}
+                </span>
               </div>
               <div className="py-2">
                 <span className="text-mut block">Preset & Kit</span>

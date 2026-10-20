@@ -4,7 +4,11 @@ import json
 
 import pytest
 
-from docforja.idiomas.traducao import executar_traducao_projeto, validar_traducao
+from docforja.idiomas.traducao import (
+    BlocoTraducaoLLM,
+    executar_traducao_projeto,
+    validar_traducao,
+)
 from docforja.nucleo.projeto import Projeto
 
 ORIGEM = """## B0 — Introdução
@@ -47,6 +51,9 @@ def test_validar_preserva_marcas_tecnicas():
     traducao = INGLES.replace("The city watches.", "The city watches. [SILÊNCIO 3 s]")
     with pytest.raises(ValueError, match="silêncios"):
         validar_traducao(origem, traducao, "en")
+    origem = ORIGEM.replace("A cidade observa.", "A *cidade* observa.")
+    with pytest.raises(ValueError, match="ênfases"):
+        validar_traducao(origem, INGLES, "en")
 
 
 def test_modo_manual_exporta_modelo_e_importa_sem_alterar_entrada(tmp_path):
@@ -69,14 +76,60 @@ def test_modo_manual_exporta_modelo_e_importa_sem_alterar_entrada(tmp_path):
     assert entrada.read_text(encoding="utf-8") == INGLES
 
 
-def test_modo_automatico_falha_sem_saida_falsa(tmp_path):
+class RoteadorTraducaoFake:
+    def __init__(self, alterar_id: bool = False):
+        self.chamadas = 0
+        self.alterar_id = alterar_id
+
+    def completar_estruturado(self, prompt, schema, sistema="", **kwargs):
+        self.chamadas += 1
+        assert schema is BlocoTraducaoLLM
+        assert "Glossário:" in prompt
+        if '"bloco_id": "B0"' in prompt:
+            primeiro_id = "B9-S99" if self.alterar_id else "B0-S01"
+            return schema.model_validate(
+                {
+                    "bloco_id": "B0",
+                    "titulo": "Introduction",
+                    "segmentos": [
+                        {"id": primeiro_id, "texto": "Vesuvius wakes. [PAUSA-C]"},
+                        {"id": "B0-S02", "texto": "The city watches."},
+                    ],
+                }
+            )
+        return schema.model_validate(
+            {
+                "bloco_id": "B1",
+                "titulo": "The eruption",
+                "segmentos": [{"id": "B1-S01", "texto": "Ash covers the streets."}],
+            }
+        )
+
+
+def test_modo_automatico_traduz_por_blocos_e_reutiliza_cache(tmp_path):
     projeto = Projeto.criar(
         "Traducao automatica", roteiro=ORIGEM, idiomas_extras=["en"],
         opcoes_adicionais={"traducao": {"modos": {"en": "automatico"}}},
         raiz_projetos=tmp_path,
     )
-    with pytest.raises(NotImplementedError, match="automática"):
-        executar_traducao_projeto(projeto)
+    roteador = RoteadorTraducaoFake()
+    resultado = executar_traducao_projeto(projeto, roteador)
+    assert [item.id for item in resultado["en"].segmentos] == [
+        "B0-S01", "B0-S02", "B1-S01"
+    ]
+    assert roteador.chamadas == 2
+    executar_traducao_projeto(projeto, roteador)
+    assert roteador.chamadas == 2
+
+
+def test_modo_automatico_rejeita_ids_alterados(tmp_path):
+    projeto = Projeto.criar(
+        "Traducao invalida", roteiro=ORIGEM, idiomas_extras=["en"],
+        opcoes_adicionais={"traducao": {"modos": {"en": "automatico"}}},
+        raiz_projetos=tmp_path,
+    )
+    with pytest.raises(ValueError, match="alterou os IDs"):
+        executar_traducao_projeto(projeto, RoteadorTraducaoFake(alterar_id=True))
     assert not (projeto.pastas.plano / "idiomas" / "en" / "atual.json").exists()
 
 

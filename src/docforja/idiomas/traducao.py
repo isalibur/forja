@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
+from pathlib import Path
+from typing import Protocol
 
 import yaml
 from pydantic import BaseModel
 
 from docforja.io import atomic_write_json, atomic_write_text
+from docforja.llm.roteador import RoteadorLLM
 from docforja.nucleo.projeto import Projeto
 from docforja.planejamento.leitura import ler_roteiro_formatado
 
@@ -27,14 +31,115 @@ class RoteiroTraduzido(BaseModel):
     segmentos: list[SegmentoTraduzido]
 
 
+class SegmentoTraducaoLLM(BaseModel):
+    id: str
+    texto: str
+
+
+class BlocoTraducaoLLM(BaseModel):
+    bloco_id: str
+    titulo: str
+    segmentos: list[SegmentoTraducaoLLM]
+
+
+class TradutorEstruturado(Protocol):
+    def completar_estruturado(
+        self, prompt: str, schema: type[BlocoTraducaoLLM], sistema: str = "", **kwargs: object
+    ) -> BlocoTraducaoLLM: ...
+
+
 def _ids_declarados(texto: str) -> list[str]:
     return re.findall(r"(?m)^\s*\*\*(B\d+-S\d+)(?:[^*]*)\*\*", texto)
 
 
 def _marcas_tecnicas(texto: str) -> list[str]:
-    marcas = re.findall(r"\[PAUSA-[CML]\]|\[SILÊNCIO[^\]]*\]|>>VISUAL:.*?<<", texto, re.I | re.S)
-    return [marca.upper() if not marca.upper().startswith(">>VISUAL:") else ">>VISUAL<<"
-            for marca in marcas]
+    padrao = r"\[PAUSA-[CML]\]|\[SILÊNCIO[^\]]*\]|>>VISUAL:.*?<<|(?<!\*)\*[^*\n]+\*(?!\*)"
+    marcas = re.findall(padrao, texto, re.I | re.S)
+    normalizadas: list[str] = []
+    for marca in marcas:
+        if marca.upper().startswith(">>VISUAL:"):
+            normalizadas.append(">>VISUAL<<")
+        elif marca.startswith("*"):
+            normalizadas.append("*ÊNFASE*")
+        else:
+            normalizadas.append(marca.upper())
+    return normalizadas
+
+
+def _carregar_prompt_traducao() -> str:
+    caminho = Path(__file__).resolve().parents[3] / "prompts" / "traducao.md.j2"
+    return caminho.read_text(encoding="utf-8")
+
+
+def _renderizar_prompt(template: str, valores: dict[str, str]) -> str:
+    prompt = template
+    for chave, valor in valores.items():
+        prompt = prompt.replace("{{ " + chave + " }}", valor)
+    return prompt
+
+
+def _traduzir_automaticamente(
+    roteiro_origem: str,
+    idioma_origem: str,
+    idioma_destino: str,
+    glossario: object,
+    roteador: TradutorEstruturado,
+) -> str:
+    template = _carregar_prompt_traducao()
+    partes: list[str] = []
+    for bloco in ler_roteiro_formatado(roteiro_origem):
+        dados_bloco = {
+            "bloco_id": bloco.id,
+            "titulo": bloco.nome,
+            "segmentos": [
+                {"id": segmento.id, "texto": segmento.texto_original}
+                for segmento in bloco.segmentos
+            ],
+        }
+        prompt = _renderizar_prompt(
+            template,
+            {
+                "idioma_origem": idioma_origem,
+                "idioma_destino": idioma_destino,
+                "glossario": yaml.safe_dump(glossario, allow_unicode=True, sort_keys=True),
+                "bloco_json": json.dumps(dados_bloco, ensure_ascii=False, indent=2),
+            },
+        )
+        resposta = roteador.completar_estruturado(
+            prompt=prompt,
+            schema=BlocoTraducaoLLM,
+            sistema="Tradutor profissional de documentários. Retorne somente dados estruturados.",
+            tier="structured",
+        )
+        ids_esperados = [segmento.id for segmento in bloco.segmentos]
+        if resposta.bloco_id != bloco.id or [s.id for s in resposta.segmentos] != ids_esperados:
+            raise ValueError(f"A tradução automática alterou os IDs do bloco {bloco.id}.")
+        titulo = re.sub(r"[\r\n]+", " ", resposta.titulo).strip() or bloco.nome
+        partes.append(f"## {bloco.id} — {titulo}")
+        for segmento in resposta.segmentos:
+            partes.append(f"**{segmento.id}** {segmento.texto.strip()}")
+        partes.append("")
+    traducao = "\n".join(partes).strip() + "\n"
+    validar_traducao(roteiro_origem, traducao, idioma_destino)
+    return traducao
+
+
+def _resultado_em_cache(
+    pasta_saida: Path, idioma: str, hash_entrada: str
+) -> RoteiroTraduzido | None:
+    indice = pasta_saida / idioma / "atual.json"
+    if not indice.is_file():
+        return None
+    dados_indice = json.loads(indice.read_text(encoding="utf-8"))
+    if dados_indice.get("hash_entrada") != hash_entrada:
+        return None
+    nome_versao = str(dados_indice.get("versao", ""))
+    if not re.fullmatch(r"roteiro_[0-9a-f]{16}\.json", nome_versao):
+        return None
+    versao = pasta_saida / idioma / nome_versao
+    if not versao.is_file():
+        return None
+    return RoteiroTraduzido.model_validate_json(versao.read_text(encoding="utf-8"))
 
 
 def validar_traducao(roteiro_origem: str, traducao: str, idioma: str) -> RoteiroTraduzido:
@@ -77,7 +182,8 @@ def validar_traducao(roteiro_origem: str, traducao: str, idioma: str) -> Roteiro
                 segmento_traduzido.texto_original
             ):
                 raise ValueError(
-                    f"A tradução alterou pausas, silêncios ou VISUAL em {segmento_origem.id}."
+                    "A tradução alterou pausas, silêncios, ênfases ou VISUAL em "
+                    f"{segmento_origem.id}."
                 )
     return RoteiroTraduzido(
         idioma=idioma,
@@ -87,7 +193,9 @@ def validar_traducao(roteiro_origem: str, traducao: str, idioma: str) -> Roteiro
     )
 
 
-def executar_traducao_projeto(projeto: Projeto) -> dict[str, RoteiroTraduzido]:
+def executar_traducao_projeto(
+    projeto: Projeto, roteador: TradutorEstruturado | None = None
+) -> dict[str, RoteiroTraduzido]:
     """Exporta modelos manuais e importa arquivos existentes, sem tocar na entrada."""
     opcoes = projeto.obter_opcoes()
     extras = opcoes.get("idiomas", {}).get("extras", [])
@@ -95,6 +203,7 @@ def executar_traducao_projeto(projeto: Projeto) -> dict[str, RoteiroTraduzido]:
         return {}
     modos = opcoes.get("traducao", {}).get("modos", {})
     roteiro_origem = projeto.obter_roteiro()
+    idioma_origem = opcoes.get("idiomas", {}).get("principal", "pt-BR")
     glossario_path = projeto.pastas.entrada / "glossario.yaml"
     glossario = yaml.safe_load(glossario_path.read_text(encoding="utf-8")) or {}
     pasta_saida = projeto.pastas.plano / "idiomas"
@@ -105,7 +214,37 @@ def executar_traducao_projeto(projeto: Projeto) -> dict[str, RoteiroTraduzido]:
             raise ValueError(f"Código de idioma inválido: {idioma}")
         modo = modos.get(idioma, "gemini_manual")
         if modo == "automatico":
-            raise NotImplementedError("Tradução automática ainda não configurada no M7.")
+            hash_entrada = hashlib.sha256(
+                json.dumps(
+                    {
+                        "roteiro": roteiro_origem,
+                        "idioma_origem": idioma_origem,
+                        "idioma_destino": idioma,
+                        "glossario": glossario,
+                        "prompt": _carregar_prompt_traducao(),
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ).encode("utf-8")
+            ).hexdigest()
+            em_cache = _resultado_em_cache(pasta_saida, idioma, hash_entrada)
+            if em_cache is not None:
+                resultados[idioma] = em_cache
+                continue
+            tradutor = roteador or RoteadorLLM()
+            texto_traduzido = _traduzir_automaticamente(
+                roteiro_origem, idioma_origem, idioma, glossario, tradutor
+            )
+            traduzido = validar_traducao(roteiro_origem, texto_traduzido, idioma)
+            destino = pasta_saida / idioma
+            versao = f"roteiro_{traduzido.hash_traducao[:16]}.json"
+            if not (destino / versao).is_file():
+                atomic_write_json(destino / versao, traduzido.model_dump(mode="json"))
+            atomic_write_json(
+                destino / "atual.json", {"versao": versao, "hash_entrada": hash_entrada}
+            )
+            resultados[idioma] = traduzido
+            continue
         if modo not in {"gemini_manual", "arquivo"}:
             raise ValueError(f"Modo de tradução desconhecido para {idioma}: {modo}")
         entrada = projeto.pastas.entrada / f"traducao_{idioma}.md"
@@ -129,7 +268,7 @@ def executar_traducao_projeto(projeto: Projeto) -> dict[str, RoteiroTraduzido]:
         versao = f"roteiro_{traduzido.hash_traducao[:16]}.json"
         if not (destino / versao).is_file():
             atomic_write_json(destino / versao, traduzido.model_dump(mode="json"))
-        atomic_write_json(destino / "atual.json", {"versao": versao})
+        atomic_write_json(destino / "atual.json", {"versao": versao, "modo": modo})
         resultados[idioma] = traduzido
     if pendentes:
         raise FileNotFoundError("Traduções pendentes: " + "; ".join(pendentes))

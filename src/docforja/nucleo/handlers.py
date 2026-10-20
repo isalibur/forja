@@ -838,7 +838,7 @@ def registrar_handlers_disponiveis(
 
     # Suporte a multi-idioma (Marco M7): no-op quando não há idiomas adicionais
     executor.registrar_handler(
-        "T1_traducao", lambda ctx: executar_traducao_projeto(ctx.projeto)
+        "T1_traducao", lambda ctx: executar_traducao_projeto(ctx.projeto, obter_roteador())
     )
     executor.registrar_handler("T2_narracao_idiomas", executar_noop_idioma_extra)
 
