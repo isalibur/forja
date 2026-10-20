@@ -94,9 +94,12 @@ def montar_pacote_saida_completo(
     duracao_real_s: float,
     arquivo_video_pronto: Path | None = None,
     arquivo_legendas_pronto: Path | None = None,
+    idioma: str | None = None,
+    plano_path: Path | None = None,
+    gerar_estrategia: bool = True,
 ) -> dict[str, Any]:
     """Cria e preenche toda a árvore 05_saida/ conforme 13 §2."""
-    idioma = projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR")
+    idioma = idioma or projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR")
     pasta_saida = projeto.pastas.saida
     pasta_idioma = pasta_saida / idioma
 
@@ -136,9 +139,10 @@ def montar_pacote_saida_completo(
         d.mkdir(parents=True, exist_ok=True)
 
     # 1. Carrega plano e ativos resolvidos
-    plano_path = projeto.pastas.plano / "plano.json"
-    if not plano_path.is_file():
-        plano_path = projeto.pastas.plano / "plano_verificado.json"
+    if plano_path is None:
+        plano_path = projeto.pastas.plano / "plano.json"
+        if not plano_path.is_file():
+            plano_path = projeto.pastas.plano / "plano_verificado.json"
     plano = Plano.model_validate_json(plano_path.read_text(encoding="utf-8"))
 
     resolvidos_path = projeto.pastas.plano / "ativos_resolvidos.json"
@@ -149,47 +153,63 @@ def montar_pacote_saida_completo(
 
     # 2. Gera os metadados estratégicos
     creditos_txt = gerar_creditos_txt(ativos)
-    pacote = construir_pacote_estrategico(plano, duracao_real_s, creditos_resumo=creditos_txt)
+    pacote = (
+        construir_pacote_estrategico(plano, duracao_real_s, creditos_resumo=creditos_txt)
+        if gerar_estrategia
+        else None
+    )
 
     # Grava metadados estratégicos (13 §4)
-    atomic_write_text(pasta_metadados / "titulos.md", formatar_titulos_md(pacote.titulos))
-    atomic_write_text(pasta_metadados / "descricao.md", pacote.descricao)
-    atomic_write_text(pasta_metadados / "capitulos.txt", formatar_capitulos_txt(pacote.capitulos))
-    atomic_write_text(pasta_metadados / "tags.txt", formatar_tags_txt(pacote.tags))
-    atomic_write_text(pasta_metadados / "hashtags.txt", formatar_hashtags_txt(pacote.hashtags))
-    atomic_write_text(
-        pasta_metadados / "palavras_chave.md", formatar_palavras_chave_md(pacote.palavras_chave)
-    )
-    atomic_write_text(
-        pasta_metadados / "thumbs_briefing.md", formatar_thumbs_briefing_md(pacote.thumbnails)
-    )
-    atomic_write_text(
-        pasta_metadados / "comentario_fixado.md", pacote.comentario_fixado
-    )
-    atomic_write_text(pasta_metadados / "post_comunidade.md", pacote.post_comunidade)
-    atomic_write_text(pasta_metadados / "checklist_publicacao.md", gerar_checklist_publicacao_md())
-    atomic_write_json(pasta_metadados / "metadados.json", pacote.model_dump(mode="json"))
+    if pacote is not None:
+        atomic_write_text(pasta_metadados / "titulos.md", formatar_titulos_md(pacote.titulos))
+        atomic_write_text(pasta_metadados / "descricao.md", pacote.descricao)
+        atomic_write_text(
+            pasta_metadados / "capitulos.txt", formatar_capitulos_txt(pacote.capitulos)
+        )
+        atomic_write_text(pasta_metadados / "tags.txt", formatar_tags_txt(pacote.tags))
+        atomic_write_text(pasta_metadados / "hashtags.txt", formatar_hashtags_txt(pacote.hashtags))
+        atomic_write_text(
+            pasta_metadados / "palavras_chave.md",
+            formatar_palavras_chave_md(pacote.palavras_chave),
+        )
+        atomic_write_text(
+            pasta_metadados / "thumbs_briefing.md",
+            formatar_thumbs_briefing_md(pacote.thumbnails),
+        )
+        atomic_write_text(pasta_metadados / "comentario_fixado.md", pacote.comentario_fixado)
+        atomic_write_text(pasta_metadados / "post_comunidade.md", pacote.post_comunidade)
+        atomic_write_text(
+            pasta_metadados / "checklist_publicacao.md", gerar_checklist_publicacao_md()
+        )
+        atomic_write_json(pasta_metadados / "metadados.json", pacote.model_dump(mode="json"))
 
-    # Planilha de publicação (15 §2.3)
-    primeiro_titulo = pacote.top_titulos_ab[0] if pacote.top_titulos_ab else plano.projeto
-    tags_string = ", ".join(pacote.tags[:10])
-    atomic_write_text(
-        pasta_publicacao / "agenda.csv",
-        gerar_agenda_csv(
-            titulo=primeiro_titulo,
-            descricao_resumo=pacote.descricao[:200],
-            tags_str=tags_string,
-        ),
-    )
+        primeiro_titulo = pacote.top_titulos_ab[0] if pacote.top_titulos_ab else plano.projeto
+        tags_string = ", ".join(pacote.tags[:10])
+        atomic_write_text(
+            pasta_publicacao / "agenda.csv",
+            gerar_agenda_csv(
+                titulo=primeiro_titulo,
+                descricao_resumo=pacote.descricao[:200],
+                tags_str=tags_string,
+            ),
+        )
+    else:
+        atomic_write_text(
+            pasta_metadados / "PENDENTE.md",
+            f"Metadados estratégicos em {idioma} aguardam tradução validada.\n",
+        )
 
     # 3. Elementos: cópia organizada de plano, otio, narração
-    shutil.copyfile(plano_path, pasta_el_plano / "plano.json")
+    principal = projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR")
+    nome_plano = "plano.json" if idioma == principal else f"plano_{idioma}.json"
+    shutil.copyfile(plano_path, pasta_el_plano / nome_plano)
     plano_md_origem = projeto.pastas.plano / "plano.md"
     if plano_md_origem.is_file():
         shutil.copyfile(plano_md_origem, pasta_el_plano / "plano.md")
 
     # Exporta projeto.otio
-    exportar_projeto_otio(plano, pasta_elementos / "projeto.otio")
+    nome_otio = "projeto.otio" if idioma == principal else f"projeto_{idioma}.otio"
+    exportar_projeto_otio(plano, pasta_elementos / nome_otio)
 
     # Narração
     wav_origem = projeto.pastas.audio / idioma / "narracao_completa.wav"
@@ -212,50 +232,67 @@ def montar_pacote_saida_completo(
                 shutil.copyfile(ficha, pasta_el_imagens / f"{aid}.licenca.json")
 
     # 4. Relatórios gerais da raiz de 05_saida
-    atomic_write_text(pasta_saida / "creditos.txt", creditos_txt)
-    atomic_write_text(
-        pasta_saida / "relatorio.md",
-        gerar_relatorio_md(
-            projeto=projeto,
-            plano=plano,
-            duracao_s=duracao_real_s,
-            total_ativos=len(ativos),
-        ),
-    )
-
-    # Proposta de promoção global (13 §3)
     itens_promo = avaliar_ativos_para_promocao(projeto.slug, ativos)
-    atomic_write_text(
-        pasta_saida / "promover_para_global.md",
-        formatar_promover_para_global_md(itens_promo),
-    )
+    if idioma == principal:
+        atomic_write_text(pasta_saida / "creditos.txt", creditos_txt)
+        atomic_write_text(
+            pasta_saida / "relatorio.md",
+            gerar_relatorio_md(
+                projeto=projeto,
+                plano=plano,
+                duracao_s=duracao_real_s,
+                total_ativos=len(ativos),
+            ),
+        )
+        atomic_write_text(
+            pasta_saida / "promover_para_global.md",
+            formatar_promover_para_global_md(itens_promo),
+        )
 
     # 5. Vídeo e legendas finais se disponíveis
     if arquivo_video_pronto and arquivo_video_pronto.is_file():
         shutil.copyfile(arquivo_video_pronto, pasta_video / "video.mp4")
     if arquivo_legendas_pronto and arquivo_legendas_pronto.is_file():
-        shutil.copyfile(arquivo_legendas_pronto, pasta_legendas / "legendas.srt")
+        destino_legendas = pasta_legendas / "legendas.srt"
+        if arquivo_legendas_pronto.resolve() != destino_legendas.resolve():
+            shutil.copyfile(arquivo_legendas_pronto, destino_legendas)
 
     return {
         "saida_completa": str(pasta_saida),
-        "total_titulos": len(pacote.titulos),
-        "total_capitulos": len(pacote.capitulos),
+        "idioma": idioma,
+        "total_titulos": len(pacote.titulos) if pacote else 0,
+        "total_capitulos": len(pacote.capitulos) if pacote else 0,
+        "metadados_localizados": pacote is not None,
         "promover_sugeridos": len(itens_promo),
     }
 
 
 def montar_arvore_saida(
-    projeto: Projeto, duracao_real_s: float | None = None
+    projeto: Projeto,
+    duracao_real_s: float | None = None,
+    arquivo_video_pronto: Path | None = None,
+    arquivo_legendas_pronto: Path | None = None,
+    idioma: str | None = None,
+    plano_path: Path | None = None,
+    gerar_estrategia: bool = True,
 ) -> dict[str, Any]:
     """Empacota a árvore de saída completa com cálculo automático da duração."""
     if duracao_real_s is None:
-        plano_path = projeto.pastas.plano / "plano.json"
-        if not plano_path.is_file():
-            plano_path = projeto.pastas.plano / "plano_verificado.json"
-        if plano_path.is_file():
-            p = Plano.model_validate_json(plano_path.read_text(encoding="utf-8"))
+        caminho_plano = plano_path or projeto.pastas.plano / "plano.json"
+        if not caminho_plano.is_file():
+            caminho_plano = projeto.pastas.plano / "plano_verificado.json"
+        if caminho_plano.is_file():
+            p = Plano.model_validate_json(caminho_plano.read_text(encoding="utf-8"))
             duracao_real_s = sum(s.duracao_s for b in p.blocos for s in b.shots)
         else:
             duracao_real_s = 60.0
-    return montar_pacote_saida_completo(projeto, duracao_real_s=duracao_real_s)
+    return montar_pacote_saida_completo(
+        projeto,
+        duracao_real_s=duracao_real_s,
+        arquivo_video_pronto=arquivo_video_pronto,
+        arquivo_legendas_pronto=arquivo_legendas_pronto,
+        idioma=idioma,
+        plano_path=plano_path,
+        gerar_estrategia=gerar_estrategia,
+    )
 

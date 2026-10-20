@@ -2,6 +2,7 @@
 
 import json
 import wave
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -10,9 +11,18 @@ from docforja.esquemas import Bloco, Plano, Shot
 from docforja.idiomas.narracao import executar_narracoes_extras, narracoes_extras_validas
 from docforja.idiomas.retime import retimar_plano
 from docforja.idiomas.traducao import executar_traducao_projeto
-from docforja.nucleo.executor import ExecutorPipeline
+from docforja.nucleo.banco import BancoProjeto
+from docforja.nucleo.etapas import DefinicaoEtapa
+from docforja.nucleo.executor import ContextoEtapa, ExecutorPipeline
 from docforja.nucleo.handlers import registrar_handlers_disponiveis
 from docforja.nucleo.projeto import Projeto
+from docforja.producao.execucao import (
+    executar_r5_montagem,
+    executar_r6_mix,
+    executar_r7_render,
+    executar_r8_qa,
+    executar_r9_pacote,
+)
 
 ORIGEM = """## B0 — Introdução
 **B0-S01** O Vesúvio desperta.
@@ -150,3 +160,85 @@ async def test_handler_t2_conclui_somente_com_artefatos_validos(tmp_path):
     assert status["T1_traducao"] == "concluida"
     assert status["T2_narracao_idiomas"] == "concluida"
     assert narracoes_extras_validas(projeto) is True
+
+
+def test_producao_multilingue_gera_artefatos_separados(tmp_path, monkeypatch):
+    projeto = Projeto.criar(
+        "Produção idiomas",
+        roteiro=ORIGEM,
+        idiomas_extras=["en"],
+        opcoes_adicionais={"traducao": {"modos": {"en": "arquivo"}}},
+        raiz_projetos=tmp_path,
+    )
+    plano = Plano(
+        projeto=projeto.slug,
+        blocos=[
+            Bloco(
+                id="B0",
+                titulo="Introdução",
+                shots=[
+                    Shot(
+                        id="B0-01", segmentos=["B0-S01"], duracao_s=0.5,
+                        inicio_segmento_s=0, fim_segmento_s=0.5, template="T06",
+                        textos=["O Vesúvio desperta."], params={"texto": "O Vesúvio desperta."},
+                    ),
+                    Shot(
+                        id="B0-02", segmentos=["B0-S02"], duracao_s=0.5,
+                        inicio_segmento_s=0, fim_segmento_s=0.5, template="T01",
+                    ),
+                ],
+            )
+        ],
+    )
+    for nome in ("plano.json", "plano_verificado.json"):
+        (projeto.pastas.plano / nome).write_text(plano.model_dump_json(), encoding="utf-8")
+    (projeto.pastas.entrada / "traducao_en.md").write_text(INGLES, encoding="utf-8")
+    executar_traducao_projeto(projeto)
+    executar_narracoes_extras(projeto, MotorFake())
+
+    audio_principal = projeto.pastas.audio / "pt-BR"
+    with wave.open(str(audio_principal / "narracao_completa.wav"), "wb") as arquivo:
+        arquivo.setnchannels(1)
+        arquivo.setsampwidth(2)
+        arquivo.setframerate(8000)
+        arquivo.writeframes(b"\x00\x00" * 8000)
+    (audio_principal / "segmentos.json").write_text(
+        json.dumps([
+            {"id": "B0-S01", "texto": "O Vesúvio desperta.", "inicio_s": 0, "fim_s": 0.5},
+            {"id": "B0-S02", "texto": "A cidade observa.", "inicio_s": 0.5, "fim_s": 1},
+        ]),
+        encoding="utf-8",
+    )
+    (projeto.pastas.plano / "previa.mp4").write_bytes(b"video-base")
+    contexto = ContextoEtapa(
+        projeto=projeto,
+        etapa=DefinicaoEtapa(id="R5_montagem"),
+        banco=BancoProjeto(projeto.banco_file),
+    )
+
+    def subprocess_fake(comando, **kwargs):
+        Path(comando[-1]).write_bytes(b"video-dublado")
+        return SimpleNamespace(returncode=0, stderr="")
+
+    monkeypatch.setattr("docforja.producao.execucao.subprocess.run", subprocess_fake)
+    executar_r5_montagem(contexto)
+    executar_r6_mix(contexto)
+    executar_r7_render(contexto)
+    executar_r8_qa(contexto)
+    executar_r9_pacote(contexto)
+
+    plano_en = json.loads(
+        (projeto.pastas.plano / "idiomas" / "en" / "plano_retimado.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert plano_en["blocos"][0]["shots"][0]["textos"] == ["Vesuvius wakes."]
+    assert (projeto.pastas.plano / "i18n" / "en.json").is_file()
+    assert (projeto.pastas.sistema / "montagem" / "en" / "timeline.otio").is_file()
+    assert (projeto.pastas.audio / "en" / "mix_final.wav").is_file()
+    assert (projeto.pastas.saida / "en" / "video.mp4").is_file()
+    assert "Vesuvius wakes." in (
+        projeto.pastas.saida / "en" / "legendas" / "legendas.srt"
+    ).read_text(encoding="utf-8")
+    assert (projeto.pastas.saida / "en" / "video" / "video.mp4").is_file()
+    assert (projeto.pastas.saida / "en" / "metadados" / "PENDENTE.md").is_file()

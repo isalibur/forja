@@ -1,5 +1,6 @@
 """Testes unitários dos módulos de estratégia, otio, saída e promoção global (Marco M6)."""
 
+import wave
 from pathlib import Path
 
 import pytest
@@ -237,6 +238,16 @@ async def test_producao_pipeline_handlers_e_execucao(tmp_path):
     atomic_write_json(
         proj.pastas.plano / "ativos_resolvidos.json",
         {"ativos": {"A-01": ativo.model_dump(mode="json")}},
+    )
+    audio = proj.pastas.audio / "pt-BR"
+    with wave.open(str(audio / "narracao_completa.wav"), "wb") as arquivo:
+        arquivo.setnchannels(1)
+        arquivo.setsampwidth(2)
+        arquivo.setframerate(8000)
+        arquivo.writeframes(b"\x00\x00" * 8000)
+    atomic_write_json(
+        audio / "segmentos.json",
+        [{"id": "B0-S01", "texto": "Texto de teste narrado.", "inicio_s": 0, "fim_s": 1}],
     )
 
     executor = criar_executor_projeto(proj)

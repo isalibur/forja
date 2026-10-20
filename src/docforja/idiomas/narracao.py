@@ -16,7 +16,7 @@ from docforja.planejamento.entidades import SegmentoProcessado
 from docforja.planejamento.leitura import ler_roteiro_formatado
 
 
-def _traducao_atual(projeto: Projeto, idioma: str) -> tuple[RoteiroTraduzido, Path]:
+def carregar_traducao_atual(projeto: Projeto, idioma: str) -> tuple[RoteiroTraduzido, Path]:
     pasta = projeto.pastas.plano / "idiomas" / idioma
     indice_path = pasta / "atual.json"
     if not indice_path.is_file():
@@ -77,30 +77,31 @@ def narracoes_extras_validas(projeto: Projeto) -> bool:
     extras = projeto.obter_opcoes().get("idiomas", {}).get("extras", [])
     try:
         return all(
-            _manifesto_valido(projeto, idioma, _traducao_atual(projeto, idioma)[0].hash_traducao)
+            _manifesto_valido(
+                projeto, idioma, carregar_traducao_atual(projeto, idioma)[0].hash_traducao
+            )
             for idioma in extras
         )
     except (OSError, ValueError):
         return False
 
 
-def _salvar_retime_se_disponivel(projeto: Projeto, idioma: str) -> None:
+def salvar_retime_se_disponivel(projeto: Projeto, idioma: str) -> Path | None:
     plano_path = projeto.pastas.plano / "plano_verificado.json"
     principal = projeto.obter_opcoes().get("idiomas", {}).get("principal", "pt-BR")
     origem_path = projeto.pastas.audio / principal / "segmentos.json"
     destino_path = projeto.pastas.audio / idioma / "segmentos.json"
     if not plano_path.is_file() or not origem_path.is_file() or not destino_path.is_file():
-        return
+        return None
     plano = Plano.model_validate_json(plano_path.read_text(encoding="utf-8"))
     retimado = retimar_plano(
         plano,
         json.loads(origem_path.read_text(encoding="utf-8")),
         json.loads(destino_path.read_text(encoding="utf-8")),
     )
-    atomic_write_json(
-        projeto.pastas.plano / "idiomas" / idioma / "plano_retimado.json",
-        retimado.model_dump(mode="json"),
-    )
+    destino = projeto.pastas.plano / "idiomas" / idioma / "plano_retimado.json"
+    atomic_write_json(destino, retimado.model_dump(mode="json"))
+    return destino
 
 
 def executar_narracoes_extras(projeto: Projeto, motor: OrquestradorNarracao) -> None:
@@ -113,9 +114,9 @@ def executar_narracoes_extras(projeto: Projeto, motor: OrquestradorNarracao) -> 
     if not motor.tts.disponivel():
         raise RuntimeError("Motor de narração configurado não está disponível.")
     for idioma in extras:
-        traducao, _ = _traducao_atual(projeto, idioma)
+        traducao, _ = carregar_traducao_atual(projeto, idioma)
         if _manifesto_valido(projeto, idioma, traducao.hash_traducao):
-            _salvar_retime_se_disponivel(projeto, idioma)
+            salvar_retime_se_disponivel(projeto, idioma)
             continue
         segmentos = _segmentos_traduzidos(projeto, traducao)
         relatorio = motor.processar_projeto_completo(
@@ -140,4 +141,4 @@ def executar_narracoes_extras(projeto: Projeto, motor: OrquestradorNarracao) -> 
                 "hash_saidas": {nome: calcular_hash_dados(pasta / nome) for nome in saidas},
             },
         )
-        _salvar_retime_se_disponivel(projeto, idioma)
+        salvar_retime_se_disponivel(projeto, idioma)
