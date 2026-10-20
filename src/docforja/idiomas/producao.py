@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 from pathlib import Path
 
@@ -22,6 +23,19 @@ def plano_do_idioma(projeto: Projeto, idioma: str) -> tuple[Plano, Path]:
         caminho = projeto.pastas.plano / "plano.json"
         if not caminho.is_file():
             caminho = projeto.pastas.plano / "plano_verificado.json"
+        if caminho.is_file():
+            segs_pt = projeto.pastas.audio / principal / "segmentos.json"
+            textos_pt: dict[str, str] = {}
+            if segs_pt.is_file():
+                with contextlib.suppress(json.JSONDecodeError, OSError):
+                    dados_segs = json.loads(segs_pt.read_text(encoding="utf-8"))
+                    textos_pt = {
+                        item["id"]: item.get("texto", "") for item in dados_segs if "id" in item
+                    }
+            atomic_write_json(
+                projeto.pastas.plano / "i18n" / f"{idioma}.json",
+                {"idioma": idioma, "segmentos": textos_pt},
+            )
     else:
         caminho = salvar_retime_se_disponivel(projeto, idioma)
         if caminho is None:
@@ -37,7 +51,7 @@ def plano_do_idioma(projeto: Projeto, idioma: str) -> tuple[Plano, Path]:
                 texto = " ".join(localizados)
                 if shot.textos:
                     shot.textos = [texto]
-                for chave in ("texto", "titulo", "subtitulo", "legenda", "traducao"):
+                for chave in ("texto", "titulo", "subtitulo", "legenda", "traducao", "rotulo"):
                     if isinstance(shot.params.get(chave), str) and shot.params[chave].strip():
                         shot.params[chave] = texto
         atomic_write_json(caminho, plano.model_dump(mode="json"))

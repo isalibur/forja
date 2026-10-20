@@ -70,6 +70,135 @@ ANGULOS_PADRAO = [
     },
 ]
 
+ANGULOS_POR_IDIOMA: dict[str, list[dict[str, str]]] = {
+    "pt-BR": ANGULOS_PADRAO,
+    "pt": ANGULOS_PADRAO,
+    "en": [
+        {
+            "angulo": "Belief Breaker",
+            "gatilho": "Surprise / Challenge to common sense",
+            "template": "{tema}: What you learned is wrong",
+            "template_alt": "The biggest myth about {tema} you still believe",
+        },
+        {
+            "angulo": "Specific Curiosity",
+            "gatilho": "Extreme curiosity / Forgotten detail",
+            "template": "The forgotten detail that sealed the fate of {tema}",
+            "template_alt": "The hidden mystery behind {tema}",
+        },
+        {
+            "angulo": "Number",
+            "gatilho": "Tangible scale and proportion",
+            "template": "{num} hours that changed the history of {tema}",
+            "template_alt": "{num} crucial minutes in the fall of {tema}",
+        },
+        {
+            "angulo": "Contrast Past vs Present",
+            "gatilho": "Temporal irony and identification",
+            "template": "{tema}: Where the past is still alive",
+            "template_alt": "From paradise to ruin: The tragic fall of {tema}",
+        },
+        {
+            "angulo": "Question",
+            "gatilho": "Need for cognitive closure",
+            "template": "What really happened during {tema}?",
+            "template_alt": "Why could no one stop {tema}?",
+        },
+        {
+            "angulo": "Recent Discovery",
+            "gatilho": "Scientific news / Modern revelation",
+            "template": "Modern science finally unlocked {tema}",
+            "template_alt": "New evidence reveals what destroyed {tema}",
+        },
+        {
+            "angulo": "Eyewitness",
+            "gatilho": "Personal empathy / Intimate account",
+            "template": "The eyewitness account of the fall of {tema}",
+            "template_alt": "The last words of a survivor of {tema}",
+        },
+        {
+            "angulo": "Hidden Consequence",
+            "gatilho": "Fascination with the invisible / Side effect",
+            "template": "The truth that remained buried under {tema}",
+            "template_alt": "The secret centuries hid in {tema}",
+        },
+        {
+            "angulo": "Dramatic Chronology",
+            "gatilho": "Countdown pacing",
+            "template": "{tema}: Step by step of the final hours",
+            "template_alt": "Minute by minute: The final hours of {tema}",
+        },
+        {
+            "angulo": "Tension and Catastrophe",
+            "gatilho": "Urgency and existential gravity",
+            "template": "The day the earth swallowed {tema}",
+            "template_alt": "When everything collapsed: The nightmare of {tema}",
+        },
+    ],
+    "es": [
+        {
+            "angulo": "Ruptura de creencia",
+            "gatilho": "Sorpresa / Desafío al sentido común",
+            "template": "{tema}: Lo que aprendiste está mal",
+            "template_alt": "El mayor mito sobre {tema} que aún crees",
+        },
+        {
+            "angulo": "Curiosidad específica",
+            "gatilho": "Curiosidad extrema / Detalle olvidado",
+            "template": "El detalle olvidado que selló el destino de {tema}",
+            "template_alt": "El misterio oculto detrás de {tema}",
+        },
+        {
+            "angulo": "Número",
+            "gatilho": "Proporción y escala tangible",
+            "template": "{num} horas que cambiaron la historia de {tema}",
+            "template_alt": "{num} minutos cruciales en el colapso de {tema}",
+        },
+        {
+            "angulo": "Contraste pasado vs presente",
+            "gatilho": "Ironía temporal e identificación",
+            "template": "{tema}: Donde el pasado sigue vivo",
+            "template_alt": "De paraíso a la ruina: La trágica caída de {tema}",
+        },
+        {
+            "angulo": "Pregunta",
+            "gatilho": "Necesidad de cierre cognitivo",
+            "template": "¿Qué pasó realmente durante {tema}?",
+            "template_alt": "¿Por qué nadie pudo detener {tema}?",
+        },
+        {
+            "angulo": "Descubrimiento reciente",
+            "gatilho": "Novedad científica / Revelación moderna",
+            "template": "La ciencia moderna por fin descifró {tema}",
+            "template_alt": "Nuevas pruebas revelan qué destruyó {tema}",
+        },
+        {
+            "angulo": "Testigo presencial",
+            "gatilho": "Empatía personal / Relato íntimo",
+            "template": "El relato del testigo que vio el fin de {tema}",
+            "template_alt": "Las últimas palabras de quien sobrevivió a {tema}",
+        },
+        {
+            "angulo": "Consecuencia oculta",
+            "gatilho": "Fascinación por lo invisible / Efecto colateral",
+            "template": "La verdad que quedó enterrada bajo {tema}",
+            "template_alt": "El secreto que los siglos ocultaron en {tema}",
+        },
+        {
+            "angulo": "Cronología dramática",
+            "gatilho": "Ritmo de cuenta regresiva",
+            "template": "{tema}: Paso a paso de las horas finales",
+            "template_alt": "Minuto a minuto: Las horas finales de {tema}",
+        },
+        {
+            "angulo": "Tensión y catástrofe",
+            "gatilho": "Urgencia y gravedad existencial",
+            "template": "El día en que la tierra se tragó a {tema}",
+            "template_alt": "Cuando todo colapsó: La pesadilla real de {tema}",
+        },
+    ],
+}
+
 
 def _limpar_tema(tema_bruto: str) -> str:
     """Extrai uma forma limpa e substantiva do nome do projeto/tema."""
@@ -79,7 +208,9 @@ def _limpar_tema(tema_bruto: str) -> str:
     return tema.title() or "Este Documentário"
 
 
-def avaliar_titulo(titulo: str, palavra_chave: str, gancho: str) -> dict[str, float]:
+def avaliar_titulo(
+    titulo: str, palavra_chave: str, gancho: str, idioma: str = "pt-BR"
+) -> dict[str, float]:
     """Avalia o título nos critérios exigidos por 13 §4.1 (0 a 10 cada)."""
     tamanho = len(titulo)
 
@@ -104,8 +235,22 @@ def avaliar_titulo(titulo: str, palavra_chave: str, gancho: str) -> dict[str, fl
     # 3. Clareza e legibilidade
     criterio_clareza = 9.0 if ("?" in titulo or ":" in titulo) else 8.0
 
-    # 4. Curiosidade e gatilho emocional
-    palavras_gatilho = ["segredo", "verdade", "realmente", "novo", "fim", "horas", "mito", "relato"]
+    # 4. Curiosidade e gatilho emocional adaptado por idioma
+    if idioma.startswith("en"):
+        palavras_gatilho = [
+            "secret", "truth", "really", "new", "fall", "hours", "myth", "witness", "mystery",
+            "wrong", "swallowed", "buried", "nightmare",
+        ]
+    elif idioma.startswith("es"):
+        palavras_gatilho = [
+            "secreto", "verdad", "realmente", "nuevo", "fin", "horas", "mito", "relato",
+            "misterio", "mal", "trago", "tragó", "enterrada", "pesadilla",
+        ]
+    else:
+        palavras_gatilho = [
+            "segredo", "verdade", "realmente", "novo", "fim", "horas", "mito", "relato",
+            "errado", "engoliu", "soterrada", "pesadelo",
+        ]
     tem_gatilho = any(g in tit_lower for g in palavras_gatilho)
     criterio_curiosidade = 9.5 if tem_gatilho else 7.0
 
@@ -130,21 +275,28 @@ def gerar_titulos_estrategicos(
     plano: Plano,
     gancho: str = "",
     numero_destaque: int = 24,
+    idioma: str = "pt-BR",
 ) -> list[ItemTitulo]:
-    """Gera 10 ideias de títulos com notas e destaca o top 3 para teste A/B."""
+    """Gera 10 ideias de títulos com notas e destaca o top 3 para teste A/B no idioma."""
     tema = _limpar_tema(plano.projeto)
     palavra_chave = tema.split()[0] if tema else "História"
 
     titulos: list[ItemTitulo] = []
+    angulos = (
+        ANGULOS_POR_IDIOMA.get(idioma)
+        or (ANGULOS_POR_IDIOMA["en"] if idioma.startswith("en") else None)
+        or (ANGULOS_POR_IDIOMA["es"] if idioma.startswith("es") else None)
+        or ANGULOS_PADRAO
+    )
 
-    for cfg in ANGULOS_PADRAO:
+    for cfg in angulos:
         candidato = cfg["template"].format(tema=tema, num=numero_destaque)
         if len(candidato) > 60:
             candidato = cfg["template_alt"].format(tema=tema, num=numero_destaque)
         if len(candidato) > 60:
             candidato = candidato[:57].rstrip() + "..."
 
-        criterios = avaliar_titulo(candidato, palavra_chave, gancho)
+        criterios = avaliar_titulo(candidato, palavra_chave, gancho, idioma=idioma)
         media = sum(criterios.values()) / len(criterios)
 
         titulos.append(
@@ -169,32 +321,62 @@ def gerar_titulos_estrategicos(
     return titulos
 
 
-def formatar_titulos_md(titulos: list[ItemTitulo]) -> str:
+def formatar_titulos_md(titulos: list[ItemTitulo], idioma: str = "pt-BR") -> str:
     """Formata o relatório titulos.md conforme a especificação 13 §4.1."""
-    linhas = [
-        "# Ideias de Títulos para CTR — DocForja",
-        "",
-        "> Regra de honestidade: nenhum título promete o que o vídeo não cumpre nos "
-        "primeiros 60 s.",
-        "",
-        "## Top 3 Recomendados para Teste A/B",
-        "",
-    ]
+    if idioma.startswith("en"):
+        linhas = [
+            "# CTR Title Ideas — DocForja",
+            "",
+            "> Honesty rule: no title promises what the video does not deliver in 60 s.",
+            "",
+            "## Top 3 Recommended for A/B Testing",
+            "",
+        ]
+        opcao_fmt = "Option"
+        gatilho_fmt = "Trigger"
+        secao_todos = "## All 10 Angles Generated"
+        header_tabela = "| # | Title | Angle | Characters | Score | A/B |"
+    elif idioma.startswith("es"):
+        linhas = [
+            "# Ideas de Títulos para CTR — DocForja",
+            "",
+            "> Regla de honestidad: ningún título promete lo que el video no cumple en 60 s.",
+            "",
+            "## Top 3 Recomendados para Prueba A/B",
+            "",
+        ]
+        opcao_fmt = "Opción"
+        gatilho_fmt = "Disparador"
+        secao_todos = "## Todos los 10 Ángulos Generados"
+        header_tabela = "| # | Título | Ángulo | Caracteres | Nota | A/B |"
+    else:
+        linhas = [
+            "# Ideias de Títulos para CTR — DocForja",
+            "",
+            "> Regra de honestidade: nenhum título promete o que o vídeo não cumpre em 60 s.",
+            "",
+            "## Top 3 Recomendados para Teste A/B",
+            "",
+        ]
+        opcao_fmt = "Opção"
+        gatilho_fmt = "Gatilho"
+        secao_todos = "## Todos os 10 Ângulos Gerados"
+        header_tabela = "| # | Título | Ângulo | Caracteres | Nota | A/B |"
 
     recomendados = [t for t in titulos if t.recomendado_ab]
     for i, t in enumerate(recomendados, start=1):
         linhas.append(
-            f"**Opção {chr(64 + i)} (Nota {t.nota}/10 · {t.angulo}):**\n"
+            f"**{opcao_fmt} {chr(64 + i)} (Nota {t.nota}/10 · {t.angulo}):**\n"
             f"> `{t.titulo}` ({len(t.titulo)} caracteres)\n"
-            f"*Gatilho:* {t.gatilho}\n"
+            f"*{gatilho_fmt}:* {t.gatilho}\n"
         )
 
     linhas.extend([
         "---",
         "",
-        "## Todos os 10 Ângulos Gerados",
+        secao_todos,
         "",
-        "| # | Título | Ângulo | Caracteres | Nota | A/B |",
+        header_tabela,
         "|---|---|---|---|---|:---:|",
     ])
 

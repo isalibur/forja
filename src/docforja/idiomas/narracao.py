@@ -54,6 +54,23 @@ def _segmentos_traduzidos(projeto: Projeto, traducao: RoteiroTraduzido) -> list[
     ]
 
 
+def eh_modo_so_legendas(projeto: Projeto, idioma: str) -> bool:
+    """Verifica se um idioma extra está configurado no modo 'só legendas'."""
+    opcoes = projeto.obter_opcoes()
+    if opcoes.get("modo_legendas", False):
+        return True
+    idiomas_cfg = opcoes.get("idiomas", {})
+    if not isinstance(idiomas_cfg, dict):
+        return False
+    if idiomas_cfg.get("modo_legendas", False):
+        return True
+    so_leg = idiomas_cfg.get("so_legendas", [])
+    if isinstance(so_leg, list) and idioma in so_leg:
+        return True
+    modos = idiomas_cfg.get("modos", {})
+    return bool(isinstance(modos, dict) and modos.get(idioma) in ("so_legendas", "legendas"))
+
+
 def _manifesto_valido(projeto: Projeto, idioma: str, hash_traducao: str) -> bool:
     pasta = projeto.pastas.audio / idioma
     manifesto_path = pasta / "narracao_idioma.json"
@@ -63,6 +80,12 @@ def _manifesto_valido(projeto: Projeto, idioma: str, hash_traducao: str) -> bool
         manifesto = json.loads(manifesto_path.read_text(encoding="utf-8"))
         if manifesto.get("hash_traducao") != hash_traducao:
             return False
+        if eh_modo_so_legendas(projeto, idioma):
+            segmentos_path = pasta / "segmentos.json"
+            if not segmentos_path.is_file():
+                return False
+            segmentos = json.loads(segmentos_path.read_text(encoding="utf-8"))
+            return [item["id"] for item in segmentos] == manifesto.get("segmentos")
         for nome, hash_esperado in manifesto.get("hash_saidas", {}).items():
             caminho = pasta / nome
             if not caminho.is_file() or calcular_hash_dados(caminho) != hash_esperado:
@@ -111,13 +134,51 @@ def executar_narracoes_extras(projeto: Projeto, motor: OrquestradorNarracao) -> 
     vozes = opcoes.get("vozes", {})
     if not extras:
         return
-    if not motor.tts.disponivel():
-        raise RuntimeError("Motor de narração configurado não está disponível.")
     for idioma in extras:
         traducao, _ = carregar_traducao_atual(projeto, idioma)
         if _manifesto_valido(projeto, idioma, traducao.hash_traducao):
             salvar_retime_se_disponivel(projeto, idioma)
             continue
+        if eh_modo_so_legendas(projeto, idioma):
+            principal = opcoes.get("idiomas", {}).get("principal", "pt-BR")
+            origem_segs = projeto.pastas.audio / principal / "segmentos.json"
+            if not origem_segs.is_file():
+                raise FileNotFoundError(
+                    f"Tempos de áudio base ausentes para legendas em {idioma}."
+                )
+            dados_base = json.loads(origem_segs.read_text(encoding="utf-8"))
+            mapa_trad = {s.id: s.texto_limpo for s in traducao.segmentos}
+            segmentos_loc = [
+                {
+                    "id": item["id"],
+                    "inicio_s": item["inicio_s"],
+                    "fim_s": item["fim_s"],
+                    "texto": mapa_trad.get(item["id"], item.get("texto", "")),
+                }
+                for item in dados_base
+            ]
+            pasta = projeto.pastas.audio / idioma
+            pasta.mkdir(parents=True, exist_ok=True)
+            atomic_write_json(pasta / "segmentos.json", segmentos_loc)
+            duracao_total = float(dados_base[-1]["fim_s"]) if dados_base else 0.0
+            atomic_write_json(
+                pasta / "narracao_idioma.json",
+                {
+                    "idioma": idioma,
+                    "modo": "so_legendas",
+                    "hash_traducao": traducao.hash_traducao,
+                    "duracao_total_s": duracao_total,
+                    "segmentos": [item.id for item in traducao.segmentos],
+                    "hash_saidas": {
+                        "segmentos.json": calcular_hash_dados(pasta / "segmentos.json"),
+                    },
+                },
+            )
+            salvar_retime_se_disponivel(projeto, idioma)
+            continue
+
+        if not motor.tts.disponivel():
+            raise RuntimeError("Motor de narração configurado não está disponível.")
         segmentos = _segmentos_traduzidos(projeto, traducao)
         relatorio = motor.processar_projeto_completo(
             segmentos=segmentos,

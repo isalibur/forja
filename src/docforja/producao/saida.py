@@ -18,6 +18,7 @@ from docforja.estrategia import (
     formatar_titulos_md,
     gerar_agenda_csv,
     gerar_checklist_publicacao_md,
+    validar_pacote_estrategico,
 )
 from docforja.global_assets.promocao import (
     avaliar_ativos_para_promocao,
@@ -154,14 +155,22 @@ def montar_pacote_saida_completo(
     # 2. Gera os metadados estratégicos
     creditos_txt = gerar_creditos_txt(ativos)
     pacote = (
-        construir_pacote_estrategico(plano, duracao_real_s, creditos_resumo=creditos_txt)
+        construir_pacote_estrategico(
+            plano, duracao_real_s, creditos_resumo=creditos_txt, idioma=idioma
+        )
         if gerar_estrategia
         else None
     )
 
     # Grava metadados estratégicos (13 §4)
     if pacote is not None:
-        atomic_write_text(pasta_metadados / "titulos.md", formatar_titulos_md(pacote.titulos))
+        valido, erros = validar_pacote_estrategico(pacote)
+        if not valido:
+            raise ValueError(f"Metadados estratégicos inválidos para {idioma}: {erros}")
+
+        atomic_write_text(
+            pasta_metadados / "titulos.md", formatar_titulos_md(pacote.titulos, idioma=idioma)
+        )
         atomic_write_text(pasta_metadados / "descricao.md", pacote.descricao)
         atomic_write_text(
             pasta_metadados / "capitulos.txt", formatar_capitulos_txt(pacote.capitulos)
@@ -170,16 +179,17 @@ def montar_pacote_saida_completo(
         atomic_write_text(pasta_metadados / "hashtags.txt", formatar_hashtags_txt(pacote.hashtags))
         atomic_write_text(
             pasta_metadados / "palavras_chave.md",
-            formatar_palavras_chave_md(pacote.palavras_chave),
+            formatar_palavras_chave_md(pacote.palavras_chave, idioma=idioma),
         )
         atomic_write_text(
             pasta_metadados / "thumbs_briefing.md",
-            formatar_thumbs_briefing_md(pacote.thumbnails),
+            formatar_thumbs_briefing_md(pacote.thumbnails, idioma=idioma),
         )
         atomic_write_text(pasta_metadados / "comentario_fixado.md", pacote.comentario_fixado)
         atomic_write_text(pasta_metadados / "post_comunidade.md", pacote.post_comunidade)
         atomic_write_text(
-            pasta_metadados / "checklist_publicacao.md", gerar_checklist_publicacao_md()
+            pasta_metadados / "checklist_publicacao.md",
+            gerar_checklist_publicacao_md(idioma=idioma),
         )
         atomic_write_json(pasta_metadados / "metadados.json", pacote.model_dump(mode="json"))
 

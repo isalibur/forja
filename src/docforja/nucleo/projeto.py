@@ -105,15 +105,25 @@ class Projeto:
             (projeto.pastas.montagem / extra / "blocos").mkdir(parents=True, exist_ok=True)
             (projeto.pastas.saida / extra).mkdir(parents=True, exist_ok=True)
 
+        idiomas_cfg = {"principal": idioma_principal, "extras": extras}
+        adicionais = dict(opcoes_adicionais or {})
+        if "idiomas" in adicionais and isinstance(adicionais["idiomas"], dict):
+            idiomas_cfg.update(adicionais["idiomas"])
+            if "principal" not in adicionais["idiomas"]:
+                idiomas_cfg["principal"] = idioma_principal
+            if "extras" not in adicionais["idiomas"]:
+                idiomas_cfg["extras"] = extras
+            del adicionais["idiomas"]
+
         opcoes = {
             "nome": nome,
             "slug": slug,
             "tipo": str(tipo),
             "preset": preset,
             "kit": kit,
-            "idiomas": {"principal": idioma_principal, "extras": extras},
+            "idiomas": idiomas_cfg,
             "monetizado": True,
-            **(opcoes_adicionais or {}),
+            **adicionais,
         }
         with projeto.opcoes_file.open("w", encoding="utf-8") as handle:
             yaml.safe_dump(opcoes, handle, allow_unicode=True, sort_keys=False)

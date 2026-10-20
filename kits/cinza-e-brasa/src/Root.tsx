@@ -25,6 +25,16 @@ export const Root: React.FC = () => {
         defaultProps={{ titulo: "Plano de Vídeo", shots: [], cartoes: [], duracao_frames: 240, tem_trilha_provisoria: false }}
         calculateMetadata={({ props }) => ({ durationInFrames: props.duracao_frames })}
       />
+      <Composition
+        id="Previa-Plano-1080p"
+        component={PreviaPlano}
+        durationInFrames={240}
+        fps={24}
+        width={1920}
+        height={1080}
+        defaultProps={{ titulo: "Plano de Vídeo", shots: [], cartoes: [], duracao_frames: 240, tem_trilha_provisoria: false }}
+        calculateMetadata={({ props }) => ({ durationInFrames: props.duracao_frames })}
+      />
       {/* 1. COMPOSICAO INTEGRADA MESTRA DO M2: BLOCO TESTE */}
       <Folder name="00-Integracao-M2">
         <Composition

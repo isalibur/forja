@@ -15,6 +15,7 @@ from docforja.estrategia.metadados import (
     gerar_checklist_publicacao_md,
     gerar_comentario_fixado_md,
     gerar_post_comunidade_md,
+    validar_pacote_estrategico,
 )
 from docforja.estrategia.modelos import (
     Capitulo,
@@ -52,4 +53,5 @@ __all__ = [
     "gerar_descricao_md",
     "gerar_post_comunidade_md",
     "gerar_titulos_estrategicos",
+    "validar_pacote_estrategico",
 ]
