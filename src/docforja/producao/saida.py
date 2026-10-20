@@ -242,3 +242,20 @@ def montar_pacote_saida_completo(
         "total_capitulos": len(pacote.capitulos),
         "promover_sugeridos": len(itens_promo),
     }
+
+
+def montar_arvore_saida(
+    projeto: Projeto, duracao_real_s: float | None = None
+) -> dict[str, Any]:
+    """Empacota a árvore de saída completa com cálculo automático da duração."""
+    if duracao_real_s is None:
+        plano_path = projeto.pastas.plano / "plano.json"
+        if not plano_path.is_file():
+            plano_path = projeto.pastas.plano / "plano_verificado.json"
+        if plano_path.is_file():
+            p = Plano.model_validate_json(plano_path.read_text(encoding="utf-8"))
+            duracao_real_s = sum(s.duracao_s for b in p.blocos for s in b.shots)
+        else:
+            duracao_real_s = 60.0
+    return montar_pacote_saida_completo(projeto, duracao_real_s=duracao_real_s)
+

@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from docforja.esquemas import Ativo, Bloco, Plano, Shot
 from docforja.estrategia.capitulos import (
     extrair_capitulos_plano,
@@ -20,6 +22,7 @@ from docforja.global_assets.promocao import (
     avaliar_ativos_para_promocao,
     promover_itens_para_global,
 )
+from docforja.io import atomic_write_json
 from docforja.nucleo.projeto import Projeto
 from docforja.producao.otio import exportar_projeto_otio, gerar_timeline_otio_dict
 from docforja.producao.saida import montar_pacote_saida_completo
@@ -203,3 +206,72 @@ def test_pacote_saida_completo_e_promocao_global(tmp_path: Path):
     assert promovidos == ["A-01"]
     assert (pasta_global / "imagens" / "A-01.jpg").is_file()
     assert (pasta_global / "imagens" / "A-01.json").is_file()
+
+
+@pytest.mark.anyio
+async def test_producao_pipeline_handlers_e_execucao(tmp_path):
+    """Verifica que o pipeline M6 avanca apos REVISAO e conclui R1-R10."""
+    from docforja.nucleo.handlers import criar_executor_projeto
+
+    proj = Projeto.criar(
+        nome="teste_producao_m6",
+        roteiro="## B0\n\n**B0-S01**\nTexto de teste narrado.",
+        raiz_projetos=tmp_path,
+    )
+
+    plano = _criar_plano_amostra()
+    atomic_write_json(
+        proj.pastas.plano / "plano.json",
+        plano.model_dump(mode="json"),
+    )
+
+    img_teste = tmp_path / "amostra.jpg"
+    img_teste.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 20)
+    ativo = Ativo(
+        id="A-01",
+        tipo="imagem",
+        descricao="Amostra de teste",
+        caminho=img_teste,
+        licenca={"licenca": "CC0", "credito": "Acervo", "comercial": True},
+    )
+    atomic_write_json(
+        proj.pastas.plano / "ativos_resolvidos.json",
+        {"ativos": {"A-01": ativo.model_dump(mode="json")}},
+    )
+
+    executor = criar_executor_projeto(proj)
+
+    # Substitui etapas preliminares por no-op para isolar o teste das etapas R1-R10
+    async def mock_ok(_ctx):
+        pass
+
+    for p_id in [
+        "E00_entrada", "P1_leitura", "P3_estrategia", "P4_shots",
+        "P5_ativos", "P6_verificador", "P7_resolucao", "P8_estimativa_previa",
+        "P2_narracao", "P2b_alinhamento",
+    ]:
+        executor.registrar_handler(p_id, mock_ok)
+
+    # REVISAO sem aprovação deve pausar o avanço da produção
+    status_pausa = await executor.executar()
+    assert status_pausa.get("REVISAO") == "pausada_revisao"
+    assert "R1_imagens" not in status_pausa or status_pausa["R1_imagens"] != "concluida"
+
+    # Libera o portão de revisão humana para produção
+    executor.aprovar_gate("REVISAO")
+    status_final = await executor.executar()
+
+    assert status_final["REVISAO"] == "concluida"
+    for etapa_m6 in [
+        "R1_imagens", "R2_tratamento", "R3_mapas", "R4_trilha_sfx",
+        "R5_montagem", "R6_mix", "R7_render", "R8_qa", "R9_pacote", "R10_biblioteca",
+    ]:
+        assert status_final[etapa_m6] == "concluida", f"Etapa {etapa_m6} não concluiu"
+
+    # Confere que o pacote completo foi montado
+    saida = proj.pastas.saida
+    assert (saida / "relatorio.md").is_file()
+    assert (saida / "creditos.txt").is_file()
+    assert (saida / "pt-BR" / "metadados" / "metadados.json").is_file()
+    assert (saida / "elementos" / "projeto.otio").is_file()
+

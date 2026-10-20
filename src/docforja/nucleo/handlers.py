@@ -39,6 +39,19 @@ from docforja.planejamento.shots import (
     reparar_shots_bloco_via_llm,
 )
 from docforja.planejamento.tempos import intervalos_narrados, segmentos_em_ordem
+from docforja.producao import (
+    executar_noop_idioma_extra,
+    executar_r1_imagens,
+    executar_r2_tratamento,
+    executar_r3_mapas,
+    executar_r4_trilha_sfx,
+    executar_r5_montagem,
+    executar_r6_mix,
+    executar_r7_render,
+    executar_r8_qa,
+    executar_r9_pacote,
+    executar_r10_biblioteca,
+)
 from docforja.settings import load_settings
 
 
@@ -807,6 +820,25 @@ def registrar_handlers_disponiveis(
     )
     executor.registrar_handler("P2_narracao", gerar_narracao, validador=narracao_valida)
     executor.registrar_handler("P2b_alinhamento", alinhar_narracao, validador=alinhamento_valido)
+
+    # Marco M6 — Gate de Revisão e Produção
+    executor.registrar_handler("REVISAO", lambda _ctx: None)
+    executor.registrar_handler("PRE_imagens", executar_r1_imagens)
+    executor.registrar_handler("R1_imagens", executar_r1_imagens)
+    executor.registrar_handler("R2_tratamento", executar_r2_tratamento)
+    executor.registrar_handler("R3_mapas", executar_r3_mapas)
+    executor.registrar_handler("R4_trilha_sfx", executar_r4_trilha_sfx)
+    executor.registrar_handler("R5_montagem", executar_r5_montagem)
+    executor.registrar_handler("R6_mix", executar_r6_mix)
+    executor.registrar_handler("R7_render", executar_r7_render)
+    executor.registrar_handler("R8_qa", executar_r8_qa)
+    executor.registrar_handler("R9_pacote", executar_r9_pacote)
+    executor.registrar_handler("R10_biblioteca", executar_r10_biblioteca)
+
+    # Suporte a multi-idioma (Marco M7): no-op quando não há idiomas adicionais
+    executor.registrar_handler("T1_traducao", executar_noop_idioma_extra)
+    executor.registrar_handler("T2_narracao_idiomas", executar_noop_idioma_extra)
+
     return executor
 
 

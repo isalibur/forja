@@ -129,6 +129,9 @@ class ExecutorPipeline:
                     )
                 )
                 return
+            if def_etapa.id not in self._handlers:
+                self.banco.salvar_etapa(def_etapa.id, status="concluida")
+                return
 
         # Verifica idempotência via hash de entrada
         hash_atual = self._calcular_hash_etapa(def_etapa)
