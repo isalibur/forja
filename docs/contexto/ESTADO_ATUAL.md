@@ -81,16 +81,27 @@ Atualizado em 20 de outubro de 2026. Este arquivo registra somente o estado oper
      - Comando CLI `docforja promover --projeto <slug> [--ativo <id>]` implementado.
      - `P7_resolucao` (`resolver_ativos_projeto`) consome ativos por ID global ou biblioteca, e busca mapas na pasta global antes de consultar acervos externos.
      - `audio/trilha.py` (`resolver_trilha_provisoria`) resolve trilhas comerciais da pasta global com prioridade sobre kit e drone gerado.
-- Verificação automatizada: 156 testes unitários passaram sem GPU e sem rede (`pytest tests/unit`); Ruff 100% limpo em `src/`, `tests/`, `scripts/` e `hermes/`.
+- Adaptadores de TTS do Marco M7 Concluídos (20/10/2026):
+  1. `openai_compat` (`src/docforja/audio/adaptadores/openai_compat.py`):
+     - `AdaptadorOpenAITTS` implementado para consumo de endpoints HTTP padrão `/v1/audio/speech`.
+     - Suporte a retries com backoff exponencial, timeout configurável e transcodificação automática via FFmpeg para WAV 24 kHz PCM mono 16-bit com fallback determinístico.
+  2. `voicestudio` (`src/docforja/audio/adaptadores/voicestudio.py`):
+     - `AdaptadorVoiceStudio` implementado para comunicação com a API local do VoiceStudio.
+     - Trava mandatória de licença comercial: bloqueia expressamente engines marcadas com `NC`, `ND` ou `comercial: False` quando o projeto for monetizado.
+  3. `arquivo_pronto` (`src/docforja/audio/adaptadores/pronta.py` e handler `P2_narracao`):
+     - Detecção e transcodificação de narrações completas fornecidas pelo usuário em `00_entrada/narracao_<idioma>.wav` (ou mp3) ou via `opcoes.narracao_pronta`.
+     - Extração de alinhamento temporal e transcrição via WhisperX.
+     - Tolerância a divergências textuais: se WER > 8%, adota a transcrição como verdade factual para fatiamento de tempos e legendas, grava flag `divergencia_detectada: True` em `03_audio/<idioma>/qualidade.json` e emite aviso auditável em `01_plano/aviso_narracao_pronta.json`.
+  4. Handlers e orquestrador integrados (`src/docforja/nucleo/handlers.py`):
+     - `_criar_orquestrador` instancia os motores dinamicamente com base nas opções do projeto (`kokoro`, `openai_compat`, `voicestudio`, `chatterbox`).
+     - Handler `P2_narracao` unificado para síntese ou narração pronta, atualizando shots e ativos automaticamente caso as etapas P4/P5 já tenham sido executadas.
+- Verificação automatizada: 163 testes unitários passando 100% sem GPU e sem rede (`pytest tests/unit`); Ruff 100% limpo em `src/`, `tests/`, `scripts/` e `hermes/`.
+- Conclusão do Marco M7: Todos os requisitos previstos para M7 (internacionalização multilíngue, operador conversacional Hermes Agent, invalidação seletiva por bloco, reaproveitamento da pasta global e adaptadores de TTS) estão concluídos e validados.
 
 ## Pendências e próxima tarefa
 
-- Próxima tarefa: Adaptadores adicionais de TTS do Marco M7:
-  1. `openai_compat`: consumo de endpoints HTTP `/v1/audio/speech` com retry, timeout e transcodificação FFmpeg para WAV 24 kHz mono.
-  2. `voicestudio`: integração com a API local do VoiceStudio, com trava obrigatória para bloquear engines não-comerciais (NC) em projetos monetizados.
-  3. `arquivo_pronto`: narração fornecida pelo usuário em `00_entrada/narracao_<idioma>.wav` com alinhamento WhisperX e tolerância a divergências de texto (WER > 8% adota a transcrição como verdade para tempos com aviso no plano).
-- Observações: manter escritas atômicas, cache por hash e não avançar para M8 ou M9. Teste assistivo manual com NVDA/VoiceOver a ser executado em ambiente com leitor instalado.
-- Observações: manter escritas atômicas, cache por hash e não avançar para M8 ou M9. Teste assistivo manual com NVDA/VoiceOver a ser executado em ambiente com leitor instalado.
+- Próxima tarefa: Revisão final e encerramento do Marco M7. Aguardar autorização do usuário antes de planejar ou iniciar os marcos posteriores (Marco M8 — Formatos Curtos/Shorts ou Marco M9 — Canal de Música).
+- Observações: manter escritas atômicas, cache por hash e não avançar para M8 ou M9 sem autorização prévia. Teste assistivo manual com NVDA/VoiceOver a ser executado em ambiente com leitor instalado.
 
 ## Entrega entre Codex e Antigravity
 

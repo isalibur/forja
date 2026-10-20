@@ -8,7 +8,14 @@ import re
 from dataclasses import asdict
 from pathlib import Path
 
-from docforja.audio.adaptadores.kokoro import AdaptadorKokoro
+from docforja.audio.adaptadores import (
+    AdaptadorChatterbox,
+    AdaptadorKokoro,
+    AdaptadorOpenAITTS,
+    AdaptadorTTS,
+    AdaptadorVoiceStudio,
+    processar_narracao_pronta_completa,
+)
 from docforja.audio.alinhamento import AlinhadorWhisperX
 from docforja.audio.metricas import calcular_wer
 from docforja.audio.narracao import OrquestradorNarracao, ResultadoSegmentoAudio
@@ -56,16 +63,34 @@ from docforja.producao import (
 from docforja.settings import load_settings
 
 
-def _criar_orquestrador() -> OrquestradorNarracao:
+def _criar_orquestrador(
+    motor_tts: str | None = None, projeto: Projeto | None = None
+) -> OrquestradorNarracao:
     settings = load_settings()
     ambientes = settings.python_environments
-    kokoro = AdaptadorKokoro(python_path=ambientes.get("kokoro"))
+    motor_nome = (motor_tts or "kokoro").lower()
+    adaptador: AdaptadorTTS
+
+    if motor_nome == "openai_compat":
+        llm_st = settings.llm.get("structured")
+        base_url = llm_st.base_url if llm_st else "http://127.0.0.1:20128/v1"
+        adaptador = AdaptadorOpenAITTS(base_url=base_url)
+    elif motor_nome == "voicestudio":
+        comercial = True
+        if projeto:
+            comercial = projeto.obter_opcoes().get("monetizado", True)
+        adaptador = AdaptadorVoiceStudio(comercial_exigido=comercial)
+    elif motor_nome == "chatterbox":
+        adaptador = AdaptadorChatterbox(python_path=ambientes.get("chatterbox"))
+    else:
+        adaptador = AdaptadorKokoro(python_path=ambientes.get("kokoro"))
+
     whisperx = AlinhadorWhisperX(
         python_path=ambientes.get("whisperx"),
         modelo=settings.alinhamento.modelo_asr,
         modelo_alinhador=settings.alinhamento.modelo_alinhador,
     )
-    return OrquestradorNarracao(adaptador_tts=kokoro, alinhador=whisperx)
+    return OrquestradorNarracao(adaptador_tts=adaptador, alinhador=whisperx)
 
 
 def _segmentos_projeto(projeto: Projeto) -> list[SegmentoProcessado]:
@@ -372,11 +397,13 @@ def registrar_handlers_disponiveis(
             raise ValueError("Plano verificado ou ativos resolvidos ausentes para P8.")
         await asyncio.to_thread(renderizar_previa, ctx.projeto)
 
-    def obter_orquestrador() -> OrquestradorNarracao:
+    def obter_orquestrador(
+        motor_nome: str | None = None, projeto: Projeto | None = None
+    ) -> OrquestradorNarracao:
         nonlocal orquestrador
-        if orquestrador is None:
-            orquestrador = _criar_orquestrador()
-        return orquestrador
+        if orquestrador is not None:
+            return orquestrador
+        return _criar_orquestrador(motor_tts=motor_nome, projeto=projeto)
 
     def obter_roteador() -> RoteadorLLM | None:
         nonlocal roteador_llm
@@ -389,13 +416,58 @@ def registrar_handlers_disponiveis(
 
     async def gerar_narracao(ctx: ContextoEtapa) -> None:
         opcoes = ctx.projeto.obter_opcoes()
-        if opcoes.get("narracao_pronta"):
-            raise RuntimeError("Narração pronta ainda não está integrada ao pipeline.")
-        motor = obter_orquestrador()
-        if not motor.tts.disponivel():
-            raise RuntimeError("Motor de narração configurado não está disponível.")
         idioma, pasta_idioma = _audio_idioma(ctx.projeto)
         pasta_idioma.mkdir(parents=True, exist_ok=True)
+
+        # 1. Verifica se há narração pronta configurada ou fornecida em 00_entrada/
+        caminho_pronta: Path | None = None
+        if opcoes.get("narracao_pronta"):
+            caminho_pronta = Path(opcoes["narracao_pronta"])
+        else:
+            cands = [
+                ctx.projeto.pastas.entrada / f"narracao_{idioma}.wav",
+                ctx.projeto.pastas.entrada / f"narracao_{idioma}.mp3",
+                ctx.projeto.pastas.entrada / "narracao.wav",
+                ctx.projeto.pastas.entrada / "narracao.mp3",
+            ]
+            for c in cands:
+                if c.is_file():
+                    caminho_pronta = c
+                    break
+
+        if caminho_pronta and caminho_pronta.is_file():
+            motor = obter_orquestrador(projeto=ctx.projeto)
+            relatorio = await asyncio.to_thread(
+                processar_narracao_pronta_completa,
+                arquivo_narracao=caminho_pronta,
+                pasta_audio=pasta_idioma,
+                idioma=idioma,
+                segmentos_roteiro=_segmentos_projeto(ctx.projeto),
+                alinhador=motor.alinhador,
+            )
+            if relatorio.get("aviso"):
+                atomic_write_json(
+                    ctx.projeto.pastas.plano / "aviso_narracao_pronta.json",
+                    {
+                        "idioma": idioma,
+                        "aviso": relatorio["aviso"],
+                        "wer": relatorio["wer"],
+                    },
+                )
+            if (ctx.projeto.pastas.plano / "shots.json").is_file() and estrategia_valida(ctx):
+                gerar_shots(ctx)
+                if (ctx.projeto.pastas.plano / "ativos.json").is_file():
+                    consolidar_ativos(ctx)
+            return
+
+        motor_nome = (
+            opcoes.get("tts", {}).get("motor")
+            or opcoes.get("motor_tts")
+            or "kokoro"
+        )
+        motor = obter_orquestrador(motor_nome=motor_nome, projeto=ctx.projeto)
+        if not motor.tts.disponivel():
+            raise RuntimeError("Motor de narração configurado não está disponível.")
         (pasta_idioma / "palavras.json").unlink(missing_ok=True)
         (pasta_idioma / "qualidade.json").unlink(missing_ok=True)
         relatorio = await asyncio.to_thread(
@@ -417,10 +489,12 @@ def registrar_handlers_disponiveis(
                 consolidar_ativos(ctx)
 
     async def gerar_narracoes_extras(ctx: ContextoEtapa) -> None:
-        await asyncio.to_thread(executar_narracoes_extras, ctx.projeto, obter_orquestrador())
+        await asyncio.to_thread(
+            executar_narracoes_extras, ctx.projeto, obter_orquestrador(projeto=ctx.projeto)
+        )
 
     def alinhar_narracao_sync(ctx: ContextoEtapa) -> None:
-        motor = obter_orquestrador()
+        motor = obter_orquestrador(projeto=ctx.projeto)
         modelo_asr = getattr(motor.alinhador, "modelo", None)
         if not motor.alinhador.disponivel():
             raise RuntimeError("WhisperX configurado não está disponível.")
