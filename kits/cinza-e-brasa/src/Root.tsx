@@ -6,6 +6,7 @@ import * as Overlays from "./sobreposicoes";
 import * as Schemas from "./schemas/templates";
 import * as SchemasSob from "./schemas/sobreposicoes";
 import { BlocoTeste } from "./composicoes/BlocoTeste";
+import { PreviaPlano } from "./composicoes/PreviaPlano";
 
 export const Root: React.FC = () => {
   useEffect(() => {
@@ -14,6 +15,16 @@ export const Root: React.FC = () => {
 
   return (
     <>
+      <Composition
+        id="Previa-Plano-540p"
+        component={PreviaPlano}
+        durationInFrames={240}
+        fps={24}
+        width={960}
+        height={540}
+        defaultProps={{ titulo: "Plano de Vídeo", shots: [], cartoes: [], duracao_frames: 240 }}
+        calculateMetadata={({ props }) => ({ durationInFrames: props.duracao_frames })}
+      />
       {/* 1. COMPOSICAO INTEGRADA MESTRA DO M2: BLOCO TESTE */}
       <Folder name="00-Integracao-M2">
         <Composition

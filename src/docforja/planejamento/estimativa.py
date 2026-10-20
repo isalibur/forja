@@ -98,11 +98,16 @@ def estimar_tempo_plano(
     plano: Plano,
     benchmark_rates: dict[str, float] | None = None,
     variacoes_imagem: int = 2,
+    duracao_audio_s: float | None = None,
 ) -> RelatorioEstimativa:
     """Calcula a estimativa completa de produção do plano por etapa e valida orçamento."""
     rates = benchmark_rates or carregar_benchmark_medias()
 
-    duracao_total_s = sum(shot.duracao_s for bloco in plano.blocos for shot in bloco.shots)
+    duracao_total_s = (
+        duracao_audio_s
+        if duracao_audio_s is not None
+        else sum(shot.duracao_s for bloco in plano.blocos for shot in bloco.shots)
+    )
 
     # Contagem de shots e templates
     shots_t02 = sum(1 for b in plano.blocos for s in b.shots if s.template == "T02")

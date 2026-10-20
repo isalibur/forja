@@ -25,6 +25,7 @@ from docforja.planejamento.entidades import SegmentoProcessado
 from docforja.planejamento.estimativa import estimar_tempo_plano
 from docforja.planejamento.estrategia import EstrategiaBloco, planejar_estrategias
 from docforja.planejamento.leitura import ler_roteiro_formatado
+from docforja.planejamento.previa import renderizar_previa
 from docforja.planejamento.relatorios import (
     gerar_estimativa_md,
     gerar_numeros_na_tela_md,
@@ -327,6 +328,13 @@ def registrar_handlers_disponiveis(
             raise ValueError("Plano verificado e dosagem aprovada ausentes para resolver ativos.")
         resolver_ativos_projeto(ctx.projeto)
 
+    async def estimar_e_renderizar_previa(ctx: ContextoEtapa) -> None:
+        if previa_valida(ctx):
+            return
+        if not dosagem_valida(ctx) or not resolucao_valida(ctx):
+            raise ValueError("Plano verificado ou ativos resolvidos ausentes para P8.")
+        await asyncio.to_thread(renderizar_previa, ctx.projeto)
+
     def obter_orquestrador() -> OrquestradorNarracao:
         nonlocal orquestrador
         if orquestrador is None:
@@ -576,9 +584,8 @@ def registrar_handlers_disponiveis(
             return False
         if not alinhamento_valido(ctx) or not estrategia_valida(ctx) or not ativos_validos(ctx):
             return False
-        plano = Plano.model_validate_json(
-            (pasta / "plano_verificado.json").read_text(encoding="utf-8")
-        )
+        plano_dados = json.loads((pasta / "plano_verificado.json").read_text(encoding="utf-8"))
+        plano = Plano.model_validate(plano_dados)
         relatorio = json.loads((pasta / "verificacao.json").read_text(encoding="utf-8"))
         nomes_relatorios = [
             "plano.json",
@@ -597,14 +604,32 @@ def registrar_handlers_disponiveis(
         segmentos_cobertos = [
             sid for bloco in plano.blocos for shot in bloco.shots for sid in shot.segmentos
         ]
+        meta_previa = pasta / "previa.json"
+        hashes_relatorios = {
+            nome: calcular_hash_dados(pasta / nome) for nome in nomes_relatorios
+        }
+        if meta_previa.is_file():
+            dados_previa = json.loads(meta_previa.read_text(encoding="utf-8"))
+            relatorios_validos = (
+                dados_previa.get("hash_verificacao")
+                == calcular_hash_dados(pasta / "verificacao.json")
+                and all(
+                    dados_previa.get("hash_saidas", {}).get(nome) == hashes_relatorios[nome]
+                    for nome in ["plano.json", "plano.md", "estimativa.md"]
+                )
+                and all(
+                    relatorio.get("hash_relatorios", {}).get(nome) == hashes_relatorios[nome]
+                    for nome in ["verificacao.md", "numeros_na_tela.md"]
+                )
+            )
+        else:
+            relatorios_validos = relatorio.get("hash_relatorios") == hashes_relatorios
         return (
             plano.projeto == ctx.projeto.slug
             and segmentos_cobertos == segmentos_esperados
-            and relatorio.get("hash_plano") == calcular_hash_dados(plano.model_dump(mode="json"))
+            and relatorio.get("hash_plano") == calcular_hash_dados(plano_dados)
             and relatorio.get("hash_entradas") == hashes_entradas_p6(ctx)
-            and relatorio.get("hash_relatorios") == {
-                nome: calcular_hash_dados(pasta / nome) for nome in nomes_relatorios
-            }
+            and relatorios_validos
             and plano.verificacao.get("fase") == "pre_resolucao_ativos"
             and plano.verificacao.get("aprovado") is True
             and relatorio.get("aprovado") is True
@@ -662,6 +687,33 @@ def registrar_handlers_disponiveis(
         except Exception:
             return False
 
+    def previa_valida(ctx: ContextoEtapa) -> bool:
+        pasta = ctx.projeto.pastas.plano
+        meta_path = pasta / "previa.json"
+        if not meta_path.is_file() or not resolucao_valida(ctx):
+            return False
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            _, pasta_audio = _audio_idioma(ctx.projeto)
+            return (
+                meta.get("fase") == "planejamento_completo"
+                and meta.get("hash_verificacao")
+                == calcular_hash_dados(pasta / "verificacao.json")
+                and meta.get("hash_resolvidos")
+                == calcular_hash_dados(pasta / "ativos_resolvidos.json")
+                and meta.get("hash_audio")
+                == calcular_hash_dados(pasta_audio / "narracao_completa.wav")
+                and meta.get("hash_segmentos")
+                == calcular_hash_dados(pasta_audio / "segmentos.json")
+                and meta.get("hash_saidas")
+                == {
+                    nome: calcular_hash_dados(pasta / nome)
+                    for nome in ["previa.mp4", "plano.json", "plano.md", "estimativa.md"]
+                }
+            )
+        except (OSError, ValueError, KeyError):
+            return False
+
     executor.registrar_handler("E00_entrada", validar_entrada)
     executor.registrar_handler("P1_leitura", ler_roteiro, validador=leitura_valida)
     executor.registrar_handler("P3_estrategia", planejar_estrategia, validador=estrategia_valida)
@@ -669,6 +721,9 @@ def registrar_handlers_disponiveis(
     executor.registrar_handler("P5_ativos", consolidar_ativos, validador=ativos_validos)
     executor.registrar_handler("P6_verificador", verificar_dosagem, validador=dosagem_valida)
     executor.registrar_handler("P7_resolucao", resolver_ativos, validador=resolucao_valida)
+    executor.registrar_handler(
+        "P8_estimativa_previa", estimar_e_renderizar_previa, validador=previa_valida
+    )
     executor.registrar_handler("P2_narracao", gerar_narracao, validador=narracao_valida)
     executor.registrar_handler("P2b_alinhamento", alinhar_narracao, validador=alinhamento_valido)
     return executor

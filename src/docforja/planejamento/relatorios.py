@@ -46,11 +46,18 @@ def gerar_plano_md(
                 seg_map[s.id] = s
 
     tempo_acumulado = 0.0
+    tempos_reais = all(
+        shot.inicio_s is not None and shot.fim_s is not None
+        for bloco in plano.blocos for shot in bloco.shots
+    )
 
     for bloco in plano.blocos:
-        dur_bloco = sum(s.duracao_s for s in bloco.shots)
-        t_inicio_bloco = tempo_acumulado
-        t_fim_bloco = tempo_acumulado + dur_bloco
+        if tempos_reais:
+            t_inicio_bloco = min(s.inicio_s for s in bloco.shots)
+            t_fim_bloco = max(s.fim_s for s in bloco.shots)
+        else:
+            t_inicio_bloco = tempo_acumulado
+            t_fim_bloco = tempo_acumulado + sum(s.duracao_s for s in bloco.shots)
         t_str = f"{formatar_tempo_mmss(t_inicio_bloco)}-{formatar_tempo_mmss(t_fim_bloco)}"
         clima = bloco.clima_musical or "padrão"
 
@@ -63,8 +70,10 @@ def gerar_plano_md(
         ativos_bloco: set[str] = set()
 
         for shot in bloco.shots:
-            t_shot_str = f"{formatar_tempo_mmss(tempo_acumulado)} · {shot.duracao_s:.1f} s"
-            tempo_acumulado += shot.duracao_s
+            inicio_shot = shot.inicio_s if tempos_reais else tempo_acumulado
+            t_shot_str = f"{formatar_tempo_mmss(inicio_shot)} · {shot.duracao_s:.1f} s"
+            if not tempos_reais:
+                tempo_acumulado += shot.duracao_s
 
             # Narração do primeiro segmento associado
             narracao = "—"
@@ -122,6 +131,8 @@ def gerar_plano_md(
             f"**Ativos do bloco:** {len(ativos_bloco)} "
             f"({gerar_c} gerar · {pesq_c} pesquisar · {pedir_c} pedir a você)\n"
         )
+        if tempos_reais:
+            tempo_acumulado = t_fim_bloco
 
     return "\n".join(linhas) + "\n"
 

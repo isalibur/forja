@@ -103,6 +103,8 @@ class Shot(BaseModel):
     segmentos: list[str] = Field(default_factory=list)
     ancora: dict[str, str] | None = None
     duracao_s: float
+    inicio_s: float | None = None
+    fim_s: float | None = None
     template: str
     params: dict[str, Any] = Field(default_factory=dict)
     sobreposicoes: list[dict[str, Any]] = Field(default_factory=list)
