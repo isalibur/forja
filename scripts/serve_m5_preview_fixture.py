@@ -23,13 +23,16 @@ from docforja.nucleo.etapas import calcular_hash_dados
 from docforja.nucleo.projeto import Projeto
 
 
-def _png_teste(caminho: Path) -> None:
+def _png_teste(caminho: Path, alternativa: bool = False) -> None:
     largura, altura = 640, 360
     linhas = bytearray()
     for y in range(altura):
         linhas.append(0)
         for x in range(largura):
-            linhas.extend((28 + x * 120 // largura, 65 + y * 100 // altura, 140))
+            if alternativa:
+                linhas.extend((180, 45 + x * 70 // largura, 30 + y * 110 // altura))
+            else:
+                linhas.extend((28 + x * 120 // largura, 65 + y * 100 // altura, 140))
 
     def bloco(tipo: bytes, conteudo: bytes) -> bytes:
         corpo = tipo + conteudo
@@ -55,6 +58,18 @@ def _criar_amostra(raiz: Path) -> Projeto:
             autor="DocForja — amostra de teste",
             licenca="CC0",
             credito_obrigatorio=False,
+        ),
+    )
+    candidata = imagem.parent / "cand_amostra_1.png"
+    _png_teste(candidata, alternativa=True)
+    salvar_ficha_licenca(
+        candidata,
+        FichaLicenca(
+            url_origem="https://example.org/amostra-sintetica",
+            autor="DocForja — candidata sintética",
+            licenca="CC0",
+            texto_credito="DocForja / CC0 (amostra sintética)",
+            detalhes={"nota_curador": 8.0, "motivo_curador": "Contraste visual para o teste"},
         ),
     )
     ativo = {
