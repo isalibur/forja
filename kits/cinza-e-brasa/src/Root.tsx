@@ -22,7 +22,7 @@ export const Root: React.FC = () => {
         fps={24}
         width={960}
         height={540}
-        defaultProps={{ titulo: "Plano de Vídeo", shots: [], cartoes: [], duracao_frames: 240 }}
+        defaultProps={{ titulo: "Plano de Vídeo", shots: [], cartoes: [], duracao_frames: 240, tem_trilha_provisoria: false }}
         calculateMetadata={({ props }) => ({ durationInFrames: props.duracao_frames })}
       />
       {/* 1. COMPOSICAO INTEGRADA MESTRA DO M2: BLOCO TESTE */}

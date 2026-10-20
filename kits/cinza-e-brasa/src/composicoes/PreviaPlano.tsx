@@ -18,9 +18,15 @@ export type PropsPreviaPlano = {
   shots: ItemPrevia[];
   cartoes: ItemPrevia[];
   duracao_frames: number;
+  tem_trilha_provisoria?: boolean;
 };
 
-export const PreviaPlano: React.FC<PropsPreviaPlano> = ({ titulo, shots, cartoes }) => {
+export const PreviaPlano: React.FC<PropsPreviaPlano> = ({
+  titulo,
+  shots,
+  cartoes,
+  tem_trilha_provisoria,
+}) => {
   const frame = useCurrentFrame();
   const { width, height, fps } = useVideoConfig();
   const shot = shots.find((item) => frame >= item.inicio_frame && frame < item.fim_frame);
@@ -34,9 +40,26 @@ export const PreviaPlano: React.FC<PropsPreviaPlano> = ({ titulo, shots, cartoes
     : 0;
   const escala = width / 960;
 
+  // Ducking: volume da cama provisória atenuado sob narração (-18 dB, 0.12),
+  // com respiro sutil em cartões e pausas (0.22).
+  const volumeTrilha = (f: number) => {
+    const s = shots.find((item) => f >= item.inicio_frame && f < item.fim_frame);
+    if (!s || s.template === "T00" || s.template === "T14" || !s.texto) {
+      return 0.22;
+    }
+    return 0.12;
+  };
+
   return (
     <AbsoluteFill style={{ backgroundColor: "#0e0e10", color: "#f0e8d8", fontFamily: "Arial, sans-serif" }}>
       <Audio src={staticFile("narracao.wav")} />
+      {tem_trilha_provisoria && (
+        <Audio
+          src={staticFile("trilha_provisoria.wav")}
+          loop
+          volume={volumeTrilha}
+        />
+      )}
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 65% 45%, #4c281f 0%, #1a1718 40%, #0e0e10 85%)" }} />
       <div style={{ position: "absolute", top: 30 * escala, left: 42 * escala, right: 42 * escala, display: "flex", justifyContent: "space-between", fontSize: 13 * escala, letterSpacing: 3 * escala, color: "#dd9c76" }}>
         <span>DOCFORJA · PRÉVIA 540p</span>
@@ -57,7 +80,7 @@ export const PreviaPlano: React.FC<PropsPreviaPlano> = ({ titulo, shots, cartoes
       </div>
       <div style={{ position: "absolute", left: 42 * escala, right: 42 * escala, bottom: 35 * escala }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 * escala, color: "#c1afa3", letterSpacing: 1 * escala }}>
-          <span>{shot?.situacao ?? "PLACEHOLDER"} · NÃO É IMAGEM FINAL</span>
+          <span>{shot?.situacao ?? "PLACEHOLDER"} · NÃO É IMAGEM FINAL{tem_trilha_provisoria ? " · TRILHA PROVISÓRIA ATIVA" : ""}</span>
           <span>{Math.floor(frame / fps / 60).toString().padStart(2, "0")}:{Math.floor((frame / fps) % 60).toString().padStart(2, "0")}</span>
         </div>
         <div style={{ height: 3 * escala, marginTop: 12 * escala, backgroundColor: "#51403a" }}>

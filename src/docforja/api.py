@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from docforja.audio.trilha import resolver_trilha_provisoria
 from docforja.esquemas import Ativo
 from docforja.midia.licenca import (
     carregar_ficha_licenca,
@@ -391,6 +392,15 @@ def obter_audio_previa(slug: str) -> FileResponse:
     if not audio.is_file():
         raise HTTPException(status_code=404, detail="Narração não encontrada")
     return FileResponse(audio, media_type="audio/wav", filename="narracao.wav")
+
+
+@app.get("/api/projetos/{slug}/trilha_provisoria.wav")
+def obter_trilha_provisoria(slug: str) -> FileResponse:
+    projeto = _projeto_da_interface(slug)
+    trilha = resolver_trilha_provisoria(projeto)
+    if trilha is None or not trilha.is_file():
+        raise HTTPException(status_code=404, detail="Trilha provisória não encontrada")
+    return FileResponse(trilha, media_type="audio/wav", filename="trilha_provisoria.wav")
 
 
 @app.get("/api/saude")

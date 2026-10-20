@@ -208,6 +208,11 @@ def test_api_plano_ui_leitura_local_e_pasta_manual(tmp_path, monkeypatch):
     assert client.get(f"/api/projetos/{projeto.slug}/ativos/A-001/imagem").status_code == 404
     assert client.get(f"/api/projetos/{projeto.slug}/ativos/A-999/imagem").status_code == 404
     assert client.get(f"/api/projetos/{projeto.slug}/narracao.wav").status_code == 404
+    trilha_proj = projeto.pastas.audio / "trilha" / "provisoria.wav"
+    trilha_proj.write_bytes(b"RIFF....WAVE")
+    resp_trilha = client.get(f"/api/projetos/{projeto.slug}/trilha_provisoria.wav")
+    assert resp_trilha.status_code == 200
+    assert resp_trilha.content == b"RIFF....WAVE"
     assert client.get("/api/projetos/%2E%2E/plano").status_code == 404
     externo = client.get(
         f"/api/projetos/{projeto.slug}/plano",

@@ -12,6 +12,7 @@ from docforja.audio.adaptadores.kokoro import AdaptadorKokoro
 from docforja.audio.alinhamento import AlinhadorWhisperX
 from docforja.audio.metricas import calcular_wer
 from docforja.audio.narracao import OrquestradorNarracao, ResultadoSegmentoAudio
+from docforja.audio.trilha import resolver_trilha_provisoria
 from docforja.esquemas import Ativo, Bloco, Plano, Shot
 from docforja.io import atomic_write_json, atomic_write_text
 from docforja.llm.roteador import RoteadorLLM
@@ -767,6 +768,13 @@ def registrar_handlers_disponiveis(
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
             _, pasta_audio = _audio_idioma(ctx.projeto)
+            trilha = resolver_trilha_provisoria(ctx.projeto)
+            hash_trilha_atual = (
+                calcular_hash_dados(trilha) if trilha and trilha.is_file() else None
+            )
+            valida_trilha = (
+                "hash_trilha" not in meta or meta.get("hash_trilha") == hash_trilha_atual
+            )
             return (
                 meta.get("fase") == "planejamento_completo"
                 and meta.get("hash_verificacao")
@@ -775,6 +783,7 @@ def registrar_handlers_disponiveis(
                 == calcular_hash_dados(pasta / "ativos_resolvidos.json")
                 and meta.get("hash_audio")
                 == calcular_hash_dados(pasta_audio / "narracao_completa.wav")
+                and valida_trilha
                 and meta.get("hash_segmentos")
                 == calcular_hash_dados(pasta_audio / "segmentos.json")
                 and meta.get("hash_saidas")

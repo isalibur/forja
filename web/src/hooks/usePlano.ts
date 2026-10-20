@@ -76,6 +76,7 @@ export type DadosPlano = {
     shots: ItemPrevia[];
     cartoes: ItemPrevia[];
     duracao_frames: number;
+    tem_trilha_provisoria?: boolean;
   } | null;
   pasta_manual?: string;
   imagens_por_shot?: Record<string, string>;

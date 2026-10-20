@@ -11,6 +11,7 @@ import wave
 from itertools import pairwise
 from pathlib import Path
 
+from docforja.audio.trilha import resolver_trilha_provisoria
 from docforja.esquemas import Ativo, Plano
 from docforja.io import atomic_write_json, atomic_write_text
 from docforja.nucleo.etapas import calcular_hash_dados
@@ -31,7 +32,10 @@ def _duracao_wav(caminho: Path) -> float:
 
 
 def montar_manifesto_previa(
-    plano: Plano, segmentos_audio: list[dict], ativos_resolvidos: dict[str, Ativo]
+    plano: Plano,
+    segmentos_audio: list[dict],
+    ativos_resolvidos: dict[str, Ativo],
+    tem_trilha_provisoria: bool = False,
 ) -> dict:
     """Usa os intervalos reais; cartões sem segmento aparecem sobre a narração."""
     if not segmentos_audio:
@@ -92,6 +96,7 @@ def montar_manifesto_previa(
         "shots": shots,
         "cartoes": cartoes,
         "duracao_frames": duracao_frames,
+        "tem_trilha_provisoria": tem_trilha_provisoria,
     }
 
 
@@ -107,8 +112,12 @@ def renderizar_previa(projeto: Projeto) -> dict:
     ativos = {aid: Ativo.model_validate(a) for aid, a in resolvidos["ativos"].items()}
     if set(ativos) != set(plano.ativos):
         raise ValueError("Os ativos resolvidos não correspondem aos do plano verificado.")
-    manifesto = montar_manifesto_previa(plano, segmentos, ativos)
+    trilha = resolver_trilha_provisoria(projeto)
+    tem_trilha = False
     duracao_real = _duracao_wav(wav)
+    manifesto = montar_manifesto_previa(
+        plano, segmentos, ativos, tem_trilha_provisoria=bool(trilha and trilha.is_file())
+    )
     if abs(duracao_real - manifesto["duracao_frames"] / FPS_PREVIA) > 0.1:
         raise ValueError("A duração do WAV diverge dos tempos dos segmentos.")
 
@@ -156,6 +165,17 @@ def renderizar_previa(projeto: Projeto) -> dict:
         temporario_audio = public / "narracao.novo.wav"
         shutil.copyfile(wav, temporario_audio)
         os.replace(temporario_audio, audio_publico)
+
+    if trilha and trilha.is_file():
+        audio_trilha = public / "trilha_provisoria.wav"
+        if not audio_trilha.is_file() or (
+            calcular_hash_dados(audio_trilha) != calcular_hash_dados(trilha)
+        ):
+            temporario_trilha = public / "trilha_provisoria.novo.wav"
+            shutil.copyfile(trilha, temporario_trilha)
+            os.replace(temporario_trilha, audio_trilha)
+        tem_trilha = True
+
     props = staging / "props.json"
     atomic_write_json(props, manifesto)
     saida_temporaria = staging / "previa.nova.mp4"
@@ -188,7 +208,7 @@ def renderizar_previa(projeto: Projeto) -> dict:
     aviso_previa = (
         "> Prévia de planejamento: imagens são placeholders identificados; "
         "não representam arquivos finais nem autorização de uso. "
-        "A narração está sincronizada ao WAV real; trilha provisória ainda não incluída.\n\n"
+        "A narração está sincronizada ao WAV real com trilha sonora provisória sob ducking.\n\n"
     )
     atomic_write_text(
         pasta / "plano.md", aviso_previa + gerar_plano_md(plano, blocos_proc)
@@ -201,6 +221,8 @@ def renderizar_previa(projeto: Projeto) -> dict:
         "hash_resolvidos": calcular_hash_dados(pasta / "ativos_resolvidos.json"),
         "hash_audio": calcular_hash_dados(wav),
         "hash_segmentos": calcular_hash_dados(segmentos_path),
+        "hash_trilha": calcular_hash_dados(trilha) if tem_trilha and trilha else None,
+        "tem_trilha_provisoria": tem_trilha,
         "hash_saidas": {
             nome: calcular_hash_dados(pasta / nome)
             for nome in ["previa.mp4", "plano.json", "plano.md", "estimativa.md"]
@@ -238,7 +260,10 @@ def reconciliar_relatorios_previa(projeto: Projeto) -> dict:
     segmentos = json.loads((audio / "segmentos.json").read_text(encoding="utf-8"))
     resolvidos = json.loads((pasta / "ativos_resolvidos.json").read_text(encoding="utf-8"))
     ativos = {aid: Ativo.model_validate(a) for aid, a in resolvidos["ativos"].items()}
-    if manifesto != montar_manifesto_previa(verificado, segmentos, ativos):
+    tem_trilha = bool(meta.get("tem_trilha_provisoria", False))
+    if manifesto != montar_manifesto_previa(
+        verificado, segmentos, ativos, tem_trilha_provisoria=tem_trilha
+    ):
         raise ValueError("O manifesto não corresponde ao plano e ao áudio verificados.")
     plano = Plano.model_validate_json((pasta / "plano.json").read_text(encoding="utf-8"))
     intervalos = {item["id"]: item for item in [*manifesto["shots"], *manifesto["cartoes"]]}
@@ -251,7 +276,7 @@ def reconciliar_relatorios_previa(projeto: Projeto) -> dict:
     aviso = (
         "> Prévia de planejamento: imagens são placeholders identificados; "
         "não representam arquivos finais nem autorização de uso. "
-        "A narração está sincronizada ao WAV real; trilha provisória ainda não incluída.\n\n"
+        "A narração está sincronizada ao WAV real com trilha sonora provisória sob ducking.\n\n"
     )
     atomic_write_json(pasta / "plano.json", plano.model_dump(mode="json"))
     atomic_write_text(
