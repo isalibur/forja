@@ -74,14 +74,26 @@ artefatos_em_avaliacao:
     conversao: CTranslate2 float16 local
     arquivo_convertido: E:/05_PROJETOS/forja/modelos/whisper-large-v3-turbo-ct2/model.bin
     sha256_arquivo_convertido: e76620f83d5f5b69efd3d87e3dc180c1bd21df9fbebacfd4335e5e1efcc018da
+    sha256_arquivos_auxiliares:
+      config.json: 27ec8ecb8ba05f3ac81522a7a035bd5ab19a5b567640bf68ccec90ded4fc1726
+      preprocessor_config.json: 7ccc62c6f2765af1f3b46c00c9b5894426835a05021c8b9c01eecb6dfb542711
+      tokenizer.json: 297b13372ac43916285644fb9687add3cc62ee2a1adb60da3dc25cc94c1871fd
+      vocabulary.json: 697ee5a65726e46b4d294d1a243d98e1878f5d81caba17891b1c5ebab7a912a9
     aprovado_producao: false
-    pendencias: validar WER no roteiro completo e registrar artefatos auxiliares da conversão
+    pendencias: modelo validado no roteiro completo (WER 1,78% < 2,00%); aprovação formal para produção aguarda marco final
   alinhador_portugues:
     repositorio: https://huggingface.co/jonatasgrosman/wav2vec2-large-xlsr-53-portuguese
     revisao_cache_local: 634ac655299bcdc46c83bc01da9bab52d2987e4f
+    modelo_configurado: jonatasgrosman/wav2vec2-large-xlsr-53-portuguese
     licenca_declarada_modelo: Apache-2.0
+    sha256:
+      pytorch_model.bin: c244caf8395a0c333bdc877e7b62ce5efea12ad8cfec0851c0fe6efb844b834e
+      config.json: ea1d581f043b854671b11d6b7db606e1ec5aafbfdd6b964c3f2f5975e335761c
+      preprocessor_config.json: ca5999a45e98bb76ea87a461ba28a23ad32a5bb9f733b8e0f6546ff38b6c612d
+      special_tokens_map.json: bb7068de1150661a10b55f9e4b12a0e77af8bf91f5e45e1b58afaf1d0e17f675
+      vocab.json: 66b0813833e1536fb028f675e10ceda8254e6ee400d8cfd48359f39982190696
     aprovado_producao: false
-    pendencias: fixar explicitamente o modelo de alinhamento no adaptador e conferir hash dos pesos
+    pendencias: modelo fixado explicitamente no adaptador e no worker; aprovação formal para produção aguarda marco final
   flux_schnell_gguf:
     arquivo: C:/ComfyUI/models/unet/flux1-schnell-Q4_K_S.gguf
     aprovado_producao: false

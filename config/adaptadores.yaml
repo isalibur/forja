@@ -22,6 +22,7 @@ python_environments:
   rembg: D:/INSTALACOES/python/python.exe
 alinhamento:
   modelo_asr: E:/05_PROJETOS/forja/modelos/whisper-large-v3-turbo-ct2
+  modelo_alinhador: jonatasgrosman/wav2vec2-large-xlsr-53-portuguese
 llm:
   structured:
     provedor: openai_compat
@@ -35,4 +36,3 @@ llm:
     provedor: ollama
     base_url: http://127.0.0.1:11434
     modelo: qwen2.5vl:7b
-

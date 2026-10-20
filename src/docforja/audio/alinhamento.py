@@ -12,11 +12,13 @@ class AlinhadorWhisperX:
         self,
         python_path: Path | None = None,
         modelo: str = "base",
+        modelo_alinhador: str | None = None,
         timeout: float = 900.0,
     ) -> None:
         self.python_path = python_path or Path("envs/align/Scripts/python.exe")
         self.worker_path = Path("src/docforja/workers/whisperx_worker.py")
         self.modelo = modelo
+        self.modelo_alinhador = modelo_alinhador
         self.timeout = timeout
 
     def disponivel(self) -> bool:
@@ -31,6 +33,7 @@ class AlinhadorWhisperX:
         idioma: str = "pt",
         device: str | None = None,
         modelo: str | None = None,
+        modelo_alinhador: str | None = None,
         timeout: float | None = None,
     ) -> tuple[Path, Path]:
         if not self.disponivel():
@@ -39,6 +42,7 @@ class AlinhadorWhisperX:
             )
 
         modelo_efetivo = modelo or self.modelo
+        modelo_alinhador_efetivo = modelo_alinhador or self.modelo_alinhador
         cmd = [
             str(self.python_path),
             str(self.worker_path),
@@ -55,6 +59,9 @@ class AlinhadorWhisperX:
         if modelo_efetivo:
             cmd.extend(["--model", modelo_efetivo])
 
+        if modelo_alinhador_efetivo:
+            cmd.extend(["--align-model", modelo_alinhador_efetivo])
+
         if device:
             cmd.extend(["--device", device])
 
@@ -65,23 +72,19 @@ class AlinhadorWhisperX:
                 json.dump(segmentos_info, f, ensure_ascii=False)
             cmd.extend(["--segmentos", str(arquivo_segmentos_temp.resolve())])
 
-        timeout_efetivo = timeout if timeout is not None else self.timeout
+        timeout_efetivo = timeout or self.timeout
         try:
-            res = subprocess.run(
+            result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=timeout_efetivo,
+                check=False,
             )
-            if res.returncode != 0:
-                raise RuntimeError(f"Erro ao executar alinhamento com WhisperX: {res.stderr}")
+            if result.returncode != 0:
+                raise RuntimeError(f"Erro no WhisperX: {result.stderr}")
         finally:
             if arquivo_segmentos_temp and arquivo_segmentos_temp.exists():
                 arquivo_segmentos_temp.unlink()
-
-        if not saida_palavras.exists() or not saida_segmentos.exists():
-            raise FileNotFoundError(
-                "WhisperX executou mas palavras.json ou segmentos.json não foram gerados."
-            )
 
         return saida_palavras, saida_segmentos

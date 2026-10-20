@@ -18,6 +18,7 @@ def processar_alinhamento(
     idioma: str = "pt",
     device: str | None = None,
     model_name: str = "base",
+    align_model_name: str | None = None,
 ) -> None:
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -54,7 +55,10 @@ def processar_alinhamento(
 
     # Alinhamento fonetico com modelo de fonemas por idioma
     try:
-        model_a, metadata = whisperx.load_align_model(language_code=idioma, device=device)
+        kwargs: dict[str, str] = {"language_code": idioma, "device": device}
+        if align_model_name:
+            kwargs["model_name"] = align_model_name
+        model_a, metadata = whisperx.load_align_model(**kwargs)
         aligned = whisperx.align(
             segments, model_a, metadata, audio, device, return_char_alignments=False
         )
@@ -91,6 +95,11 @@ def main() -> None:
     parser.add_argument(
         "--model", default="base", help="Modelo Whisper ASR (ex: base, large-v3)"
     )
+    parser.add_argument(
+        "--align-model",
+        default=None,
+        help="Modelo de alinhamento fonético (ex: jonatasgrosman/wav2vec2)",
+    )
 
     args = parser.parse_args()
     try:
@@ -102,6 +111,7 @@ def main() -> None:
             idioma=args.lang,
             device=args.device,
             model_name=args.model,
+            align_model_name=args.align_model,
         )
         sys.exit(0)
     except Exception as e:

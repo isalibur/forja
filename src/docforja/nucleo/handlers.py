@@ -46,7 +46,9 @@ def _criar_orquestrador() -> OrquestradorNarracao:
     ambientes = settings.python_environments
     kokoro = AdaptadorKokoro(python_path=ambientes.get("kokoro"))
     whisperx = AlinhadorWhisperX(
-        python_path=ambientes.get("whisperx"), modelo=settings.alinhamento.modelo_asr
+        python_path=ambientes.get("whisperx"),
+        modelo=settings.alinhamento.modelo_asr,
+        modelo_alinhador=settings.alinhamento.modelo_alinhador,
     )
     return OrquestradorNarracao(adaptador_tts=kokoro, alinhador=whisperx)
 

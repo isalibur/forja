@@ -28,6 +28,7 @@ class LlmSettings(BaseModel):
 
 class AlignmentSettings(BaseModel):
     modelo_asr: str = "base"
+    modelo_alinhador: str | None = None
 
 
 class AppSettings(BaseModel):

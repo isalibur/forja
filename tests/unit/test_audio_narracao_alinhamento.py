@@ -223,3 +223,15 @@ def test_alinhador_whisperx_passa_modelo_configurado():
 
     alinhador = AlinhadorWhisperX(python_path=Path("python"), modelo="large-v3")
     assert alinhador.modelo == "large-v3"
+
+
+def test_alinhador_whisperx_passa_modelo_alinhador_configurado():
+    from docforja.audio.alinhamento import AlinhadorWhisperX
+
+    alinhador = AlinhadorWhisperX(
+        python_path=Path("python"),
+        modelo="large-v3",
+        modelo_alinhador="jonatasgrosman/wav2vec2-large-xlsr-53-portuguese",
+    )
+    assert alinhador.modelo == "large-v3"
+    assert alinhador.modelo_alinhador == "jonatasgrosman/wav2vec2-large-xlsr-53-portuguese"
