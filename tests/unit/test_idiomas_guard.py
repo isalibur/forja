@@ -9,7 +9,7 @@ from docforja.nucleo.projeto import Projeto
 from docforja.producao.execucao import executar_noop_idioma_extra
 
 
-@pytest.mark.parametrize("etapa_id", ["T1_traducao", "T2_narracao_idiomas"])
+@pytest.mark.parametrize("etapa_id", ["T2_narracao_idiomas"])
 def test_idiomas_extras_nao_sao_marcados_como_concluidos(tmp_path, etapa_id):
     projeto = Projeto.criar(
         "Idiomas pendentes", idiomas_extras=["en", "es"], raiz_projetos=tmp_path

@@ -14,6 +14,7 @@ from docforja.audio.metricas import calcular_wer
 from docforja.audio.narracao import OrquestradorNarracao, ResultadoSegmentoAudio
 from docforja.audio.trilha import resolver_trilha_provisoria
 from docforja.esquemas import Ativo, Bloco, Plano, Shot
+from docforja.idiomas.traducao import executar_traducao_projeto
 from docforja.io import atomic_write_json, atomic_write_text
 from docforja.llm.roteador import RoteadorLLM
 from docforja.midia.resolucao import resolver_ativos_projeto
@@ -836,7 +837,9 @@ def registrar_handlers_disponiveis(
     executor.registrar_handler("R10_biblioteca", executar_r10_biblioteca)
 
     # Suporte a multi-idioma (Marco M7): no-op quando não há idiomas adicionais
-    executor.registrar_handler("T1_traducao", executar_noop_idioma_extra)
+    executor.registrar_handler(
+        "T1_traducao", lambda ctx: executar_traducao_projeto(ctx.projeto)
+    )
     executor.registrar_handler("T2_narracao_idiomas", executar_noop_idioma_extra)
 
     return executor

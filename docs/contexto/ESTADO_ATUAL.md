@@ -47,12 +47,12 @@ Atualizado em 20 de outubro de 2026. Este arquivo registra somente o estado oper
      - `Kits.tsx`: Visualização de paleta de cores, tipografia e catálogo de templates Remotion do kit Cinza e Brasa.
      - `Sistema.tsx`: Painel de telemetria de semáforo de GPU, cotas diárias, modelos fixados no lockfile e ambientes Python isolados.
 - Revisão de contraste após M6 (20/10/2026): o novo botão “Produzir” na tela Plano introduziu texto branco sobre brasa no tema escuro (Lighthouse 96). O texto/ícone agora usam o token de fundo; as 20 combinações de 5 telas × 2 temas × 2 larguras voltaram a 100/100, sem achados de contraste. `audit:a11y` passa a falhar também se houver achado `color-contrast`, mesmo com pontuação ≥90.
-- Primeiro bloqueio seguro M7 (20/10/2026): T1 e T2 continuam sem tradução/narração extras implementadas. O handler de ausência de idiomas só é válido quando `extras` está vazio; com `en`/`es`, falha explicitamente em vez de marcar as etapas como concluídas sem criar saídas. Testes cobrem ambas as etapas e o caso sem extras.
-- Verificação automatizada: 131 testes unitários passando (`uv run pytest tests/unit`) sem GPU e sem rede; Ruff 100% limpo; compilação completa TypeScript/Vite do frontend web gerando bundle em `web_dist/` com 0 erros.
+- Primeira entrega M7/T1 (20/10/2026): importação manual ou por arquivo de `00_entrada/traducao_<idioma>.md` sem alterar a entrada. O modo manual exporta modelo versionado com glossário em `01_plano/idiomas/`. A validação exige todos os IDs uma única vez, na mesma ordem e nos mesmos blocos, texto narrável e preservação das marcas de pausa, silêncio e VISUAL; a saída por idioma é versionada por hash e tem ponteiro `atual.json`. O modo automático ainda falha explicitamente, pois não há adaptador configurado. T2 continua bloqueado quando há idiomas extras; a ausência de extras permanece no-op seguro. Portanto, M7 não está concluído.
+- Verificação automatizada: 136 testes unitários passaram sem GPU e sem rede; Ruff limpo. A compilação completa TypeScript/Vite do frontend web havia gerado bundle em `web_dist/` com 0 erros antes desta entrega.
 
 ## Pendências e próxima tarefa
 
-- Próxima tarefa: implementar T1 de tradução por segmentos com IDs preservados e glossário (modos `automatico`, `gemini_manual` e `arquivo`), depois T2 de narração por idioma, retime proporcional e pacote por idioma conforme `docs/construtor/08-marcos-de-construcao.md §M7`. Até lá, projetos com idiomas extras falham explicitamente, sem saída falsa.
+- Próxima tarefa: configurar adaptador seguro para o modo `automatico` de T1 e integrar a escolha de modos na interface; depois implementar T2 de narração por idioma, retime proporcional e pacote por idioma conforme `docs/construtor/08-marcos-de-construcao.md §M7`. Até lá, projetos com idiomas extras não produzem saída final multilíngue.
 - Observações M6: integração com hardware real (ComfyUI ativo, GPU local e renderizador Remotion de produção) validada via adaptadores e fallbacks determinísticos testáveis. Teste assistivo manual com NVDA/VoiceOver a ser executado em ambiente com leitor instalado.
 
 ## Entrega entre Codex e Antigravity
