@@ -78,7 +78,16 @@ def _criar_orquestrador(
         comercial = True
         if projeto:
             comercial = projeto.obter_opcoes().get("monetizado", True)
-        adaptador = AdaptadorVoiceStudio(comercial_exigido=comercial)
+        adaptador = AdaptadorVoiceStudio(
+            base_url=settings.voicestudio.base_url,
+            engine=settings.voicestudio.engine,
+            engines_comerciais=settings.voicestudio.engines_comerciais,
+            instrucoes=settings.voicestudio.instrucoes,
+            api_key=settings.voicestudio.api_key,
+            timeout_s=settings.voicestudio.timeout_seconds,
+            probe_timeout_s=settings.voicestudio.probe_timeout_seconds,
+            comercial_exigido=comercial,
+        )
     elif motor_nome == "chatterbox":
         adaptador = AdaptadorChatterbox(python_path=settings.resolver_ambiente("chatterbox"))
     else:

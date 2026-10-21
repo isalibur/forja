@@ -92,10 +92,24 @@ MCP: `POST http://127.0.0.1:3900/mcp` (HTTP) ou `python -m backend.mcp_shim` (st
 3. `docforja executar` importa, alinha com WhisperX contra o texto do roteiro e mede o WER; acima de 8% de divergência o sistema adota a transcrição como verdade de tempos e legendas e avisa no plano.
 4. Registre a engine e a voz usadas em `00_entrada/opcoes.yaml` (`motor_tts`, `voz`, `monetizado`); a licença comercial da engine é responsabilidade sua e precisa estar conferida antes de publicar.
 
+**Sintetizar direto pelo app (adaptador `voicestudio`)**
+O app expõe a síntese em `POST {raiz}/v1/audio/speech`, no mesmo formato da OpenAI (`model` = engine instalada, `voice` = perfil de voz, `input` = texto). O adaptador do DocForja fala exatamente esse contrato e normaliza a saída em WAV 24 kHz mono.
+
+```yaml
+# config/adaptadores.yaml
+voicestudio:
+  base_url: http://127.0.0.1:3900
+  engine: omnivoice          # engine instalada no app
+  engines_comerciais: []     # só declare engines cuja licença de saída você conferiu
+  instrucoes: ""             # estilo (ex.: "feminina, sussurro" no OmniVoice)
+```
+- O projeto usa o motor com `motor_tts: voicestudio` e `voz: <perfil>`; a voz aceita o id ou o nome do perfil (`GET /v1/audio/voices` lista os disponíveis).
+- **Trava de licença**: em projeto **monetizado**, a engine precisa estar em `engines_comerciais`. A lista vem vazia de propósito — o inventário do app não libera saída comercial de nenhuma engine, e o motor padrão (OmniVoice) é não comercial. Sem esse registro, a produção é recusada com a mensagem explicando o motivo.
+- `docforja doctor` mostra o estado do serviço e lembra se a engine está registrada; `docforja benchmark` faz um ping em `/v1/models`.
+
 **Limites conhecidos**
-- O **adaptador `voicestudio` de TTS ainda não conecta ao app**: o código espera `POST http://127.0.0.1:8000/v1/synthesize`, enquanto o app atual expõe a porta 3900 com superfície de transcrição (HTTP compatível com OpenAI, WebSocket) e MCP, sem contrato de síntese documentado. Use a "narração pronta" acima; deixar o adaptador utilizável é uma fatia própria.
 - O app é AGPL-3.0 e roda separado do DocForja; o áudio gerado segue a licença da engine usada, que é separada do app.
-- O inventário de licenças do próprio app **não libera saída comercial de nenhuma engine** e o motor padrão (OmniVoice) é não comercial. Em projeto monetizado, só use engines cuja licença comercial você tenha conferido; o verificador de alegações exige a fonte registrada.
+- O inventário de licenças do próprio app **não libera saída comercial de nenhuma engine**. Em projeto monetizado, só use engines cuja licença comercial você tenha conferido e registrado; o verificador de alegações exige a fonte registrada.
 
 ## 8. Bibliotecas iniciais
 - Música: as faixas inseridas pelo usuário podem ser indexadas com sua declaração geral de autorização, sem `license.json` individual. Para faixas obtidas de bibliotecas de terceiros, manter a licença comercial e os créditos exigidos pela fonte.
@@ -116,6 +130,7 @@ OPENTOPOGRAPHY_API_KEY=
 COPERNICUS_USER=
 COPERNICUS_PASSWORD=
 DOCFORJA_LOCAL_TOKEN=
+OMNIVOICE_API_KEY=            # opcional: só se o seu VoiceStudio exigir bearer
 WIKIMEDIA_USER_AGENT=DocForja/0.1 (contato: seu-email)
 ```
 

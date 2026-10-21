@@ -5,12 +5,60 @@ from pathlib import Path
 import pytest
 
 from docforja.audio.adaptadores.base import AdaptadorTTS
+from docforja.audio.adaptadores.voicestudio import AdaptadorVoiceStudio
 from docforja.audio.narracao import OrquestradorNarracao
 from docforja.nucleo.executor import ExecutorPipeline
-from docforja.nucleo.handlers import criar_executor_projeto, registrar_handlers_disponiveis
+from docforja.nucleo.handlers import (
+    _criar_orquestrador,
+    criar_executor_projeto,
+    registrar_handlers_disponiveis,
+)
 from docforja.nucleo.projeto import Projeto
+from docforja.settings import AppSettings, VoiceStudioSettings
 
 ROTEIRO_VALIDO = """## B1 — Abertura\n\n**B1-S01** {calmo}\nA história começa aqui.\n"""
+
+
+def test_orquestrador_voicestudio_usa_a_configuracao_das_settings(monkeypatch) -> None:
+    """O motor VoiceStudio recebe endpoint, engine e registro comercial das settings."""
+    settings = AppSettings(
+        voicestudio=VoiceStudioSettings(
+            base_url="http://127.0.0.1:3999",
+            engine="indextts",
+            engines_comerciais=["indextts"],
+            instrucoes="feminina, sussurro",
+        )
+    )
+    monkeypatch.setattr("docforja.nucleo.handlers.load_settings", lambda: settings)
+
+    orquestrador = _criar_orquestrador("voicestudio")
+
+    assert isinstance(orquestrador.tts, AdaptadorVoiceStudio)
+    assert orquestrador.tts.base_url == "http://127.0.0.1:3999"
+    assert orquestrador.tts.engine == "indextts"
+    assert orquestrador.tts.engines_comerciais == {"indextts"}
+    assert orquestrador.tts.instrucoes == "feminina, sussurro"
+
+
+def test_voicestudio_bloqueia_engine_sem_licenca_comercial_em_projeto_monetizado(
+    tmp_path, monkeypatch
+) -> None:
+    """Em projeto monetizado, a engine precisa estar registrada como comercial."""
+    settings = AppSettings(voicestudio=VoiceStudioSettings(engine="omnivoice"))
+    monkeypatch.setattr("docforja.nucleo.handlers.load_settings", lambda: settings)
+    projeto = Projeto.criar(
+        nome="teste_voicestudio_monetizado",
+        roteiro=ROTEIRO_VALIDO,
+        raiz_projetos=tmp_path,
+        opcoes_adicionais={"monetizado": True},
+    )
+
+    orquestrador = _criar_orquestrador("voicestudio", projeto)
+
+    assert isinstance(orquestrador.tts, AdaptadorVoiceStudio)
+    assert orquestrador.tts.comercial_exigido is True
+    with pytest.raises(PermissionError, match="engines_comerciais"):
+        orquestrador.tts.verificar_licenca_comercial("perfil-de-voz")
 
 
 @pytest.mark.anyio

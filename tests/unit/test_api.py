@@ -8,6 +8,7 @@ from docforja.idiomas.traducao import RoteiroTraduzido, SegmentoTraduzido
 from docforja.io import atomic_write_json
 from docforja.nucleo.banco import BancoProjeto
 from docforja.nucleo.projeto import Projeto
+from docforja.settings import VoiceStudioSettings
 
 
 def test_api_saude():
@@ -22,7 +23,12 @@ def test_api_saude():
 
 def test_api_projetos_fluxo(tmp_path, monkeypatch):
     mock_settings = lambda: type(  # noqa: E731
-        "Settings", (), {"paths": type("Paths", (), {"projects": tmp_path})()}
+        "Settings",
+        (),
+        {
+            "paths": type("Paths", (), {"projects": tmp_path})(),
+            "voicestudio": VoiceStudioSettings(),
+        },
     )()
     monkeypatch.setattr("docforja.api.load_settings", mock_settings)
     monkeypatch.setattr("docforja.nucleo.projeto.load_settings", mock_settings)
@@ -409,6 +415,7 @@ def test_api_producao_e_saida_endpoints(tmp_path, monkeypatch):
                     "modelo_alinhador": "wav2vec2",
                 },
             )(),
+            "voicestudio": VoiceStudioSettings(),
         },
     )()
     monkeypatch.setattr("docforja.api.load_settings", mock_settings)

@@ -33,6 +33,18 @@ class AlignmentSettings(BaseModel):
     modelo_alinhador: str | None = None
 
 
+class VoiceStudioSettings(BaseModel):
+    """Serviço local do VoiceStudio (app AGPL separado, API compatível com OpenAI)."""
+
+    base_url: str = "http://127.0.0.1:3900"
+    engine: str = "omnivoice"
+    engines_comerciais: list[str] = Field(default_factory=list)
+    instrucoes: str = ""
+    api_key: str = ""
+    timeout_seconds: float = 60.0
+    probe_timeout_seconds: float = 3.0
+
+
 class AppSettings(BaseModel):
     minimum_free_disk_gb: int = 200
     paths: PathSettings = Field(default_factory=PathSettings)
@@ -40,6 +52,7 @@ class AppSettings(BaseModel):
     python_environments: dict[str, Path] = Field(default_factory=dict)
     llm: dict[str, LlmSettings] = Field(default_factory=dict)
     alinhamento: AlignmentSettings = Field(default_factory=AlignmentSettings)
+    voicestudio: VoiceStudioSettings = Field(default_factory=VoiceStudioSettings)
 
     def resolver_ambiente(self, nome: str) -> Path | None:
         """Resolve o interpretador do ambiente; caminhos relativos partem da raiz do repositório."""

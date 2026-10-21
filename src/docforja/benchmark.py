@@ -7,6 +7,7 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
+import httpx
 import yaml
 
 from docforja.io import atomic_write_json
@@ -39,6 +40,17 @@ class BenchmarkRunner:
         for item in models.get("imagem", {}).get("candidatos", []):
             results.append(self._availability_result("imagem", item["id"], "ComfyUI"))
         for item in models.get("tts", {}).get("candidatos", []):
+            adaptador = str(item.get("adaptador", ""))
+            if adaptador == "voicestudio":
+                benchmark = item.get("benchmark", {}) or {}
+                results.append(
+                    self._servico_result(
+                        "tts",
+                        item["id"],
+                        str(benchmark.get("base_url", "http://127.0.0.1:3900")),
+                    )
+                )
+                continue
             module = "chatterbox" if "chatterbox" in item["id"] else "kokoro"
             results.append(self._module_result("tts", item["id"], module, module))
         results.append(self._module_result("alinhamento", "whisperx", "whisperx", "whisperx"))
@@ -92,6 +104,27 @@ class BenchmarkRunner:
                 if not available
                 else "dependência disponível; adaptador de medição requer os modelos locais"
             ),
+        )
+
+    def _servico_result(self, category: str, candidate: str, base_url: str) -> BenchmarkResult:
+        """Confere um serviço local opcional (HTTP) e descreve o resultado sem medir modelo."""
+        url = f"{base_url.rstrip('/')}/v1/models"
+        try:
+            resposta = httpx.get(url, timeout=3.0)
+            online = resposta.status_code < 500
+            resumo = f"online | HTTP {resposta.status_code}" if online else (
+                f"respondeu HTTP {resposta.status_code}"
+            )
+        except (httpx.HTTPError, OSError, TimeoutError):
+            online = False
+            resumo = "serviço local indisponível"
+        return BenchmarkResult(
+            id=f"{category}_{candidate}",
+            category=category,
+            candidate=candidate,
+            status=CheckStatus.WARNING if online else CheckStatus.SKIPPED,
+            duration_seconds=0,
+            message=resumo,
         )
 
     def _render_benchmarks(self) -> list[BenchmarkResult]:

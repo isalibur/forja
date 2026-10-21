@@ -23,6 +23,15 @@ python_environments:
 alinhamento:
   modelo_asr: E:/05_PROJETOS/forja/modelos/whisper-large-v3-turbo-ct2
   modelo_alinhador: jonatasgrosman/wav2vec2-large-xlsr-53-portuguese
+voicestudio:
+  base_url: http://127.0.0.1:3900
+  engine: omnivoice
+  # Registre aqui apenas engines cuja licenca de saida comercial voce conferiu.
+  # O inventario do app nao libera nenhuma engine para uso comercial.
+  engines_comerciais: []
+  instrucoes: ""
+  timeout_seconds: 60
+  probe_timeout_seconds: 3
 llm:
   structured:
     provedor: openai_compat

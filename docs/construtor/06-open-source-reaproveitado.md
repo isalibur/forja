@@ -35,13 +35,13 @@
 
 **Licença:** o **app** é AGPL-3.0. O próprio projeto avisa que **pesos de modelos, vozes e as condições de uso do áudio gerado são separados** do app, e o inventário de licenças dele informa que **nenhum modelo está liberado para uso comercial das saídas** até o momento; o OmniVoice (motor padrão) e o NLLB (tradução) aparecem com termos não comerciais.
 
-**API:** a superfície pública documentada é de **transcrição e ditado** — `GET /.well-known/voicestudio-speech` (descoberta de capacidades), `POST /v1/audio/transcriptions` (compatível com OpenAI), WebSocket de transcrição em streaming e MCP (`POST /mcp` ou `python -m backend.mcp_shim`). A **síntese de voz não tem contrato documentado**; por isso o adaptador de TTS do DocForja, que espera `POST /v1/synthesize` em outra porta, ainda não conecta ao app.
+**API:** a superfície pública documentada é de **síntese e transcrição** — `POST /v1/audio/speech` (TTS no formato OpenAI: `model` = engine instalada, `voice` = perfil de voz, `input` = texto), `GET /v1/models`, `GET /v1/audio/voices`, `POST /v1/audio/transcriptions` (compatível com OpenAI), WebSocket de transcrição em streaming e MCP (`POST /mcp` ou `python -m backend.mcp_shim`).
 
 **Decisão:**
 | Uso | Status |
 |---|---|
 | Ferramenta à parte para você **testar vozes, desenhar uma voz, gravar/editar narração** e exportar WAV → entra no DocForja como **narração pronta** | ✔ Recomendado, desde que a engine usada tenha licença comercial conferida por você (receita em `09 §7.1`) |
-| **Adaptador `voicestudio`** (o DocForja chama a API local para sintetizar) | ◐ Implementado no M7 com trava de licença comercial, mas **ainda não utilizável**: a URL e o endpoint precisam casar com a API real do app |
+| **Adaptador `voicestudio`** (o DocForja chama a API local para sintetizar) | ✔ Conectado ao contrato real (`POST /v1/audio/speech`, formato OpenAI), com URL e engine configuráveis e trava de licença comercial; a engine precisa estar registrada em `voicestudio.engines_comerciais` para projeto monetizado |
 | Motor padrão de TTS do DocForja | ✘ Não (licenças das saídas não liberadas; mais uma aplicação grande para manter) |
 | Tradução/dublagem pelo VoiceStudio | ✘ Não (NLLB não comercial) |
 | Transcrição pelo VoiceStudio | ✘ Desnecessário (WhisperX já cobre) |

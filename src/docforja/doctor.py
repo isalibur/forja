@@ -77,6 +77,7 @@ class Doctor:
             self._check_disk(),
         ]
         checks.extend(self._check_service(service) for service in self.settings.services)
+        checks.append(self._check_voicestudio())
         checks.extend(
             [
                 self._check_ollama_models(),
@@ -241,6 +242,31 @@ class Doctor:
                 summary="offline ou inacessível",
                 required=service.required,
             )
+
+    def _check_voicestudio(self) -> CheckResult:
+        """Confere o serviço local do VoiceStudio (opcional) e a engine registrada."""
+        base_url = self.settings.voicestudio.base_url.rstrip("/")
+        url = f"{base_url}/v1/models"
+        try:
+            status_code, _ = self.http_get(url, 3.0)
+            online = status_code < 500
+            resumo = f"online | HTTP {status_code}" if online else f"respondeu HTTP {status_code}"
+        except (httpx.HTTPError, OSError, TimeoutError):
+            online = False
+            resumo = "offline ou inacessível"
+        engines = self.settings.voicestudio.engines_comerciais
+        comercial = (
+            "engine registrada como comercial"
+            if self.settings.voicestudio.engine.lower() in {item.lower() for item in engines}
+            else "engine sem licença comercial registrada (bloqueada em projeto monetizado)"
+        )
+        return CheckResult(
+            id="voicestudio",
+            label="VoiceStudio (opcional)",
+            status=CheckStatus.OK if online else CheckStatus.SKIPPED,
+            summary=f"{resumo} | {comercial}",
+            required=False,
+        )
 
     def _check_ollama_models(self) -> CheckResult:
         service = next((item for item in self.settings.services if item.name == "Ollama"), None)

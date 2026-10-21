@@ -7,6 +7,7 @@ import json
 import wave
 from pathlib import Path
 
+import httpx
 import pytest
 
 from docforja.audio.adaptadores import (
@@ -77,7 +78,9 @@ def test_openai_compat_retry_apos_falha_temporaria(tmp_path: Path, httpx_mock):
 
 def test_voicestudio_bloqueio_licenca_nao_comercial(tmp_path: Path):
     """Garante bloqueio de vozes/engines NC para projetos monetizados (AGENTS.md, Marco M7)."""
-    adaptador_monetizado = AdaptadorVoiceStudio(comercial_exigido=True)
+    adaptador_monetizado = AdaptadorVoiceStudio(
+        comercial_exigido=True, engines_comerciais=["omnivoice"]
+    )
 
     # 1. Bloqueia sufixos explícitos de licença NC
     with pytest.raises(PermissionError, match="não-comercial"):
@@ -87,23 +90,91 @@ def test_voicestudio_bloqueio_licenca_nao_comercial(tmp_path: Path):
     with pytest.raises(PermissionError, match="não-comercial"):
         adaptador_monetizado.gerar("Texto", tmp_path / "saida.wav", voz="f5-tts-nc")
 
-    # 3. Permite quando o projeto explicitamente não for monetizado
+    # 3. Bloqueia a engine sem licença comercial registrada
+    with pytest.raises(PermissionError, match="engines_comerciais"):
+        AdaptadorVoiceStudio(comercial_exigido=True).verificar_licenca_comercial("perfil")
+
+    # 4. Permite quando o projeto explicitamente não for monetizado
     adaptador_nao_monetizado = AdaptadorVoiceStudio(comercial_exigido=False)
     # Não levanta PermissionError na checagem
     adaptador_nao_monetizado.verificar_licenca_comercial("modelo_clonado-nc")
 
 
-def test_voicestudio_sintese_comercial_aprovada(tmp_path: Path, httpx_mock):
-    """Testa geração VoiceStudio com voz aprovada."""
-    base_url = "http://127.0.0.1:8000"
-    endpoint = f"{base_url}/v1/synthesize"
+def test_voicestudio_sintese_usa_endpoint_compativel_com_openai(
+    tmp_path: Path, httpx_mock
+):
+    """A síntese usa POST {raiz}/v1/audio/speech com model, voice e input."""
+    base_url = "http://127.0.0.1:3900"
     wav_bytes = _criar_wav_mock(duracao_s=0.5)
-    httpx_mock.add_response(url=endpoint, method="POST", content=wav_bytes, status_code=200)
+    httpx_mock.add_response(
+        url=f"{base_url}/v1/models", method="GET", json={"data": []}, status_code=200
+    )
+    httpx_mock.add_response(
+        url=f"{base_url}/v1/audio/speech",
+        method="POST",
+        content=wav_bytes,
+        status_code=200,
+    )
 
-    adaptador = AdaptadorVoiceStudio(base_url=base_url, comercial_exigido=True)
+    adaptador = AdaptadorVoiceStudio(
+        base_url=base_url,
+        engine="omnivoice",
+        engines_comerciais=["omnivoice"],
+        comercial_exigido=True,
+    )
     saida = tmp_path / "saida_voicestudio.wav"
     res = adaptador.gerar("Texto narrado", saida_wav=saida, voz="locutor_comercial")
+
     assert res.is_file()
+    requisicao = httpx_mock.get_requests()[-1]
+    corpo = json.loads(requisicao.content.decode("utf-8"))
+    assert requisicao.method == "POST"
+    assert requisicao.url.path == "/v1/audio/speech"
+    assert corpo["model"] == "omnivoice"
+    assert corpo["voice"] == "locutor_comercial"
+    assert corpo["input"] == "Texto narrado"
+    assert corpo["response_format"] == "wav"
+
+
+def test_voicestudio_relata_erro_do_servico_e_servico_fora_do_ar(
+    tmp_path: Path, httpx_mock
+):
+    """Erros do app local viram mensagem legível e serviço ausente é recusado."""
+    base_url = "http://127.0.0.1:3900"
+    httpx_mock.add_response(
+        url=f"{base_url}/v1/models", method="GET", json={"data": []}, status_code=200
+    )
+    httpx_mock.add_response(
+        url=f"{base_url}/v1/audio/speech",
+        method="POST",
+        json={"error": {"message": "engine não instalada", "type": "invalid_request_error"}},
+        status_code=400,
+    )
+    adaptador = AdaptadorVoiceStudio(
+        base_url=base_url, engines_comerciais=["omnivoice"], comercial_exigido=True
+    )
+    with pytest.raises(RuntimeError, match="engine não instalada"):
+        adaptador.gerar("Texto", tmp_path / "saida.wav", voz="perfil")
+
+    httpx_mock.add_exception(
+        httpx.ConnectError("conexão recusada"),
+        url="http://127.0.0.1:59999/v1/models",
+    )
+    fora = AdaptadorVoiceStudio(base_url="http://127.0.0.1:59999")
+    assert fora.disponivel() is False
+
+def test_voicestudio_lista_perfis_de_voz(tmp_path: Path, httpx_mock):
+    """A lista de vozes do app é lida no endpoint próprio."""
+    base_url = "http://127.0.0.1:3900"
+    httpx_mock.add_response(
+        url=f"{base_url}/v1/audio/voices",
+        method="GET",
+        json={"data": [{"voice_id": "v1", "name": "Locutor", "addressable_by_name": True}]},
+        status_code=200,
+    )
+    adaptador = AdaptadorVoiceStudio(base_url=base_url)
+    vozes = adaptador.listar_vozes()
+    assert vozes[0]["voice_id"] == "v1"
 
 
 def test_narracao_pronta_com_divergencia_textual_acima_de_8_pct(tmp_path: Path):

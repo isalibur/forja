@@ -47,6 +47,13 @@ tts:
             language: es
             lang_code: e
             path: E:/05_PROJETOS/forja/modelos/kokoro/ef_dora.pt
+    - id: voicestudio-omnivoice
+      adaptador: voicestudio
+      benchmark:
+        engine: omnivoice
+        base_url: http://127.0.0.1:3900
+        # As vozes sao os perfis de voz instalados no app; veja GET /v1/audio/voices.
+        voices: []
 alinhamento:
   candidatos:
     - id: whisper-large-v3-turbo-local

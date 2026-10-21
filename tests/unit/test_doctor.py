@@ -3,7 +3,7 @@ import pytest
 from docforja.doctor import Doctor, _version_tuple
 from docforja.models import CheckStatus
 from docforja.process import ProcessResult
-from docforja.settings import AppSettings, PathSettings, ServiceSettings
+from docforja.settings import AppSettings, PathSettings, ServiceSettings, VoiceStudioSettings
 
 
 class FakeRunner:
@@ -63,6 +63,35 @@ def test_gpu_parser_never_exposes_environment_secrets(settings, monkeypatch):
     assert gpu.details["vram_mb"] == 12288
     assert "super-secret-token" not in serialized
     assert "combo-secret-name" not in serialized
+
+
+def test_voicestudio_e_reportado_como_opcional(settings, monkeypatch):
+    """O doctor mostra o estado do VoiceStudio e a engine registrada."""
+    monkeypatch.setattr("docforja.doctor.shutil.which", lambda name: f"C:/{name}.exe")
+    monkeypatch.setattr("docforja.doctor.importlib.util.find_spec", lambda name: object())
+    configurado = settings.model_copy(
+        update={
+            "voicestudio": VoiceStudioSettings(
+                engine="indextts", engines_comerciais=["indextts"]
+            )
+        }
+    )
+
+    doctor = Doctor(configurado, runner=FakeRunner(), http_get=fake_http, environ={})
+    report = doctor.run()
+    checagem = next(item for item in report.checks if item.id == "voicestudio")
+
+    assert checagem.required is False
+    assert checagem.status == CheckStatus.OK
+    assert "engine registrada como comercial" in checagem.summary
+
+    sem_registro = configurado.model_copy(
+        update={"voicestudio": VoiceStudioSettings(engine="omnivoice")}
+    )
+    report_sem = Doctor(sem_registro, runner=FakeRunner(), http_get=fake_http, environ={}).run()
+    checagem_sem = next(item for item in report_sem.checks if item.id == "voicestudio")
+
+    assert "sem licença comercial registrada" in checagem_sem.summary
 
 
 def test_ollama_reports_missing_models(settings, monkeypatch):

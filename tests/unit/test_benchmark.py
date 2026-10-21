@@ -50,6 +50,41 @@ def test_benchmark_runs_renders_sequentially_and_writes_report(tmp_path, monkeyp
     assert saved["schema_version"] == 1
 
 
+def test_benchmark_trata_voicestudio_como_servico_local(tmp_path, monkeypatch):
+    config = tmp_path / "config"
+    config.mkdir()
+    (config / "modelos.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "tts": {
+                    "candidatos": [
+                        {
+                            "id": "voicestudio-omnivoice",
+                            "adaptador": "voicestudio",
+                            "benchmark": {"base_url": "http://127.0.0.1:3900"},
+                        }
+                    ]
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("docforja.benchmark.shutil.which", lambda name: None)
+    monkeypatch.setattr("docforja.benchmark.importlib.util.find_spec", lambda name: None)
+
+    class Resposta:
+        status_code = 200
+
+    monkeypatch.setattr("docforja.benchmark.httpx.get", lambda url, timeout: Resposta())
+
+    report = BenchmarkRunner(output_dir=tmp_path / "out", config_dir=config).run()
+    item = next(i for i in report.results if i.candidate == "voicestudio-omnivoice")
+
+    assert item.category == "tts"
+    assert item.status == CheckStatus.WARNING
+    assert "online" in item.message
+
+
 def test_benchmark_recognizes_configured_isolated_environment(tmp_path, monkeypatch):
     config = tmp_path / "config"
     config.mkdir()

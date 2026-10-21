@@ -1677,6 +1677,11 @@ def obter_detalhes_sistema() -> dict[str, Any]:
         "adaptadores": {
             "whisper": settings.alinhamento.modelo_asr,
             "alinhador": settings.alinhamento.modelo_alinhador,
+            "voicestudio": {
+                "base_url": settings.voicestudio.base_url,
+                "engine": settings.voicestudio.engine,
+                "engines_comerciais": settings.voicestudio.engines_comerciais,
+            },
         },
     }
 
