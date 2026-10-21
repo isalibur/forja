@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 import re
+import unicodedata
+
+MOEDAS = {"reais", "real", "dolares", "dólares", "euro", "euros"}
+HOMOFONOS_PT = {"bill": "bio", "bile": "bio"}
+SIMBOLOS_MOEDA = re.compile(r"(?:r\$|us\$|€|£)\s*", flags=re.IGNORECASE)
 
 _UNIDADES_PT = {
     "zero": 0,
@@ -139,23 +144,46 @@ def _normalizar_numeros_pt(tokens: list[str]) -> list[str]:
     idx = 0
     while idx < len(tokens):
         valor, next_idx = _parse_numero_composto_pt(tokens, idx)
-        if valor is not None:
-            normalizados.append(str(valor))
-            idx = next_idx
-        else:
-            normalizados.append(tokens[idx])
+        if valor is None:
+            if tokens[idx] in MOEDAS:
+                idx += 1
+                continue
+            normalizados.append(HOMOFONOS_PT.get(tokens[idx], tokens[idx]))
+            if tokens[idx].isdigit() and idx + 1 < len(tokens) and tokens[idx + 1] == "00":
+                idx += 2
+                continue
             idx += 1
+            continue
+        cursor = next_idx
+        centavos: int | None = None
+        if cursor < len(tokens) and tokens[cursor] in MOEDAS:
+            cursor += 1
+            if cursor + 1 < len(tokens) and tokens[cursor] == "e":
+                candidato, fim = _parse_numero_composto_pt(tokens, cursor + 1)
+                if candidato is not None and 0 < candidato < 100:
+                    centavos = candidato
+                    cursor = fim
+        normalizados.append(str(valor))
+        if centavos is not None:
+            normalizados.append(str(centavos))
+        idx = cursor
     return normalizados
 
 
 def _tokenizar(texto: str) -> list[str]:
-    """Tokeniza texto em palavras minusculas sem pontuacao."""
+    """Tokeniza texto em palavras minusculas sem pontuacao nem acento."""
     tokens = []
-    for t in re.findall(r"\b[\w\-']+\b", texto.lower()):
+    for t in re.findall(r"\b[\w\-']+\b", SIMBOLOS_MOEDA.sub(" ", texto.lower())):
         limpo = t.strip("-'")
         if limpo:
-            tokens.append(limpo)
+            tokens.append(_sem_acento(limpo))
     return tokens
+
+
+def _sem_acento(texto: str) -> str:
+    """Remove a marcação diacrítica: acento é ortografia, não pronúncia."""
+    decomposto = unicodedata.normalize("NFKD", texto)
+    return "".join(caractere for caractere in decomposto if not unicodedata.combining(caractere))
 
 
 def calcular_wer(referencia: str, hipotese: str, idioma: str | None = None) -> float:

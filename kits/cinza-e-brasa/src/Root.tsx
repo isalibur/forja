@@ -434,6 +434,7 @@ export const Root: React.FC = () => {
             "V08",
             "V09",
             "V10",
+            "V11",
           ] as TemplateShort[]
         ).map((variante) => (
           <Composition

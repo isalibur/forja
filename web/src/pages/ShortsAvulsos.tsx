@@ -9,8 +9,24 @@ type PedidoAvulso = {
   formula_id: string;
   origem_roteiro: string;
   roteiro: string | null;
+  roteiro_sugerido?: string | null;
   cta: string | null;
+  produto?: ProdutoAfiliado | null;
   pendencias: string[];
+};
+type ProdutoAfiliado = {
+  nome: string;
+  descricao: string;
+  beneficios: string[];
+  preco: string | null;
+  fonte_preco: string | null;
+  condicao: string | null;
+  link_afiliado: string;
+  imagens: string[];
+  nicho: string | null;
+  plataforma: string;
+  marca: string | null;
+  cta: string;
 };
 type Formula = { nome: string; estrutura: string[]; templates: string[] };
 type AprovacaoRoteiro = { texto: string; revisao: string; status: string };
@@ -61,8 +77,31 @@ type Resultado = {
 
 const t = textos.shortsAvulsos;
 
+const relacaoPermitida = (pedido: PedidoAvulso, documentacao: Documentacao): boolean => {
+  if (pedido.objetivo === "educativo") return documentacao.dados.relacao_comercial === "nenhuma";
+  return Boolean(pedido.produto) && documentacao.dados.relacao_comercial === "afiliado";
+};
+
+const fichaInicial = (pedido: PedidoAvulso): DadosAlegacoes => {
+  if (!pedido.produto) return FICHA_VAZIA;
+  const produto = pedido.produto;
+  return {
+    ...FICHA_VAZIA,
+    fontes: produto.fonte_preco
+      ? [{ alegacao: `Preço informado de ${produto.nome}.`, fonte: produto.fonte_preco }]
+      : FICHA_VAZIA.fontes,
+    fonte_preco: produto.fonte_preco,
+    relacao_comercial: "afiliado",
+    marca: produto.marca,
+    aviso_publicidade: true,
+  };
+};
+
 export const ShortsAvulsos: React.FC = () => {
   const [csvTexto, setCsvTexto] = useState("");
+  const [planilhaAfiliados, setPlanilhaAfiliados] = useState("");
+  const [previaAfiliados, setPreviaAfiliados] = useState<Resultado | null>(null);
+  const [agenda, setAgenda] = useState("");
   const [nome, setNome] = useState("");
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [campanhas, setCampanhas] = useState<Resultado[]>([]);
@@ -177,11 +216,74 @@ export const ShortsAvulsos: React.FC = () => {
     }
   };
 
+  const planejarAfiliados = async (evento: React.FormEvent<HTMLFormElement>) => {
+    evento.preventDefault();
+    setOcupado(true);
+    setErro("");
+    setPreviaAfiliados(null);
+    try {
+      const resposta = await fetch("/api/shorts/afiliados/planilhas/planejar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csv_texto: planilhaAfiliados }),
+      });
+      const corpo = await resposta.json();
+      if (!resposta.ok) throw new Error(corpo.detail || t.erroPadrao);
+      setPreviaAfiliados(corpo as Resultado);
+    } catch (falha) {
+      setErro(falha instanceof Error ? falha.message : t.erroPadrao);
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  const salvarAfiliados = async () => {
+    setOcupado(true);
+    setErro("");
+    try {
+      const resposta = await fetch("/api/shorts/afiliados/campanhas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, csv_texto: planilhaAfiliados }),
+      });
+      const corpo = await resposta.json();
+      if (!resposta.ok) throw new Error(corpo.detail || t.erroPadrao);
+      const campanha = corpo as Resultado;
+      setResultado(campanha);
+      setPreviaAfiliados(null);
+      setCampanhas((anteriores) => [campanha, ...anteriores.filter((item) => item.id !== campanha.id)]);
+    } catch (falha) {
+      setErro(falha instanceof Error ? falha.message : t.erroPadrao);
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  const carregarAgenda = async () => {
+    if (!resultado?.id) return;
+    setOcupado(true);
+    setErro("");
+    try {
+      const resposta = await fetch(`/api/shorts/avulsos/campanhas/${resultado.id}/agenda`);
+      const corpo = await resposta.json();
+      if (!resposta.ok) throw new Error(corpo.detail || t.erroPadrao);
+      setAgenda(String(corpo.agenda_csv ?? ""));
+    } catch (falha) {
+      setErro(falha instanceof Error ? falha.message : t.erroPadrao);
+    } finally {
+      setOcupado(false);
+    }
+  };
+
   const aprovarRoteiro = async (pedido: PedidoAvulso) => {
     if (!resultado?.id || !resultado.hash_conteudo) return;
     const campanhaId = resultado.id;
     const chave = `${campanhaId}:${pedido.id}`;
-    const texto = roteiros[chave] ?? resultado.aprovacoes_roteiro?.[pedido.id]?.texto ?? pedido.roteiro ?? "";
+    const texto = roteiros[chave]
+      ?? resultado.aprovacoes_roteiro?.[pedido.id]?.texto
+      ?? pedido.roteiro
+      ?? pedido.roteiro_sugerido
+      ?? "";
     setOcupado(true);
     setErro("");
     try {
@@ -334,6 +436,56 @@ export const ShortsAvulsos: React.FC = () => {
         </button>
       </form>
       {erro && <p role="alert" className="rounded-btn border border-red-500 p-3 text-sm text-red-500">{erro}</p>}
+      <form className="rounded-card border border-line bg-surf p-5 space-y-4"
+        onSubmit={(evento) => { void planejarAfiliados(evento); }}>
+        <div className="space-y-1">
+          <h2 className="font-semibold text-tx">{t.tituloAfiliados}</h2>
+          <p id="ajuda-planilha" className="text-xs text-mut">{t.ajudaPlanilha}</p>
+        </div>
+        <textarea
+          id="planilha-afiliados"
+          aria-describedby="ajuda-planilha"
+          className="min-h-32 w-full rounded-btn border border-line bg-bg p-3 font-mono text-sm text-tx focus:outline-none focus:ring-2 focus:ring-brasa"
+          placeholder={t.exemploPlanilha}
+          maxLength={262144}
+          required
+          value={planilhaAfiliados}
+          onChange={(evento) => { setPlanilhaAfiliados(evento.target.value); setPreviaAfiliados(null); setErro(""); }}
+        />
+        <button type="submit" disabled={ocupado || !planilhaAfiliados.trim()} className="rounded-btn border border-brasa px-4 py-2 font-semibold text-brasa disabled:opacity-50">
+          {ocupado ? t.planejando : t.revisarPlanilha}
+        </button>
+        {previaAfiliados && (
+          <div className="space-y-3">
+            <p className="text-sm text-mut">{previaAfiliados.pedidos.length} {t.produtosRevistos}</p>
+            <ul className="space-y-2">
+              {previaAfiliados.pedidos.map((pedido) => (
+                <li key={pedido.id} className="rounded-btn border border-line p-3 text-xs text-mut">
+                  <p className="font-semibold text-tx">{pedido.id} · {pedido.tema}</p>
+                  {pedido.produto && (
+                    <>
+                      <p>{pedido.produto.beneficios.join(" · ")}</p>
+                      <p>{pedido.produto.preco ? `${t.preco}: ${pedido.produto.preco}` : t.semPreco}</p>
+                      <p className="break-all">{pedido.produto.link_afiliado}</p>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="text-sm text-tx">{t.nomeCampanha}
+                <input className="ml-2 rounded-btn border border-line bg-bg p-2 text-tx" maxLength={120}
+                  value={nome} onChange={(evento) => setNome(evento.target.value)} />
+              </label>
+              <button type="button" disabled={ocupado || !nome.trim()}
+                onClick={() => { void salvarAfiliados(); }}
+                className="rounded-btn bg-brasa px-4 py-2 font-semibold text-bg disabled:opacity-50">
+                {t.salvar}
+              </button>
+            </div>
+          </div>
+        )}
+      </form>
       {resultado && (
         <div className="space-y-4" aria-live="polite">
           <h2 className="text-lg font-semibold text-tx">{resultado.pedidos.length} {t.resultado}</h2>
@@ -351,6 +503,19 @@ export const ShortsAvulsos: React.FC = () => {
             </div>
           )}
           <p className="text-sm text-mut">Produção avulsa: rascunhos educativos sem relação comercial, sujeitos a revisão final.</p>
+          {resultado.id && resultado.pedidos.some((pedido) => pedido.produto) && (
+            <div className="space-y-2 rounded-btn border border-line p-3">
+              <p className="text-sm font-medium text-tx">{t.tituloAgenda}</p>
+              <p className="text-xs text-mut">{t.ajudaAgenda}</p>
+              <button type="button" onClick={() => { void carregarAgenda(); }} disabled={ocupado}
+                className="rounded-btn border border-brasa px-3 py-2 text-sm font-semibold text-brasa disabled:opacity-50">
+                {t.gerarAgenda}
+              </button>
+              {agenda && (
+                <pre className="max-h-64 overflow-auto rounded-btn border border-line bg-bg p-2 text-xs text-tx">{agenda}</pre>
+              )}
+            </div>
+          )}
           <div className="grid gap-4 md:grid-cols-2">
             {resultado.pedidos.map((pedido) => {
               const formula = resultado.formulas[pedido.formula_id];
@@ -360,7 +525,7 @@ export const ShortsAvulsos: React.FC = () => {
               const documentacao = resultado.documentacoes_alegacoes?.[pedido.id];
               const producao = producoes[chave];
               const metadadosRascunho = metadados[chave];
-              const ficha = fichas[chave] ?? documentacao?.dados ?? FICHA_VAZIA;
+              const ficha = fichas[chave] ?? documentacao?.dados ?? fichaInicial(pedido);
               const escolhidas = midiasEscolhidas[chave] ?? selecao?.midias.map((item) => item.id_global) ?? [];
               return (
                 <article key={pedido.id} className="rounded-card border border-line bg-surf p-5 space-y-3">
@@ -371,6 +536,23 @@ export const ShortsAvulsos: React.FC = () => {
                     </div>
                   </div>
                   <p className="text-sm text-mut">{t.formula}: {formula?.nome ?? pedido.formula_id}</p>
+                  {pedido.produto && (
+                    <div className="space-y-1 rounded-btn border border-line p-3 text-xs text-mut">
+                      <p className="font-semibold uppercase tracking-wide text-mut">{t.tituloProduto}</p>
+                      <p>{pedido.produto.descricao}</p>
+                      <ul className="list-disc pl-4">
+                        {pedido.produto.beneficios.map((beneficio) => (
+                          <li key={beneficio}>{beneficio}</li>
+                        ))}
+                      </ul>
+                      {pedido.produto.preco && (
+                        <p>{t.preco}: {pedido.produto.preco}{pedido.produto.fonte_preco ? ` · ${t.fontePreco}: ${pedido.produto.fonte_preco}` : ""}</p>
+                      )}
+                      <p>{t.plataforma}: {pedido.produto.plataforma}{pedido.produto.marca ? ` · ${pedido.produto.marca}` : ""}</p>
+                      <p className="break-all">{t.linkAfiliado}: {pedido.produto.link_afiliado}</p>
+                      <p>{t.linkNaoQueimado}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-mut">{t.estrutura}</p>
                     <div className="flex flex-wrap items-center gap-1 text-xs text-tx">
@@ -390,10 +572,10 @@ export const ShortsAvulsos: React.FC = () => {
                       </label>
                       <textarea id={`roteiro-${pedido.id}`} maxLength={20000}
                         className="min-h-28 w-full rounded-btn border border-line bg-bg p-3 text-sm text-tx"
-                        value={roteiros[chave] ?? aprovacao?.texto ?? pedido.roteiro ?? ""}
+                        value={roteiros[chave] ?? aprovacao?.texto ?? pedido.roteiro ?? pedido.roteiro_sugerido ?? ""}
                         onChange={(evento) => setRoteiros((anteriores) => ({ ...anteriores, [chave]: evento.target.value }))}
                       />
-                      <button type="button" disabled={ocupado || !(roteiros[chave] ?? aprovacao?.texto ?? pedido.roteiro ?? "").trim()}
+                      <button type="button" disabled={ocupado || !(roteiros[chave] ?? aprovacao?.texto ?? pedido.roteiro ?? pedido.roteiro_sugerido ?? "").trim()}
                         onClick={() => { void aprovarRoteiro(pedido); }}
                         className="rounded-btn border border-brasa px-3 py-2 text-sm font-semibold text-brasa disabled:opacity-50">
                         {aprovacao ? t.aprovarNovaRevisao : t.aprovarRoteiro}
@@ -497,7 +679,7 @@ export const ShortsAvulsos: React.FC = () => {
                           <option value="parceria_paga">{t.parceriaPaga}</option>
                         </select>
                       </label>
-                      {ficha.relacao_comercial === "parceria_paga" && (
+                      {(ficha.relacao_comercial === "parceria_paga" || pedido.produto) && (
                         <input placeholder={t.marca} aria-label={t.marca}
                           className="w-full rounded-btn border border-line bg-bg p-2 text-xs text-tx"
                           value={ficha.marca ?? ""} onChange={(evento) => atualizarFicha(chave, ficha, { marca: evento.target.value || null })} />
@@ -519,7 +701,11 @@ export const ShortsAvulsos: React.FC = () => {
                   {resultado.id && (
                     <div className="space-y-2 rounded-btn border border-line p-3">
                       <p className="text-sm font-medium text-tx">Produzir rascunho vertical</p>
-                      <p className="text-xs text-mut">Somente educativo, sem relação comercial, com CTA no roteiro aprovado exatamente uma vez. Sem música nem publicação automática.</p>
+                      <p className="text-xs text-mut">
+                        {pedido.produto
+                          ? "Short de afiliado: exige aviso de publicidade, marca da loja e fonte do preço na ficha. O link vai só nos metadados e na agenda."
+                          : "Somente educativo, sem relação comercial, com CTA no roteiro aprovado exatamente uma vez. Sem música nem publicação automática."}
+                      </p>
                       <p className="text-xs text-mut">CTA informado no CSV: {pedido.cta || "não informado"}</p>
                       <label className="block text-xs text-tx">Confirmação: digite PRODUZIR
                         <input value={codigos[chave] ?? ""} autoComplete="off"
@@ -527,7 +713,7 @@ export const ShortsAvulsos: React.FC = () => {
                           className="mt-1 block w-full rounded-btn border border-line bg-bg p-2 text-tx" />
                       </label>
                       <button type="button" onClick={() => { void produzirAvulso(pedido); }}
-                        disabled={ocupado || codigos[chave] !== "PRODUZIR" || !aprovacao || !selecao || !documentacao || pedido.objetivo !== "educativo" || documentacao.dados.relacao_comercial !== "nenhuma" || producao?.status === "aguardando" || producao?.status === "executando"}
+                        disabled={ocupado || codigos[chave] !== "PRODUZIR" || !aprovacao || !selecao || !documentacao || !relacaoPermitida(pedido, documentacao) || producao?.status === "aguardando" || producao?.status === "executando"}
                         className="rounded-btn border border-brasa px-3 py-2 text-sm font-semibold text-brasa disabled:opacity-50">
                         Produzir rascunho
                       </button>

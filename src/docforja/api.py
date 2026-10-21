@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import csv
+import io
 import json
 import mimetypes
 import re
@@ -42,13 +44,18 @@ from docforja.nucleo.gpu import semaforo_gpu
 from docforja.nucleo.handlers import criar_executor_projeto
 from docforja.nucleo.projeto import Projeto
 from docforja.settings import load_settings
+from docforja.shorts.afiliados import gerar_agenda_csv
 from docforja.shorts.alegacoes_avulsas import (
     DadosAlegacoes,
     documentacao_vigente,
     obter_documentacao,
     registrar_documentacao,
 )
-from docforja.shorts.avulsos import PASTA_FORMULAS_PADRAO, ler_lote_avulsos_texto
+from docforja.shorts.avulsos import (
+    PASTA_FORMULAS_PADRAO,
+    ler_lote_afiliados,
+    ler_lote_avulsos_texto,
+)
 from docforja.shorts.campanhas import (
     CampanhaAvulsa,
     aprovacoes_da_campanha,
@@ -574,6 +581,79 @@ def criar_campanha_avulsa(payload: SalvarLoteAvulsosPayload) -> dict[str, Any]:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return _resposta_campanha(campanha)
+
+
+@app.post("/api/shorts/afiliados/planilhas/planejar")
+def planejar_planilha_afiliados(payload: PlanejarLoteAvulsosPayload) -> dict[str, Any]:
+    """Mostra os produtos da planilha; não cria campanha nem renderiza."""
+    try:
+        pedidos = ler_lote_afiliados(payload.csv_texto)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    formulas = carregar_formulas(PASTA_FORMULAS_PADRAO)
+    return {
+        "quantidade": len(pedidos),
+        "pedidos": [pedido.model_dump(mode="json") for pedido in pedidos],
+        "formulas": {
+            id_: formulas[id_].model_dump(mode="json")
+            for id_ in sorted({pedido.formula_id for pedido in pedidos})
+        },
+        "status": "aguardando_revisao",
+    }
+
+
+@app.post("/api/shorts/afiliados/campanhas", status_code=201)
+def criar_campanha_afiliada(payload: SalvarLoteAvulsosPayload) -> dict[str, Any]:
+    """Persiste o lote de produtos; aprovação de roteiro, mídia e publicação seguem humanas."""
+    try:
+        pedidos = ler_lote_afiliados(payload.csv_texto)
+        campanha = salvar_campanha(
+            load_settings().paths.projects,
+            payload.nome,
+            pedidos,
+            carregar_formulas(PASTA_FORMULAS_PADRAO),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return _resposta_campanha(campanha)
+
+
+@app.get("/api/shorts/avulsos/campanhas/{campanha_id}/agenda")
+def obter_agenda_campanha(campanha_id: str) -> dict[str, Any]:
+    """Consolida a planilha de publicação dos shorts de afiliado já produzidos."""
+    raiz = load_settings().paths.projects
+    try:
+        campanha = obter_campanha(raiz, campanha_id)
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    linhas: list[dict[str, str]] = []
+    pendentes: list[str] = []
+    for pedido in campanha.pedidos:
+        if pedido.produto is None:
+            continue
+        estado = obter_estado_avulso(raiz, campanha_id, pedido.id)
+        revisao = estado.get("revisao")
+        if estado.get("status") != "concluido" or not isinstance(revisao, str):
+            pendentes.append(pedido.id)
+            continue
+        pasta = (
+            raiz / "_campanhas_avulsas" / campanha_id / "saidas" / pedido.id / "revisoes" / revisao
+        )
+        metadados_path = pasta / "metadados.json"
+        agenda_path = pasta / "agenda.csv"
+        if not metadados_path.is_file() or not agenda_path.is_file():
+            pendentes.append(pedido.id)
+            continue
+        linhas.extend(
+            {chave.lower(): valor for chave, valor in row.items()}
+            for row in csv.DictReader(io.StringIO(agenda_path.read_text(encoding="utf-8")))
+        )
+    return {
+        "campanha_id": campanha_id,
+        "quantidade": len(linhas),
+        "pendentes": pendentes,
+        "agenda_csv": gerar_agenda_csv(linhas),
+    }
 
 
 def _resposta_campanha(campanha: CampanhaAvulsa) -> dict[str, Any]:

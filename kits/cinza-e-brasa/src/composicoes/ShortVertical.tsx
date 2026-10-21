@@ -21,7 +21,8 @@ export type TemplateShort =
   | "V07"
   | "V08"
   | "V09"
-  | "V10";
+  | "V10"
+  | "V11";
 
 export type PropsShortVertical = {
   variante: TemplateShort;
@@ -290,6 +291,26 @@ export const ShortVertical: React.FC<PropsShortVertical> = (props) => {
           ) : (
             <Texto>V10 aguarda prova real fornecida pelo usuário.</Texto>
           )
+        ) : null}
+        {props.variante === "V11" ? (
+          <>
+            <Texto grande>{props.titulo}</Texto>
+            {props.itens.slice(0, 3).map((item, index) => (
+              <div
+                key={`${index}-${item}`}
+                style={{ display: "flex", alignItems: "center", gap: 14 }}
+              >
+                <span style={{ color: tokens.color.ember, fontSize: 54, fontWeight: 800 }}>•</span>
+                <Texto>{item}</Texto>
+              </div>
+            ))}
+            {props.preco ? <Texto cor={tokens.color.ochre}>{props.preco}</Texto> : null}
+            {props.condicao ? <Texto>{props.condicao}</Texto> : null}
+            {props.marca ? <Texto>{props.marca}</Texto> : null}
+            {props.aviso_publicidade ? (
+              <Texto cor={tokens.color.ember}>{props.aviso_publicidade}</Texto>
+            ) : null}
+          </>
         ) : null}
       </div>
       <LegendaPalavra captions={props.legendas} />

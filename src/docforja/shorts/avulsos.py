@@ -9,6 +9,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from docforja.shorts.afiliados import (
+    ProdutoAfiliado,
+    ler_planilha_produtos,
+    roteiro_sugerido,
+)
 from docforja.shorts.formulas import carregar_formulas
 from docforja.shorts.modelos import FormulaShort
 
@@ -37,6 +42,8 @@ class PedidoShortAvulso(BaseModel):
     origem_roteiro: OrigemRoteiro
     roteiro: str | None = None
     cta: str | None = None
+    produto: ProdutoAfiliado | None = None
+    roteiro_sugerido: str | None = None
     pendencias: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
@@ -138,3 +145,41 @@ def ler_lote_avulsos_texto(
     """Valida CSV colado na interface, sem gravar o conteúdo recebido."""
     formulas = carregar_formulas(pasta_formulas)
     return _ler_lote(csv.DictReader(io.StringIO(texto_csv.lstrip("\ufeff"))), formulas)
+
+
+def ler_lote_afiliados(
+    texto_csv: str, pasta_formulas: Path = PASTA_FORMULAS_PADRAO
+) -> list[PedidoShortAvulso]:
+    """Converte a planilha de produtos em um pedido de short de afiliado por linha."""
+    formulas = carregar_formulas(pasta_formulas)
+    formula = formulas.get("produto_afiliado")
+    if formula is None:
+        raise ValueError("A fórmula produto_afiliado não está no catálogo.")
+    produtos = ler_planilha_produtos(texto_csv)
+    pedidos: list[PedidoShortAvulso] = []
+    for indice, produto in enumerate(produtos, start=1):
+        pendencias = [
+            "aprovar roteiro",
+            "aprovar mídias e licenças",
+            "comprovar alegações exigidas pela fórmula",
+        ]
+        if produto.preco:
+            pendencias.append("confirmar a fonte do preço")
+        pedidos.append(
+            PedidoShortAvulso.model_validate(
+                {
+                    "id": f"A{indice:03d}",
+                    "tema": produto.nome,
+                    "objetivo": "vendas",
+                    "duracao_s": produto.duracao_s,
+                    "formula_id": formula.id,
+                    "origem_roteiro": "formula",
+                    "roteiro": None,
+                    "cta": produto.cta,
+                    "produto": produto.model_dump(mode="json"),
+                    "roteiro_sugerido": roteiro_sugerido(produto),
+                    "pendencias": pendencias,
+                }
+            )
+        )
+    return pedidos

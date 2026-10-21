@@ -10,7 +10,19 @@ const CaptionSchema = z.object({
 });
 
 export const SchemaShortVertical = z.object({
-  variante: z.enum(["V01", "V02", "V03", "V04", "V05", "V06", "V07", "V08", "V09", "V10"]),
+  variante: z.enum([
+    "V01",
+    "V02",
+    "V03",
+    "V04",
+    "V05",
+    "V06",
+    "V07",
+    "V08",
+    "V09",
+    "V10",
+    "V11",
+  ]),
   titulo: z.string().default(""),
   subtitulo: z.string().default(""),
   texto: z.string().default(""),

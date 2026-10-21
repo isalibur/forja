@@ -83,6 +83,24 @@ def test_wer_portugues_iguala_apenas_grafias_numericas():
         == 0.0
     )
 
+    # Preços falados: a moeda e os centavos não contam como divergência
+    assert (
+        calcular_wer(
+            "Hoje sai por 149,90 e esse valor vem da loja.",
+            "Hoje sai por cento e quarenta e nove reais e noventa e esse valor vem da loja.",
+            idioma="pt-BR",
+        )
+        == 0.0
+    )
+    assert (
+        calcular_wer(
+            "Hoje sai por R$ 89,00, com o valor registrado na loja.",
+            "Hoje sai por oitenta e nove reais, com o valor registrado na loja.",
+            idioma="pt-BR",
+        )
+        == 0.0
+    )
+
 
 def test_duracoes_pausas_padrao():
     """Valida constantes de tempo das pausas do roteiro."""

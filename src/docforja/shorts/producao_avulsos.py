@@ -6,6 +6,7 @@ import json
 import re
 import shutil
 import tempfile
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,15 @@ from docforja.nucleo.gpu import semaforo_gpu
 from docforja.nucleo.handlers import _criar_orquestrador
 from docforja.planejamento.entidades import SegmentoProcessado
 from docforja.planejamento.previa import KIT_REMOTION
+from docforja.shorts.afiliados import (
+    AVISO_PUBLICIDADE as AVISO_AFILIADO,
+)
+from docforja.shorts.afiliados import (
+    ProdutoAfiliado,
+    gerar_agenda_csv,
+    gerar_textos_plataforma,
+    linha_agenda,
+)
 from docforja.shorts.alegacoes_avulsas import documentacao_vigente, obter_documentacao
 from docforja.shorts.campanhas import obter_aprovacao_roteiro, obter_campanha
 from docforja.shorts.midias_avulsas import (
@@ -47,8 +57,9 @@ from docforja.shorts.verificador import verificar_short
 MODELOS_CONFIG = Path(__file__).resolve().parents[3] / "config" / "modelos.yaml"
 ARTEFATOS = {
     "video.mp4", "capa.jpg", "legendas.srt", "metadados.json",
-    "youtube.md", "instagram.md",
+    "youtube.md", "instagram.md", "agenda.csv",
 }
+AVISO_PUBLICIDADE = AVISO_AFILIADO
 
 
 class PreparacaoAvulsa(BaseModel):
@@ -67,6 +78,8 @@ class PreparacaoAvulsa(BaseModel):
     duracao_alvo_s: int
     ids_imagens: list[str]
     voz: str
+    produto: ProdutoAfiliado | None = None
+    relacao_comercial: str = "nenhuma"
 
 
 def _voz_ptbr() -> str:
@@ -107,9 +120,20 @@ def preparar_producao(
         documentacao, aprovacao.revisao, selecao.revisao
     ):
         raise ValueError("Registre a ficha de alegações para as revisões atuais.")
-    if pedido.objetivo != "educativo" or documentacao.dados.relacao_comercial != "nenhuma":
+    if pedido.objetivo == "educativo":
+        if documentacao.dados.relacao_comercial != "nenhuma":
+            raise ValueError("Avulsos educativos não aceitam relação comercial declarada.")
+    elif pedido.produto is not None and documentacao.dados.relacao_comercial == "afiliado":
+        if not documentacao.dados.aviso_publicidade:
+            raise ValueError("Short de afiliado exige aviso de publicidade na ficha.")
+        if not (documentacao.dados.marca or "").strip():
+            raise ValueError("Short de afiliado exige a marca da loja na ficha.")
+        if pedido.produto.preco and not (documentacao.dados.fonte_preco or "").strip():
+            raise ValueError("O preço exibido exige a fonte do preço na ficha.")
+    else:
         raise ValueError(
-            "Esta primeira produção aceita apenas avulsos educativos sem relação comercial."
+            "Esta produção aceita avulsos educativos sem relação comercial "
+            "e shorts de afiliado com produto, aviso e marca confirmados."
         )
     cta = " ".join((pedido.cta or "").split())
     texto = " ".join(aprovacao.texto.split())
@@ -118,6 +142,7 @@ def preparar_producao(
             "Informe um CTA de até seis palavras que apareça uma vez no roteiro aprovado."
         )
     voz = _voz_ptbr()
+    produto = pedido.produto
     fontes = {
         "campanha": campanha.hash_conteudo,
         "roteiro": aprovacao.revisao,
@@ -126,6 +151,7 @@ def preparar_producao(
         "voz": voz,
         "catalogo_tts": calcular_hash_dados(MODELOS_CONFIG),
         "producao": calcular_hash_dados(Path(__file__)),
+        "produto": produto.model_dump(mode="json") if produto else "",
         "templates": calcular_hash_dados(
             KIT_REMOTION / "src" / "composicoes" / "ShortVertical.tsx"
         ),
@@ -147,6 +173,8 @@ def preparar_producao(
         duracao_alvo_s=pedido.duracao_s,
         ids_imagens=[item.id_global for item in selecao.midias],
         voz=voz,
+        produto=produto,
+        relacao_comercial=documentacao.dados.relacao_comercial,
     )
 
 
@@ -184,11 +212,18 @@ def _gancho(texto: str) -> str:
     return " ".join(texto.split()[:6]).rstrip(".,;:!?—- ")
 
 
+def _data_sugerida() -> str:
+    """Sugere o dia seguinte para a planilha de publicação; o usuário confere a agenda."""
+    return (date.today() + timedelta(days=1)).isoformat()
+
+
 def _criar_cenas(
     preparacao: PreparacaoAvulsa, palavras: list[dict[str, Any]], imagens: list[str], duracao: float
 ) -> list[CenaRenderShort]:
     frames = max(1, round(duracao * FPS))
     hook = _gancho(preparacao.texto)
+    if preparacao.produto is not None:
+        return _cenas_afiliado(preparacao, palavras, imagens, duracao, hook)
     cenas: list[CenaRenderShort] = []
     inicio = 0
     numero = 0
@@ -208,6 +243,88 @@ def _criar_cenas(
         ))
         inicio = fim
         numero += 1
+    return cenas
+
+
+def _cenas_afiliado(
+    preparacao: PreparacaoAvulsa,
+    palavras: list[dict[str, Any]],
+    imagens: list[str],
+    duracao: float,
+    hook: str,
+) -> list[CenaRenderShort]:
+    """Estrutura da fórmula produto_afiliado: gancho, produto em uso, cartão V11 e CTA."""
+    produto = preparacao.produto
+    assert produto is not None
+    duracao_cartao = min(5.6, max(4.0, duracao * 0.18))
+    metade_cartao = duracao_cartao / 2
+    duracao_cta = min(2.5, max(2.0, duracao * 0.08))
+    inicio_cartao = min(max(2.5, duracao * 0.45), max(2.5, duracao - duracao_cartao - duracao_cta))
+    fim_cartao = min(duracao - duracao_cta, inicio_cartao + duracao_cartao)
+    inicio_cta = max(fim_cartao, duracao - duracao_cta)
+    blocos: list[tuple[str, float, float, int, dict[str, Any]]] = [
+        ("V01", 0.0, min(2.0, duracao), 0, {})
+    ]
+    cursor = min(2.0, duracao)
+    indice = 0
+    while cursor < inicio_cartao - 0.01:
+        fim = min(inicio_cartao, cursor + 2.5)
+        blocos.append(("V02", cursor, fim, indice, {}))
+        cursor = fim
+        indice += 1
+    if fim_cartao > inicio_cartao:
+        blocos.append((
+            "V11",
+            inicio_cartao,
+            inicio_cartao + metade_cartao,
+            indice,
+            {"titulo": produto.nome, "itens": list(produto.beneficios[:2])},
+        ))
+        indice += 1
+        blocos.append((
+            "V11",
+            inicio_cartao + metade_cartao,
+            fim_cartao,
+            indice,
+            {
+                "itens": list(produto.beneficios[2:]),
+                "preco": produto.preco or "",
+                "condicao": produto.condicao or "",
+                "marca": produto.marca or "",
+                "aviso_publicidade": AVISO_PUBLICIDADE,
+            },
+        ))
+        indice += 1
+        cursor = fim_cartao
+    while cursor < inicio_cta - 0.01:
+        fim = min(inicio_cta, cursor + 2.5)
+        blocos.append(("V02", cursor, fim, indice, {}))
+        cursor = fim
+        indice += 1
+    if duracao > inicio_cta + 0.01:
+        blocos.append(("V07", inicio_cta, duracao, indice, {"cta": preparacao.cta}))
+    cenas: list[CenaRenderShort] = []
+    for numero, (variante, inicio, fim, indice_imagem, extra) in enumerate(blocos):
+        frame_inicio = max(0, round(inicio * FPS))
+        frame_fim = min(round(duracao * FPS), max(frame_inicio + 1, round(fim * FPS)))
+        props = PropsCenaShort(
+            variante=variante,
+            titulo=hook if variante == "V01" else str(extra.get("titulo", "")),
+            itens=list(extra.get("itens", [])),
+            preco=str(extra.get("preco", "")),
+            condicao=str(extra.get("condicao", "")),
+            marca=str(extra.get("marca", "")),
+            aviso_publicidade=str(extra.get("aviso_publicidade", "")),
+            cta=str(extra.get("cta", "")),
+            imagem=imagens[indice_imagem % len(imagens)],
+            legendas=_captions_remotion(palavras, inicio, fim),
+        )
+        cenas.append(CenaRenderShort(
+            id=f"cena-{numero:03d}",
+            inicio_frame=frame_inicio,
+            duracao_frames=frame_fim - frame_inicio,
+            props=props,
+        ))
     return cenas
 
 
@@ -247,7 +364,14 @@ def produzir_avulso(
                 gerar_timestamps_estimados=False,
             )
         if narracao.wer_medio is None or narracao.wer_medio > 0.02:
-            raise ValueError("A narração divergiu do roteiro; revise antes de renderizar.")
+            divergencia = (
+                f"{narracao.wer_medio * 100:.2f}%"
+                if narracao.wer_medio is not None
+                else "desconhecido"
+            )
+            raise ValueError(
+                f"A narração divergiu do roteiro (WER {divergencia}); revise antes de renderizar."
+            )
         duracao = narracao.duracao_total_s
         palavras = _palavras(narracao.arquivo_palavras_json, {"avulso"}, 0, duracao)
         loudness, _ = _mixar_audio(
@@ -265,6 +389,23 @@ def produzir_avulso(
         atomic_write_text(work / "legendas.srt", _srt(palavras))
         hook = _gancho(preparacao.texto)
         loudness_entregue = _medir_lufs(work / "video.mp4")
+        elementos = [
+            ElementoTelaShort(id="gancho", x=0.08, y=0.18, largura=0.78, altura=0.35),
+            ElementoTelaShort(id="legenda", x=0.08, y=0.67, largura=0.78, altura=0.06),
+        ]
+        textos_tela = [hook]
+        if preparacao.produto is not None:
+            produto = preparacao.produto
+            elementos.append(
+                ElementoTelaShort(id="cartao-produto", x=0.08, y=0.18, largura=0.78, altura=0.40)
+            )
+            elementos.append(
+                ElementoTelaShort(id="cta", x=0.08, y=0.18, largura=0.78, altura=0.40)
+            )
+            textos_tela.extend(
+                [produto.nome, *produto.beneficios, produto.preco or "", produto.condicao or ""]
+            )
+            textos_tela.extend([produto.marca or "", AVISO_PUBLICIDADE, preparacao.cta])
         qa = verificar_short(ShortParaVerificar(
             duracao_s=duracao,
             duracao_alvo_s=float(preparacao.duracao_alvo_s),
@@ -272,12 +413,9 @@ def produzir_avulso(
             inicio_gancho_textual_s=0,
             inicio_gancho_falado_s=float(palavras[0]["start"]),
             mudancas_visuais_s=[c.inicio_frame / FPS for c in cenas[1:]],
-            elementos=[
-                ElementoTelaShort(id="gancho", x=0.08, y=0.18, largura=0.78, altura=0.35),
-                ElementoTelaShort(id="legenda", x=0.08, y=0.67, largura=0.78, altura=0.06),
-            ],
+            elementos=elementos,
             legendas=_intervalos_legenda(palavras),
-            textos_tela=[hook],
+            textos_tela=[texto for texto in textos_tela if texto],
             quantidade_ctas_principais=len(
                 re.findall(re.escape(preparacao.cta), preparacao.texto, re.I)
             ),
@@ -300,6 +438,7 @@ def produzir_avulso(
             "cta": preparacao.cta,
             "duracao_s": duracao,
             "wer": narracao.wer_medio,
+            "relacao_comercial": preparacao.relacao_comercial,
             "qa": qa.model_dump(mode="json"),
             "creditos_imagens": [
                 {"id": item.id_global, "credito": item.credito, "licenca": item.licenca}
@@ -311,18 +450,67 @@ def produzir_avulso(
                 "alegacoes": preparacao.revisao_alegacoes,
             },
         }
+        if preparacao.produto is not None:
+            produto = preparacao.produto
+            metadados["produto"] = {
+                "nome": produto.nome,
+                "beneficios": list(produto.beneficios),
+                "preco": produto.preco,
+                "fonte_preco": produto.fonte_preco,
+                "condicao": produto.condicao,
+                "marca": produto.marca,
+                "nicho": produto.nicho,
+                "plataforma": produto.plataforma,
+                "link_afiliado": produto.link_afiliado,
+                "aviso_publicidade": AVISO_PUBLICIDADE,
+                "link_queimado_no_video": False,
+            }
         atomic_write_json(work / "metadados.json", metadados)
-        titulo = preparacao.tema.strip()[:40]
-        atomic_write_text(
-            work / "youtube.md",
-            f"# {titulo}\n\n{preparacao.texto}\n\n#Shorts #DocForja\n"
-            "\nRASCUNHO — não publicar sem revisão factual, visual, sonora e do QA.\n",
-        )
-        atomic_write_text(
-            work / "instagram.md",
-            f"{preparacao.tema}\n\n{preparacao.texto}\n\n#Reels #DocForja\n"
-            "\nRASCUNHO — não publicar sem revisão factual, visual, sonora e do QA.\n",
-        )
+        if preparacao.produto is not None:
+            produto = preparacao.produto
+            textos = gerar_textos_plataforma(produto, preparacao.cta, hook)
+            linha = linha_agenda(
+                produto,
+                textos["titulo"],
+                textos["youtube"],
+                textos["hashtags"],
+                data=_data_sugerida(),
+                hora="18:00",
+                arquivos={"video": "video.mp4", "capa": "capa.jpg"},
+            )
+        else:
+            titulo = " ".join(preparacao.tema.split())[:40]
+            hashtags = "#Shorts #Reels #DocForja"
+            youtube = (
+                f"# {titulo}\n\n{preparacao.texto}\n\n{hashtags}\n"
+                "\nRASCUNHO — não publicar sem revisão factual, visual, sonora e do QA.\n"
+            )
+            instagram = (
+                f"{preparacao.tema}\n\n{preparacao.texto}\n\n{hashtags}\n"
+                "\nRASCUNHO — não publicar sem revisão factual, visual, sonora e do QA.\n"
+            )
+            textos = {
+                "titulo": titulo,
+                "youtube": youtube,
+                "instagram": instagram,
+                "hashtags": hashtags,
+            }
+            linha = {
+                "plataforma": "ambas",
+                "data": _data_sugerida(),
+                "hora": "18:00",
+                "arquivo_video": "video.mp4",
+                "arquivo_capa": "capa.jpg",
+                "titulo": titulo,
+                "legenda": youtube,
+                "hashtags": hashtags,
+                "link": "",
+                "aviso_publicidade": "",
+                "status": "rascunho",
+            }
+        atomic_write_text(work / "youtube.md", textos["youtube"])
+        atomic_write_text(work / "instagram.md", textos["instagram"])
+        atomic_write_text(work / "agenda.csv", gerar_agenda_csv([linha]))
         atual = preparar_producao(
             raiz_projetos, raiz_global, preparacao.campanha_id, preparacao.pedido_id
         )
