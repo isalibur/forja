@@ -145,26 +145,66 @@ def main() -> int:
         resultados.append(registro)
         print(json.dumps(registro, ensure_ascii=False), flush=True)
 
+    # Vozes clonadas produzidas por outros motores entram na mesma comparação.
+    conhecidos = {voz for voz, _, _ in VOZES}
+    for bruto in sorted((destino / "brutos").glob("*.wav")):
+        if bruto.stem in conhecidos:
+            continue
+        final = destino / "amostras" / bruto.name
+        final.parent.mkdir(parents=True, exist_ok=True)
+        aplicar_cadeia_voz(bruto, final)
+        info = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "json",
+                str(final),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        duracao = 0.0
+        if info.returncode == 0:
+            duracao = round(float(json.loads(info.stdout)["format"]["duration"]), 2)
+        lado = bruto.with_suffix(".json")
+        metadados = json.loads(lado.read_text(encoding="utf-8")) if lado.is_file() else {}
+        registro = {
+            "voz": bruto.stem,
+            "idioma": str(metadados.get("idioma", "p")),
+            "descricao": str(metadados.get("descricao", "voz de outro motor")),
+            "motor": str(metadados.get("motor", "motor externo")),
+            "duracao_s": duracao,
+            "arquivo": final.name,
+        }
+        resultados.append(registro)
+        print(json.dumps(registro, ensure_ascii=False), flush=True)
+
     linhas = [
-        "# Amostras de voz — Kokoro 82M",
+        "# Amostras de voz — Kokoro 82M, OmniVoice e Qwen3-TTS",
         "",
         "Trecho curto em cada voz, com a mesma cadeia de voz da produção "
         "(passa-alta, presença, compressão e redução leve de ruído). "
         "Velocidade natural (1.0), saída em 24 kHz mono.",
         "",
-        "| Arquivo | Voz | Idioma | Duração |",
-        "|---|---|---|---|",
+        "| Arquivo | Voz | Motor | Idioma | Duração |",
+        "|---|---|---|---|---|",
     ]
     for registro in resultados:
         if "erro" in registro:
             linhas.append(
-                f"| — | `{registro['voz']}` | {registro['idioma']} | "
+                f"| — | `{registro['voz']}` | — | {registro['idioma']} | "
                 f"falhou: {registro['erro']} |"
             )
             continue
+        motor = str(registro.get("motor", "Kokoro 82M (hexgrad/Kokoro-82M)"))
         linhas.append(
-            f"| `{registro['arquivo']}` | `{registro['voz']}` | {registro['descricao']} | "
-            f"{registro['duracao_s']} s |"
+            f"| `{registro['arquivo']}` | `{registro['voz']}` | {motor} | "
+            f"{registro['descricao']} | {registro['duracao_s']} s |"
         )
     linhas.extend(
         [
