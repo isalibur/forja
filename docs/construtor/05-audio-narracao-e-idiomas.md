@@ -5,8 +5,8 @@
 | Caminho | Como | Quando usar |
 |---|---|---|
 | **TTS local** (padrão) | Adaptador `chatterbox` (Chatterbox Multilingual, MIT — tem variante pt-BR) ou `kokoro` (Kokoro-82M, Apache-2.0 — vozes pt-BR, inglês, espanhol, francês, italiano e outros) | Produção rápida, sem custo |
-| **Narração pronta** | Você envia um WAV/MP3 por idioma (sua voz, locutor, ou arquivo de outra ferramenta, ex.: VoiceStudio) | Máxima qualidade/identidade |
-| **Adaptador externo** | Qualquer servidor local/remoto compatível (ex.: API local do VoiceStudio; servidor no padrão OpenAI `/v1/audio/speech`; API paga, se você quiser) | Testar outras vozes/engines sem mudar o sistema |
+| **Narração pronta** | Você envia um WAV/MP3 por idioma (sua voz, locutor, ou arquivo de outra ferramenta, ex.: VoiceStudio) — colocar em `00_entrada/narracao_<idioma>.wav`; instalação e uso do VoiceStudio em `09 §7.1` | Máxima qualidade/identidade |
+| **Adaptador externo** | Qualquer servidor local/remoto compatível (servidor no padrão OpenAI `/v1/audio/speech`; API paga, se você quiser) | Testar outras vozes/engines sem mudar o sistema |
 
 **Voz do canal:** o kit guarda, por idioma, o motor, a voz/arquivo de referência e os parâmetros — a mesma voz em todos os vídeos. Clonagem de voz só com autorização escrita do dono da voz (arquivo de consentimento no kit).
 

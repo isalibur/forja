@@ -31,17 +31,17 @@
 
 ## 2. VoiceStudio (`debpalash/VoiceStudio`) — análise
 
-**O que é:** app desktop (Electron, também Docker) para clonagem e design de voz, dublagem, ditado, transcrição e audiolivros, com dezenas de engines de TTS (OmniVoice por padrão; também VoxCPM2, CosyVoice 3, IndexTTS 2.5, Sherpa-ONNX, MOSS-TTS, entre outras), aceleração CUDA (roda na RTX 3060), API local em `127.0.0.1:3900`, servidor MCP para agentes, "receitas" e pastas vigiadas.
+**O que é:** app desktop (Electron — a versão 0.5.3 foi o último Tauri; também há Docker) para clonagem e design de voz, dublagem, ditado, transcrição e audiolivros, com dezenas de engines de TTS (OmniVoice/k2-fsa por padrão; também VoxCPM2, CosyVoice 3, IndexTTS 2.5, Sherpa-ONNX, MOSS-TTS, entre outras), aceleração CUDA (roda na RTX 3060), API local em `127.0.0.1:3900`, servidor MCP para agentes, "receitas" e pastas vigiadas. Instalação: instalador oficial (`irm https://voicestudio.sh/install | iex` no Windows), executável da página de releases, código-fonte (`git clone` + `bun install` + `bun run setup:api` + `bun run dev`) e skill de agente (`npx skills add debpalash/VoiceStudio`) — ver `09 §7.1`.
 
 **Licença:** o **app** é AGPL-3.0. O próprio projeto avisa que **pesos de modelos, vozes e as condições de uso do áudio gerado são separados** do app, e o inventário de licenças dele informa que **nenhum modelo está liberado para uso comercial das saídas** até o momento; o OmniVoice (motor padrão) e o NLLB (tradução) aparecem com termos não comerciais.
 
-**API:** a documentação pública descreve bem a **transcrição** (compatível com OpenAI em `/v1/audio/transcriptions`) e o MCP; a síntese de voz aparece como `/generate` e `/engines`, mas sem contrato documentado com clareza.
+**API:** a superfície pública documentada é de **transcrição e ditado** — `GET /.well-known/voicestudio-speech` (descoberta de capacidades), `POST /v1/audio/transcriptions` (compatível com OpenAI), WebSocket de transcrição em streaming e MCP (`POST /mcp` ou `python -m backend.mcp_shim`). A **síntese de voz não tem contrato documentado**; por isso o adaptador de TTS do DocForja, que espera `POST /v1/synthesize` em outra porta, ainda não conecta ao app.
 
 **Decisão:**
 | Uso | Status |
 |---|---|
-| Ferramenta à parte para você **testar vozes, desenhar uma voz, gravar/editar narração** e exportar WAV → entra no DocForja como **narração pronta** | ✔ Recomendado, desde que a engine usada tenha licença comercial conferida por você |
-| **Adaptador `voicestudio`** (o DocForja chama a API local para sintetizar) | ◐ Implementar no M7, atrás de uma verificação: o projeto monetizado só aceita uma engine marcada como comercial no registro |
+| Ferramenta à parte para você **testar vozes, desenhar uma voz, gravar/editar narração** e exportar WAV → entra no DocForja como **narração pronta** | ✔ Recomendado, desde que a engine usada tenha licença comercial conferida por você (receita em `09 §7.1`) |
+| **Adaptador `voicestudio`** (o DocForja chama a API local para sintetizar) | ◐ Implementado no M7 com trava de licença comercial, mas **ainda não utilizável**: a URL e o endpoint precisam casar com a API real do app |
 | Motor padrão de TTS do DocForja | ✘ Não (licenças das saídas não liberadas; mais uma aplicação grande para manter) |
 | Tradução/dublagem pelo VoiceStudio | ✘ Não (NLLB não comercial) |
 | Transcrição pelo VoiceStudio | ✘ Desnecessário (WhisperX já cobre) |

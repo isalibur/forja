@@ -53,8 +53,49 @@ ollama pull qwen2.5vl:7b
 
 ## 7. Opcionais
 - **Hermes Agent:** instalar pelo README oficial (`NousResearch/hermes-agent`), no WSL2 com `networkingMode=mirrored` em `%UserProfile%\.wslconfig`; provedor = endpoint do 9Router (`http://localhost:20128/v1`); copiar `hermes/skills/docforja/`; Telegram só com o seu chat ID.
-- **VoiceStudio:** instalar o app pelo release oficial, se quiser usá-lo para criar narrações (exportar WAV → "narração pronta") ou, no M7, pelo adaptador — só com engines de licença comercial conferida.
 - **DaVinci Resolve (gratuito):** para abrir o `projeto.otio` e finalizar à mão, se quiser.
+
+### 7.1 VoiceStudio (opcional)
+Ferramenta **separada** (app AGPL-3.0) para desenhar ou clonar voz, dublar, ditar, transcrever e gerar audiolivros. Ela nunca é embutida no DocForja: roda na sua máquina e entrega arquivo — ver `01 §` e `07 §`.
+
+**Instalar (Windows 11 + RTX 3060)**
+```powershell
+# 1) instalador oficial (recomendado); preserva projetos, modelos e ajustes
+irm https://voicestudio.sh/install | iex
+
+# 2) ou o .exe da página de releases (debpalash/VoiceStudio/releases/latest)
+
+# 3) ou a partir do GitHub — exige Git, Node.js 22+, Bun, Rust/Cargo e ferramentas de build
+git clone https://github.com/debpalash/VoiceStudio.git
+cd VoiceStudio
+bun install
+bun run setup:api      # dependências do backend Python antes de abrir o app
+bun run dev
+
+# 4) skill de agente, como as skills do Remotion neste repositório
+npx skills add debpalash/VoiceStudio
+```
+O repositório traz guias por plataforma (`docs/install/windows.md`, `macos.md`, `linux.md`) e `docs/install/docker.md`.
+
+**Aceleração:** NVIDIA (Windows/Linux) → CUDA; Apple Silicon → Metal; sem GPU dedicada → CPU (o setup instala o build pequeno do PyTorch, ~5 GB livres); Windows on ARM → experimental.
+
+**API local e MCP (porta 3900)**
+```powershell
+curl http://127.0.0.1:3900/.well-known/voicestudio-speech          # capacidades do serviço
+curl http://127.0.0.1:3900/v1/audio/transcriptions -F file=@voz.wav  # transcrição (formato OpenAI)
+```
+MCP: `POST http://127.0.0.1:3900/mcp` (HTTP) ou `python -m backend.mcp_shim` (stdio). Variáveis reconhecidas pelo app: `VOICESTUDIO_URL`, `OMNIVOICE_PORT` (3900), `OMNIVOICE_API_KEY`.
+
+**Como usar com o DocForja (caminho suportado)**
+1. No app, crie a voz (clonagem **com autorização do dono da voz** ou desenho) e exporte a narração em WAV.
+2. Copie para `00_entrada/narracao_pt-BR.wav` (aceita `narracao_<idioma>.wav`/`.mp3`, `narracao.wav`/`.mp3` ou o caminho explícito em `opcoes.narracao_pronta`).
+3. `docforja executar` importa, alinha com WhisperX contra o texto do roteiro e mede o WER; acima de 8% de divergência o sistema adota a transcrição como verdade de tempos e legendas e avisa no plano.
+4. Registre a engine e a voz usadas em `00_entrada/opcoes.yaml` (`motor_tts`, `voz`, `monetizado`); a licença comercial da engine é responsabilidade sua e precisa estar conferida antes de publicar.
+
+**Limites conhecidos**
+- O **adaptador `voicestudio` de TTS ainda não conecta ao app**: o código espera `POST http://127.0.0.1:8000/v1/synthesize`, enquanto o app atual expõe a porta 3900 com superfície de transcrição (HTTP compatível com OpenAI, WebSocket) e MCP, sem contrato de síntese documentado. Use a "narração pronta" acima; deixar o adaptador utilizável é uma fatia própria.
+- O app é AGPL-3.0 e roda separado do DocForja; o áudio gerado segue a licença da engine usada, que é separada do app.
+- O inventário de licenças do próprio app **não libera saída comercial de nenhuma engine** e o motor padrão (OmniVoice) é não comercial. Em projeto monetizado, só use engines cuja licença comercial você tenha conferido; o verificador de alegações exige a fonte registrada.
 
 ## 8. Bibliotecas iniciais
 - Música: as faixas inseridas pelo usuário podem ser indexadas com sua declaração geral de autorização, sem `license.json` individual. Para faixas obtidas de bibliotecas de terceiros, manter a licença comercial e os créditos exigidos pela fonte.
