@@ -44,7 +44,7 @@ from docforja.shorts.verificador import verificar_short
 FPS = 30
 MAX_CHARS_LEGENDA = 42
 MAX_CHARS_LINHA_LEGENDA = 21
-GANHO_TRILHA_SHORT = 0.072
+GANHO_TRILHA_SHORT = 0.0648
 
 
 class CaptionRemotion(BaseModel):

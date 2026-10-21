@@ -128,7 +128,7 @@ def test_mix_short_usa_trilha_reduzida_e_registra_volume(tmp_path: Path, monkeyp
         voz, tmp_path / "mix.wav", trilha, tmp_path / "relatorio_mix.json"
     )
 
-    assert "volume=0.072" in comandos[0][comandos[0].index("-filter_complex") + 1]
+    assert "volume=0.0648" in comandos[0][comandos[0].index("-filter_complex") + 1]
     assert lufs == -14.0
     assert mais_presente is None
 
