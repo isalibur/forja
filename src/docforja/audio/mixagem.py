@@ -185,7 +185,7 @@ def mixar_audio(
         lra_lu=medidas_saida["output_lra"],
         ganho_trilha_sob_fala=GANHO_TRILHA_SOB_FALA if usa_trilha else None,
         sidechain_ducking=(
-            "ativo (ganho inicial 0.12 sob fala; threshold 0.02, ratio 8:1, "
+            f"ativo (ganho inicial {GANHO_TRILHA_SOB_FALA} sob fala; threshold 0.02, ratio 8:1, "
             "ataque 50 ms, release 400 ms)" if usa_trilha else "inativo (sem trilha)"
         ),
         hash_mix=calcular_hash_dados(destino),
