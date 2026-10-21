@@ -250,6 +250,45 @@ def test_ds9_informa_quando_mascaramento_da_voz_nao_foi_medido() -> None:
     assert ds9.detalhes == "Mascaramento da voz ainda não foi medido."
 
 
+def test_ds4_aceita_pausa_natural_entre_blocos_e_reprova_lacuna_real() -> None:
+    base = {
+        "duracao_s": 22.625,
+        "duracao_alvo_s": 22.625,
+        "inicio_gancho_visual_s": 0,
+        "inicio_gancho_textual_s": 0,
+        "inicio_gancho_falado_s": 0.0,
+        "mudancas_visuais_s": list(range(3, 22, 3)),
+        "quantidade_ctas_principais": 1,
+        "audio_lufs_integrado": -14.0,
+        "musica_cobre_voz": False,
+    }
+    com_pausa = verificar_short(
+        ShortParaVerificar(
+            **base,
+            legendas=[
+                IntervaloLegendaShort(inicio_s=0, fim_s=1.52, texto="Um rio pode mudar de nome."),
+                IntervaloLegendaShort(inicio_s=1.82, fim_s=22.625, texto="O mesmo curso de água."),
+            ],
+        )
+    )
+    com_lacuna = verificar_short(
+        ShortParaVerificar(
+            **base,
+            legendas=[
+                IntervaloLegendaShort(inicio_s=0, fim_s=1.52, texto="Um rio pode mudar de nome."),
+                IntervaloLegendaShort(inicio_s=4.52, fim_s=22.625, texto="O mesmo curso de água."),
+            ],
+        )
+    )
+
+    ds4_pausa = next(item for item in com_pausa.violacoes if item.regra == "DS4")
+    ds4_lacuna = next(item for item in com_lacuna.violacoes if item.regra == "DS4")
+
+    assert ds4_pausa.aprovada
+    assert not ds4_lacuna.aprovada
+    assert "3.00" in ds4_lacuna.detalhes
+
+
 def test_catalogo_de_formulas_tem_ids_unicos_e_conteudo_afiliado() -> None:
     catalogo = carregar_formulas(Path("global/formulas_shorts"))
 

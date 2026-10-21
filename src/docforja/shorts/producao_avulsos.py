@@ -27,7 +27,6 @@ from docforja.shorts.midias_avulsas import (
 )
 from docforja.shorts.modelos import (
     ElementoTelaShort,
-    IntervaloLegendaShort,
     ShortParaVerificar,
 )
 from docforja.shorts.producao import (
@@ -36,6 +35,8 @@ from docforja.shorts.producao import (
     PropsCenaShort,
     PropsRenderShort,
     _captions_remotion,
+    _intervalos_legenda,
+    _medir_lufs,
     _mixar_audio,
     _palavras,
     _renderizar,
@@ -175,11 +176,19 @@ def obter_artefato(
     return arquivo
 
 
+def _gancho(texto: str) -> str:
+    """Usa a primeira frase completa quando cabe em seis palavras."""
+    primeira = re.split(r"(?<=[.!?…])\s+", texto.strip(), maxsplit=1)[0]
+    if len(primeira.split()) <= 6:
+        return primeira.rstrip(".,;:!?—- ")
+    return " ".join(texto.split()[:6]).rstrip(".,;:!?—- ")
+
+
 def _criar_cenas(
     preparacao: PreparacaoAvulsa, palavras: list[dict[str, Any]], imagens: list[str], duracao: float
 ) -> list[CenaRenderShort]:
     frames = max(1, round(duracao * FPS))
-    hook = " ".join(preparacao.texto.split()[:6]).rstrip(".,;:!?—- ")
+    hook = _gancho(preparacao.texto)
     cenas: list[CenaRenderShort] = []
     inicio = 0
     numero = 0
@@ -254,7 +263,8 @@ def produzir_avulso(
         _renderizar("Short-Derivado", props_path, public, work / "video.mp4")
         _renderizar("Short-Derivado", props_path, public, work / "capa.jpg", still=True)
         atomic_write_text(work / "legendas.srt", _srt(palavras))
-        hook = " ".join(preparacao.texto.split()[:6]).rstrip(".,;:!?—- ")
+        hook = _gancho(preparacao.texto)
+        loudness_entregue = _medir_lufs(work / "video.mp4")
         qa = verificar_short(ShortParaVerificar(
             duracao_s=duracao,
             duracao_alvo_s=float(preparacao.duracao_alvo_s),
@@ -266,15 +276,12 @@ def produzir_avulso(
                 ElementoTelaShort(id="gancho", x=0.08, y=0.18, largura=0.78, altura=0.35),
                 ElementoTelaShort(id="legenda", x=0.08, y=0.67, largura=0.78, altura=0.06),
             ],
-            legendas=[
-                IntervaloLegendaShort(
-                    inicio_s=float(p["start"]), fim_s=float(p["end"]), texto=str(p["text"])
-                )
-                for p in palavras if p["end"] > p["start"]
-            ],
+            legendas=_intervalos_legenda(palavras),
             textos_tela=[hook],
-            quantidade_ctas_principais=1,
-            audio_lufs_integrado=loudness,
+            quantidade_ctas_principais=len(
+                re.findall(re.escape(preparacao.cta), preparacao.texto, re.I)
+            ),
+            audio_lufs_integrado=loudness_entregue if loudness_entregue is not None else loudness,
             musica_cobre_voz=False,
         ))
         selecao = obter_selecao_midias(

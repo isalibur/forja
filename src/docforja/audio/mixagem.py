@@ -10,7 +10,6 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -54,8 +53,20 @@ def _executar_ffmpeg(comando: list[str]) -> str:
     return f"{resultado.stdout}\n{resultado.stderr}"
 
 
-def _extrair_loudnorm(texto: str, campo: str) -> dict[str, Any]:
-    """Extrai o último objeto JSON do filtro loudnorm e valida campos numéricos."""
+CAMPOS_LOUDNORM = (
+    "input_i",
+    "input_tp",
+    "input_lra",
+    "input_thresh",
+    "target_offset",
+    "output_i",
+    "output_tp",
+    "output_lra",
+)
+
+
+def extrair_medidas_loudnorm(texto: str) -> dict[str, float]:
+    """Extrai as medições de entrada e saída do loudnorm presentes na saída do FFmpeg."""
     objetos = re.findall(r'\{\s*"input_i".*?\}', texto, flags=re.DOTALL)
     if not objetos:
         raise ValueError("FFmpeg não retornou as medições JSON do loudnorm.")
@@ -63,22 +74,28 @@ def _extrair_loudnorm(texto: str, campo: str) -> dict[str, Any]:
         dados = json.loads(objetos[-1])
     except json.JSONDecodeError as exc:
         raise ValueError("Medições JSON do loudnorm são inválidas.") from exc
-    campos = ("input_i", "input_tp", "input_lra", "input_thresh", "target_offset")
-    try:
-        medidas = {nome: float(dados[nome]) for nome in campos}
-    except (KeyError, TypeError, ValueError) as exc:
-        raise ValueError(f"Medição {campo} do loudnorm ausente ou não finita.") from exc
-    if not all(math.isfinite(valor) for valor in medidas.values()):
-        raise ValueError(f"Medição {campo} do loudnorm não é finita.")
-    if campo == "saida":
-        saidas = ("output_i", "output_tp", "output_lra")
+    medidas: dict[str, float] = {}
+    for nome in CAMPOS_LOUDNORM:
+        if nome not in dados:
+            continue
         try:
-            medidas.update({nome: float(dados[nome]) for nome in saidas})
-        except (KeyError, TypeError, ValueError) as exc:
-            raise ValueError("Medição final do loudnorm ausente ou não finita.") from exc
-        if not all(math.isfinite(medidas[nome]) for nome in saidas):
-            raise ValueError("Medição final do loudnorm não é finita.")
+            numero = float(dados[nome])
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Medição {nome} do loudnorm ausente ou não finita.") from exc
+        if not math.isfinite(numero):
+            raise ValueError(f"Medição {nome} do loudnorm não é finita.")
+        medidas[nome] = numero
+    if not medidas:
+        raise ValueError("Medições JSON do loudnorm não trazem campos conhecidos.")
     return medidas
+
+
+def exigir_medidas(medidas: dict[str, float], campos: tuple[str, ...]) -> dict[str, float]:
+    """Devolve as medições exigidas e recusa quando alguma está ausente."""
+    faltando = [nome for nome in campos if nome not in medidas]
+    if faltando:
+        raise ValueError(f"Medição do loudnorm ausente: {', '.join(faltando)}.")
+    return {nome: medidas[nome] for nome in campos}
 
 
 def _filtro_mixagem(com_trilha: bool = False) -> str:
@@ -151,7 +168,10 @@ def mixar_audio(
     primeiro_passe.extend([
         "-filter_complex", filtro_base, "-map", "[out]", "-f", "null", "-",
     ])
-    medidas_entrada = _extrair_loudnorm(_executar_ffmpeg(primeiro_passe), "entrada")
+    medidas_entrada = exigir_medidas(
+        extrair_medidas_loudnorm(_executar_ffmpeg(primeiro_passe)),
+        ("input_i", "input_tp", "input_lra", "input_thresh", "target_offset"),
+    )
 
     normalizacao = (
         "loudnorm=I=-14:TP=-1:LRA=11:linear=true:"
@@ -171,7 +191,9 @@ def mixar_audio(
     ])
     try:
         texto_saida = _executar_ffmpeg(comando_saida)
-        medidas_saida = _extrair_loudnorm(texto_saida, "saida")
+        medidas_saida = exigir_medidas(
+            extrair_medidas_loudnorm(texto_saida), ("output_i", "output_tp", "output_lra")
+        )
         if not temporario.is_file() or temporario.stat().st_size == 0:
             raise RuntimeError("FFmpeg não criou o arquivo de mix esperado.")
         os.replace(temporario, destino)

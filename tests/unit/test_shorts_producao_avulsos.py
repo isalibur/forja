@@ -14,6 +14,7 @@ from docforja.api import app
 from docforja.shorts.modelos import ShortParaVerificar
 from docforja.shorts.producao_avulsos import (
     _criar_cenas,
+    _gancho,
     obter_artefato,
     preparar_producao,
     produzir_avulso,
@@ -115,6 +116,15 @@ def test_cta_repetido_no_roteiro_bloqueia_render(
         preparar_producao(projetos, global_, campanha_id, "A001")
 
 
+def test_gancho_usa_primeira_frase_completa_quando_cabe_em_seis_palavras() -> None:
+    assert _gancho("Um rio pode mudar de nome. O mesmo curso nasce pequeno.") == (
+        "Um rio pode mudar de nome"
+    )
+    assert _gancho("Uma frase com mais de seis palavras precisa ser cortada no limite") == (
+        "Uma frase com mais de seis"
+    )
+
+
 def test_cenas_e_ds9_avulso_sem_musica(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -178,9 +188,13 @@ def test_producao_piloto_publica_revisao_ou_usa_cache_sem_rederivar(
         "docforja.shorts.producao_avulsos._criar_orquestrador", lambda _: Narrador()
     )
     monkeypatch.setattr(
+        "docforja.shorts.producao_avulsos._criar_orquestrador", lambda _: Narrador()
+    )
+    monkeypatch.setattr(
         "docforja.shorts.producao_avulsos.semaforo_gpu.adquirir_sync", lambda **_: nullcontext()
     )
     monkeypatch.setattr("docforja.shorts.producao_avulsos._mixar_audio", mixar)
+    monkeypatch.setattr("docforja.shorts.producao_avulsos._medir_lufs", lambda _caminho: -14.0)
     monkeypatch.setattr("docforja.shorts.producao_avulsos._renderizar", renderizar)
 
     primeira = produzir_avulso(projetos, global_, preparo)
@@ -192,3 +206,6 @@ def test_producao_piloto_publica_revisao_ou_usa_cache_sem_rederivar(
     meta = json.loads((saida / "revisoes" / preparo.revisao / "metadados.json").read_text())
     assert meta["publicacao_autorizada"] is False
     assert meta["fontes"]["roteiro"] == preparo.revisao_roteiro
+    ds9 = next(item for item in meta["qa"]["violacoes"] if item["regra"] == "DS9")
+    assert ds9["aprovada"] is True
+    assert "-14.0 LUFS" in ds9["detalhes"]

@@ -67,7 +67,6 @@ def _criar_orquestrador(
     motor_tts: str | None = None, projeto: Projeto | None = None
 ) -> OrquestradorNarracao:
     settings = load_settings()
-    ambientes = settings.python_environments
     motor_nome = (motor_tts or "kokoro").lower()
     adaptador: AdaptadorTTS
 
@@ -81,12 +80,12 @@ def _criar_orquestrador(
             comercial = projeto.obter_opcoes().get("monetizado", True)
         adaptador = AdaptadorVoiceStudio(comercial_exigido=comercial)
     elif motor_nome == "chatterbox":
-        adaptador = AdaptadorChatterbox(python_path=ambientes.get("chatterbox"))
+        adaptador = AdaptadorChatterbox(python_path=settings.resolver_ambiente("chatterbox"))
     else:
-        adaptador = AdaptadorKokoro(python_path=ambientes.get("kokoro"))
+        adaptador = AdaptadorKokoro(python_path=settings.resolver_ambiente("kokoro"))
 
     whisperx = AlinhadorWhisperX(
-        python_path=ambientes.get("whisperx"),
+        python_path=settings.resolver_ambiente("whisperx"),
         modelo=settings.alinhamento.modelo_asr,
         modelo_alinhador=settings.alinhamento.modelo_alinhador,
     )

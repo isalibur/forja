@@ -16,7 +16,9 @@ class AlinhadorWhisperX:
         timeout: float = 900.0,
     ) -> None:
         self.python_path = python_path or Path("envs/align/Scripts/python.exe")
-        self.worker_path = Path("src/docforja/workers/whisperx_worker.py")
+        self.worker_path = (
+            Path(__file__).resolve().parents[1] / "workers" / "whisperx_worker.py"
+        )
         self.modelo = modelo
         self.modelo_alinhador = modelo_alinhador
         self.timeout = timeout

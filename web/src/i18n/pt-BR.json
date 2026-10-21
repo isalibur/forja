@@ -53,6 +53,11 @@
     "roteiroPendente": "Roteiro ainda pendente",
     "semProducao": "Esta prévia não aprova roteiros, mídias ou licenças e não inicia a produção.",
     "erroPadrao": "Não foi possível validar o CSV.",
+    "qaTitulo": "Verificação do rascunho (DS1–DS9)",
+    "qaAprovada": "aprovada",
+    "qaReprovada": "reprovar",
+    "qaDuracao": "Duração",
+    "qaWer": "Erro de leitura da narração (WER)",
     "objetivos": {
       "vendas": "Vendas",
       "promocao_canal": "Promoção do canal",

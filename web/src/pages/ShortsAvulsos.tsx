@@ -30,6 +30,14 @@ type DadosAlegacoes = {
 };
 type Documentacao = { revisao: string; dados: DadosAlegacoes; status: string };
 type ProducaoAvulsa = { status: string; revisao?: string; erro?: string; cache?: boolean };
+type RegraQa = { regra: string; aprovada: boolean; descricao: string; detalhes: string };
+type MetadadosRascunho = {
+  status: string;
+  publicacao_autorizada: boolean;
+  duracao_s: number;
+  wer: number | null;
+  qa: { aprovado: boolean; violacoes: RegraQa[] };
+};
 const FICHA_VAZIA: DadosAlegacoes = {
   fontes: [{ alegacao: "", fonte: "" }], sem_alegacoes_verificaveis: false,
   prova_real: null, fonte_preco: null, condicao_urgencia: null,
@@ -64,6 +72,7 @@ export const ShortsAvulsos: React.FC = () => {
   const [fichas, setFichas] = useState<Record<string, DadosAlegacoes>>({});
   const [codigos, setCodigos] = useState<Record<string, string>>({});
   const [producoes, setProducoes] = useState<Record<string, ProducaoAvulsa>>({});
+  const [metadados, setMetadados] = useState<Record<string, MetadadosRascunho>>({});
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
 
@@ -86,7 +95,15 @@ export const ShortsAvulsos: React.FC = () => {
         void fetch(`/api/shorts/avulsos/campanhas/${campanhaId}/pedidos/${pedido.id}/producao`)
           .then((resposta) => resposta.ok ? resposta.json() as Promise<ProducaoAvulsa> : null)
           .then((estado) => {
-            if (estado) setProducoes((anteriores) => ({ ...anteriores, [`${campanhaId}:${pedido.id}`]: estado }));
+            if (!estado) return;
+            setProducoes((anteriores) => ({ ...anteriores, [`${campanhaId}:${pedido.id}`]: estado }));
+            if (estado.status !== "concluido") return;
+            void fetch(`/api/shorts/avulsos/campanhas/${campanhaId}/pedidos/${pedido.id}/artefatos/metadados.json`)
+              .then((resposta) => resposta.ok ? resposta.json() as Promise<MetadadosRascunho> : null)
+              .then((dados) => {
+                if (dados) setMetadados((anteriores) => ({ ...anteriores, [`${campanhaId}:${pedido.id}`]: dados }));
+              })
+              .catch(() => { /* Os metadados podem ser recarregados abrindo a campanha. */ });
           })
           .catch(() => { /* A produção pode ser consultada novamente ao reabrir. */ });
       });
@@ -342,6 +359,7 @@ export const ShortsAvulsos: React.FC = () => {
               const selecao = resultado.selecoes_midias?.[pedido.id];
               const documentacao = resultado.documentacoes_alegacoes?.[pedido.id];
               const producao = producoes[chave];
+              const metadadosRascunho = metadados[chave];
               const ficha = fichas[chave] ?? documentacao?.dados ?? FICHA_VAZIA;
               const escolhidas = midiasEscolhidas[chave] ?? selecao?.midias.map((item) => item.id_global) ?? [];
               return (
@@ -519,6 +537,24 @@ export const ShortsAvulsos: React.FC = () => {
                           <video controls preload="none" className="mx-auto max-h-[560px] w-auto max-w-full" src={`/api/shorts/avulsos/campanhas/${resultado.id}/pedidos/${pedido.id}/artefatos/video.mp4`} />
                           <a className="text-sm text-brasa underline" href={`/api/shorts/avulsos/campanhas/${resultado.id}/pedidos/${pedido.id}/artefatos/legendas.srt`}>Baixar legendas</a>
                           <p className="text-xs text-mut">Rascunho não autorizado para publicação; confira alegações, imagem, áudio e QA.</p>
+                          {metadadosRascunho && (
+                            <div className="space-y-1 rounded-btn border border-line p-2">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-mut">{t.qaTitulo}</p>
+                              <p className="text-xs text-mut">
+                                {t.qaDuracao}: {metadadosRascunho.duracao_s.toFixed(1)} s · {t.qaWer}:{" "}
+                                {metadadosRascunho.wer === null ? "—" : `${(metadadosRascunho.wer * 100).toFixed(2)}%`}
+                              </p>
+                              <ul className="space-y-1 text-xs">
+                                {metadadosRascunho.qa.violacoes.map((regra) => (
+                                  <li key={regra.regra} className={regra.aprovada ? "text-mut" : "text-brasa"}>
+                                    <span className="font-semibold">{regra.regra}</span>{" "}
+                                    {regra.aprovada ? t.qaAprovada : t.qaReprovada} — {regra.descricao}
+                                    {regra.detalhes ? ` (${regra.detalhes})` : ""}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

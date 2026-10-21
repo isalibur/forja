@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -16,6 +17,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from docforja.audio.mixagem import exigir_medidas, extrair_medidas_loudnorm
 from docforja.esquemas import Ativo, Plano
 from docforja.idiomas.narracao import carregar_traducao_atual, eh_modo_so_legendas
 from docforja.io import atomic_write_json, atomic_write_text
@@ -513,6 +515,17 @@ def _agrupar_palavras(palavras: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return grupos
 
 
+def _intervalos_legenda(palavras: list[dict[str, Any]]) -> list[IntervaloLegendaShort]:
+    """Converte os blocos de legenda efetivamente renderizados em intervalos de verificação."""
+    return [
+        IntervaloLegendaShort(
+            inicio_s=float(bloco["start"]), fim_s=float(bloco["end"]), texto=str(bloco["text"])
+        )
+        for bloco in _agrupar_palavras(palavras)
+        if float(bloco["end"]) > float(bloco["start"])
+    ]
+
+
 def _srt(palavras: list[dict[str, Any]]) -> str:
     def timestamp(segundos: float) -> str:
         total_ms = max(0, round(segundos * 1000))
@@ -586,61 +599,101 @@ def _sidecar_trilha(trilha: Path) -> Path | None:
     return None
 
 
+def _medir_lufs(caminho: Path) -> float | None:
+    """Mede o loudness integrado do arquivo entregue, no mesmo layout do vídeo final."""
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg or not caminho.is_file():
+        return None
+    medicao = _executar(
+        [ffmpeg, "-i", str(caminho), "-af", "ebur128=framelog=quiet", "-f", "null", "-"],
+        cwd=KIT_REMOTION,
+        timeout=900,
+    )
+    medido = re.search(r"\bI:\s*(-?[\d.]+)\s*LUFS", medicao)
+    return float(medido.group(1)) if medido else None
+
+
 def _mixar_audio(
     voz: Path, destino: Path, trilha: Path | None, relatorio_longo: Path
 ) -> tuple[float | None, bool | None]:
+    """Normaliza a mix do short em 48 kHz estéreo e mede o arquivo entregue."""
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
         raise RuntimeError("FFmpeg não está instalado ou não está no PATH.")
     volume_trilha_short = GANHO_TRILHA_SHORT
+    entradas = ["-i", str(voz)]
     if trilha and trilha.is_file():
         if not _licenca_trilha_comercial(trilha):
             raise ValueError(
                 "A trilha não tem ficha comercial vigente; o short não será renderizado."
             )
-        filtro = (
-            f"[1:a]volume={volume_trilha_short}[m];"
-            "[m][0:a]sidechaincompress=threshold=0.02:ratio=8:attack=20:release=350[duck];"
-            "[0:a][duck]amix=inputs=2:duration=first:normalize=0[mix];"
-            "[mix]loudnorm=I=-14:TP=-1:LRA=11:print_format=json[out]"
+        entradas.extend(["-stream_loop", "-1", "-i", str(trilha)])
+        grafo = (
+            "[0:a]aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo[voz];"
+            f"[1:a]volume={volume_trilha_short},"
+            "aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo[musica];"
+            "[musica][voz]sidechaincompress=threshold=0.02:ratio=8:attack=20:release=350[duck];"
+            "[voz][duck]amix=inputs=2:duration=first:normalize=0[mix]"
         )
-        comando = [
-            ffmpeg,
-            "-y",
-            "-i",
-            str(voz),
-            "-stream_loop",
-            "-1",
-            "-i",
-            str(trilha),
-            "-filter_complex",
-            filtro,
-            "-map",
-            "[out]",
-            "-c:a",
-            "pcm_s16le",
-            str(destino),
-        ]
     else:
-        comando = [
-            ffmpeg,
-            "-y",
-            "-i",
-            str(voz),
-            "-af",
-            "loudnorm=I=-14:TP=-1:LRA=11",
-            "-c:a",
-            "pcm_s16le",
-            str(destino),
-        ]
-    _executar(comando, cwd=KIT_REMOTION, timeout=900)
-    medicao = _executar(
-        [ffmpeg, "-i", str(destino), "-af", "ebur128=framelog=quiet", "-f", "null", "-"],
-        cwd=KIT_REMOTION,
-        timeout=900,
+        grafo = "[0:a]aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo[mix]"
+
+    medicao = f"{grafo};[mix]loudnorm=I=-14:TP=-1:LRA=11:print_format=json[out]"
+    primeira_passagem = [
+        ffmpeg,
+        "-hide_banner",
+        "-nostats",
+        *entradas,
+        "-filter_complex",
+        medicao,
+        "-map",
+        "[out]",
+        "-f",
+        "null",
+        "-",
+    ]
+    medidas = exigir_medidas(
+        extrair_medidas_loudnorm(_executar(primeira_passagem, cwd=KIT_REMOTION, timeout=900)),
+        ("input_i", "input_tp", "input_lra", "input_thresh", "target_offset"),
     )
-    medido = re.search(r"\bI:\s*(-?[\d.]+)\s*LUFS", medicao)
-    lufs = float(medido.group(1)) if medido else None
+    normalizacao = (
+        "loudnorm=I=-14:TP=-1:LRA=11:linear=true:"
+        f"measured_I={medidas['input_i']}:"
+        f"measured_TP={medidas['input_tp']}:"
+        f"measured_LRA={medidas['input_lra']}:"
+        f"measured_thresh={medidas['input_thresh']}:"
+        f"offset={medidas['target_offset']}:print_format=json"
+    )
+    saida = f"{grafo};[mix]{normalizacao}[out]"
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    temporario = destino.with_name(f"{destino.stem}.tmp{destino.suffix}")
+    comando = [
+        ffmpeg,
+        "-y",
+        "-hide_banner",
+        "-nostats",
+        *entradas,
+        "-filter_complex",
+        saida,
+        "-map",
+        "[out]",
+        "-ar",
+        "48000",
+        "-ac",
+        "2",
+        "-c:a",
+        "pcm_s16le",
+        str(temporario),
+    ]
+    try:
+        _executar(comando, cwd=KIT_REMOTION, timeout=900)
+        if not temporario.is_file() or temporario.stat().st_size == 0:
+            raise RuntimeError("FFmpeg não criou a mix esperada do short.")
+        os.replace(temporario, destino)
+    finally:
+        temporario.unlink(missing_ok=True)
+
+    lufs = _medir_lufs(destino)
     musica_mais_presente: bool | None = None
     if trilha and trilha.is_file() and relatorio_longo.is_file():
         relatorio = json.loads(relatorio_longo.read_text(encoding="utf-8"))
@@ -1065,11 +1118,7 @@ def produzir_short_derivado(
                     id="cta", x=0.08, y=0.2, largura=0.78, altura=0.4, texto=texto_completo
                 )
             )
-        intervalos = [
-            IntervaloLegendaShort(inicio_s=item["start"], fim_s=item["end"], texto=item["text"])
-            for item in palavras
-            if item["end"] > item["start"]
-        ]
+        intervalos = _intervalos_legenda(palavras)
         verificacao = verificar_short(
             ShortParaVerificar(
                 duracao_s=duracao_total,

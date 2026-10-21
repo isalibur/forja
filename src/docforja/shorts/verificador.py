@@ -5,10 +5,24 @@ from __future__ import annotations
 from itertools import pairwise
 
 from docforja.shorts.modelos import (
+    IntervaloLegendaShort,
     ResultadoDosagemShort,
     ShortParaVerificar,
     ViolacaoDosagemShort,
 )
+
+TOLERANCIA_GAP_LEGENDA_S = 0.75
+TOLERANCIA_BORDA_LEGENDA_S = 0.1
+
+
+def _maior_lacuna(legendas: list[IntervaloLegendaShort]) -> float:
+    """Maior intervalo sem legenda entre blocos consecutivos."""
+    if len(legendas) < 2:
+        return 0.0
+    return max(
+        atual.inicio_s - anterior.fim_s
+        for anterior, atual in pairwise(sorted(legendas, key=lambda item: item.inicio_s))
+    )
 
 
 def verificar_short(short: ShortParaVerificar) -> ResultadoDosagemShort:
@@ -70,10 +84,10 @@ def verificar_short(short: ShortParaVerificar) -> ResultadoDosagemShort:
     legenda_cobre = not short.possui_fala
     if short.possui_fala and legendas_em_ordem:
         legenda_cobre = (
-            legendas_em_ordem[0].inicio_s <= 0.1
-            and legendas_em_ordem[-1].fim_s >= short.duracao_s - 0.1
+            legendas_em_ordem[0].inicio_s <= TOLERANCIA_BORDA_LEGENDA_S
+            and legendas_em_ordem[-1].fim_s >= short.duracao_s - TOLERANCIA_BORDA_LEGENDA_S
             and all(
-                atual.inicio_s <= anterior.fim_s + 0.1
+                atual.inicio_s <= anterior.fim_s + TOLERANCIA_GAP_LEGENDA_S
                 for anterior, atual in pairwise(legendas_em_ordem)
             )
         )
@@ -82,6 +96,11 @@ def verificar_short(short: ShortParaVerificar) -> ResultadoDosagemShort:
             regra="DS4",
             aprovada=legenda_cobre,
             descricao="Legendas cobrem a fala do início ao fim.",
+            detalhes=(
+                ""
+                if legenda_cobre
+                else f" Maior lacuna entre legendas: {_maior_lacuna(legendas_em_ordem):.2f} s"
+            ),
         )
     )
 

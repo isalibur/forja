@@ -9,7 +9,9 @@ from docforja.audio.adaptadores.base import AdaptadorTTS
 class AdaptadorKokoro(AdaptadorTTS):
     def __init__(self, python_path: Path | None = None) -> None:
         self.python_path = python_path or Path("D:/IA/audio_factory/.venv/Scripts/python.exe")
-        self.worker_path = Path("src/docforja/workers/kokoro_worker.py")
+        self.worker_path = (
+            Path(__file__).resolve().parents[2] / "workers" / "kokoro_worker.py"
+        )
 
     def disponivel(self) -> bool:
         return self.python_path.exists() and self.worker_path.exists()

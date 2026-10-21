@@ -122,17 +122,31 @@ def test_mix_short_usa_trilha_reduzida_e_registra_volume(tmp_path: Path, monkeyp
         {"ganho_trilha_sob_fala": 0.12},
     )
     comandos = []
+    medicoes = json.dumps({
+        "input_i": "-22.0",
+        "input_tp": "-4.0",
+        "input_lra": "5.0",
+        "input_thresh": "-32.0",
+        "target_offset": "0.0",
+    })
+
+    def executar(comando, **_kwargs):
+        comandos.append(comando)
+        if not comando[-1].endswith("-"):
+            Path(comando[-1]).write_bytes(b"mix normalizada")
+        return f"{medicoes}\nI: -14.0 LUFS"
+
     monkeypatch.setattr("docforja.shorts.producao.shutil.which", lambda _: "ffmpeg")
-    monkeypatch.setattr(
-        "docforja.shorts.producao._executar",
-        lambda comando, **_kwargs: comandos.append(comando) or "I: -14.0 LUFS",
-    )
+    monkeypatch.setattr("docforja.shorts.producao._executar", executar)
 
     lufs, mais_presente = _mixar_audio(
         voz, tmp_path / "mix.wav", trilha, tmp_path / "relatorio_mix.json"
     )
 
     assert "volume=0.0648" in comandos[0][comandos[0].index("-filter_complex") + 1]
+    assert "measured_I=-22.0" in comandos[1][comandos[1].index("-filter_complex") + 1]
+    assert comandos[1][comandos[1].index("-ar") + 1] == "48000"
+    assert comandos[1][comandos[1].index("-ac") + 1] == "2"
     assert lufs == -14.0
     assert mais_presente is False
 

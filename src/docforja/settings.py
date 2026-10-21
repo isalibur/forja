@@ -5,6 +5,8 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, Field
 
+RAIZ_REPO = Path(__file__).resolve().parents[2]
+
 
 class ServiceSettings(BaseModel):
     name: str
@@ -38,6 +40,15 @@ class AppSettings(BaseModel):
     python_environments: dict[str, Path] = Field(default_factory=dict)
     llm: dict[str, LlmSettings] = Field(default_factory=dict)
     alinhamento: AlignmentSettings = Field(default_factory=AlignmentSettings)
+
+    def resolver_ambiente(self, nome: str) -> Path | None:
+        """Resolve o interpretador do ambiente; caminhos relativos partem da raiz do repositório."""
+        caminho = self.python_environments.get(nome)
+        if caminho is None:
+            return None
+        if caminho.is_absolute():
+            return caminho
+        return RAIZ_REPO / caminho
 
 
 def load_settings(path: Path = Path("config/adaptadores.yaml")) -> AppSettings:
