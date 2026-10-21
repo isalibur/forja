@@ -21,6 +21,9 @@ def test_dicionario_pronuncia():
     assert "Pompéia" in convertido_pt
     assert "Erculano" in convertido_pt
     assert "Mizêno" in convertido_pt
+    assert dicionario.aplicar("Em 79 d.C., Pompeia.", idioma="pt-BR") == (
+        "Em 79 depois de Cristo, Pompéia."
+    )
 
     # Palavras que contem parte de outras palavras nao devem ser afetadas incorretamente
     texto_fronteira = "plínio foi ao porto de miseno"

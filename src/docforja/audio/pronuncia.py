@@ -32,8 +32,8 @@ class DicionarioPronuncia:
 
         resultado = texto
         for palavra_orig, pronuncia in subs.items():
-            # Substitui apenas palavras inteiras respeitando limites de palavra
-            padrao = rf"\b{re.escape(palavra_orig)}\b"
+            # Lookarounds preservam limites de token também para abreviações pontuadas.
+            padrao = rf"(?<!\w){re.escape(palavra_orig)}(?!\w)"
             resultado = re.sub(padrao, pronuncia, resultado)
         return resultado
 
