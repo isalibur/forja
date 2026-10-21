@@ -100,16 +100,17 @@ O app expõe a síntese em `POST {raiz}/v1/audio/speech`, no mesmo formato da Op
 voicestudio:
   base_url: http://127.0.0.1:3900
   engine: omnivoice          # engine instalada no app
-  engines_comerciais: []     # só declare engines cuja licença de saída você conferiu
   instrucoes: ""             # estilo (ex.: "feminina, sussurro" no OmniVoice)
 ```
 - O projeto usa o motor com `motor_tts: voicestudio` e `voz: <perfil>`; a voz aceita o id ou o nome do perfil (`GET /v1/audio/voices` lista os disponíveis).
-- **Trava de licença**: em projeto **monetizado**, a engine precisa estar em `engines_comerciais`. A lista vem vazia de propósito — o inventário do app não libera saída comercial de nenhuma engine, e o motor padrão (OmniVoice) é não comercial. Sem esse registro, a produção é recusada com a mensagem explicando o motivo.
-- `docforja doctor` mostra o estado do serviço e lembra se a engine está registrada; `docforja benchmark` faz um ping em `/v1/models`.
+- **Escolha da voz:** o critério é a qualidade da voz. O app permite desenhar uma voz (sintética, sem identidade de terceiros) ou clonar uma voz **com autorização do dono** — o próprio app tem o registro de posse ("Voice ownership") e o perfil "verified own voice". O kit guarda o consentimento escrito, conforme `05 §1`.
+- **Termos de uso:** a licença do app (AGPL-3.0) cobre o programa e admite uso comercial; os **pesos, as vozes e as condições da saída** têm termos próprios, gerenciados pelo app e exibidos no Model Manager. O DocForja não bloqueia a produção por isso e registra no projeto o motor, a voz e a origem usados.
+- `docforja doctor` mostra o estado do serviço e a engine em uso; `docforja benchmark` faz um ping em `/v1/models`.
 
 **Limites conhecidos**
-- O app é AGPL-3.0 e roda separado do DocForja; o áudio gerado segue a licença da engine usada, que é separada do app.
-- O inventário de licenças do próprio app **não libera saída comercial de nenhuma engine**. Em projeto monetizado, só use engines cuja licença comercial você tenha conferido e registrado; o verificador de alegações exige a fonte registrada.
+- O app é AGPL-3.0 e roda separado do DocForja; usá-lo como ferramenta local não impõe AGPL ao áudio nem aos vídeos gerados.
+- A clonagem de voz de terceiros continua proibida sem autorização do dono da voz.
+- Sem GPU dedicada o app roda em CPU (build pequeno do PyTorch, ~5 GB) e bem mais devagar.
 
 ## 8. Bibliotecas iniciais
 - Música: as faixas inseridas pelo usuário podem ser indexadas com sua declaração geral de autorização, sem `license.json` individual. Para faixas obtidas de bibliotecas de terceiros, manter a licença comercial e os créditos exigidos pela fonte.

@@ -108,8 +108,6 @@ def main() -> int:
         adaptador = AdaptadorVoiceStudio(
             base_url=base,
             engine="omnivoice",
-            engines_comerciais=["omnivoice"],
-            comercial_exigido=True,
         )
         relatorio["disponivel"] = adaptador.disponivel()
         relatorio["vozes"] = adaptador.listar_vozes()
@@ -135,13 +133,13 @@ def main() -> int:
             relatorio["erro_do_servico"] = str(erro)
         Manipulador.falhar_sintese = False
 
-        try:
-            AdaptadorVoiceStudio(
-                base_url=base, engine="omnivoice", comercial_exigido=True
-            ).verificar_licenca_comercial("v1")
-            relatorio["bloqueio_comercial"] = "não foi bloqueado"
-        except PermissionError as erro:
-            relatorio["bloqueio_comercial"] = str(erro)
+        termos = adaptador.termos_de_uso()
+        relatorio["termos_de_uso"] = termos
+
+        httpx_mock_free = AdaptadorVoiceStudio(base_url=base, engine="omnivoice")
+        relatorio["sintese_sem_registro_comercial"] = (
+            httpx_mock_free.disponivel() is True
+        )
 
         fora = AdaptadorVoiceStudio(base_url="http://127.0.0.1:59999")
         relatorio["servico_fora_do_ar"] = fora.disponivel()
@@ -155,7 +153,8 @@ def main() -> int:
         and relatorio.get("audio", {}).get("taxa") == 24000
         and relatorio.get("audio", {}).get("bits") == 2
         and "engine não instalada" in str(relatorio.get("erro_do_servico"))
-        and "engines_comerciais" in str(relatorio.get("bloqueio_comercial"))
+        and relatorio.get("termos_de_uso", {}).get("engine") == "omnivoice"
+        and relatorio.get("sintese_sem_registro_comercial") is True
         and relatorio.get("servico_fora_do_ar") is False
     )
     print(json.dumps(relatorio, ensure_ascii=False, indent=2))

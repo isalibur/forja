@@ -66,15 +66,11 @@ def test_gpu_parser_never_exposes_environment_secrets(settings, monkeypatch):
 
 
 def test_voicestudio_e_reportado_como_opcional(settings, monkeypatch):
-    """O doctor mostra o estado do VoiceStudio e a engine registrada."""
+    """O doctor mostra o estado do VoiceStudio e a engine em uso."""
     monkeypatch.setattr("docforja.doctor.shutil.which", lambda name: f"C:/{name}.exe")
     monkeypatch.setattr("docforja.doctor.importlib.util.find_spec", lambda name: object())
     configurado = settings.model_copy(
-        update={
-            "voicestudio": VoiceStudioSettings(
-                engine="indextts", engines_comerciais=["indextts"]
-            )
-        }
+        update={"voicestudio": VoiceStudioSettings(engine="indextts")}
     )
 
     doctor = Doctor(configurado, runner=FakeRunner(), http_get=fake_http, environ={})
@@ -83,15 +79,7 @@ def test_voicestudio_e_reportado_como_opcional(settings, monkeypatch):
 
     assert checagem.required is False
     assert checagem.status == CheckStatus.OK
-    assert "engine registrada como comercial" in checagem.summary
-
-    sem_registro = configurado.model_copy(
-        update={"voicestudio": VoiceStudioSettings(engine="omnivoice")}
-    )
-    report_sem = Doctor(sem_registro, runner=FakeRunner(), http_get=fake_http, environ={}).run()
-    checagem_sem = next(item for item in report_sem.checks if item.id == "voicestudio")
-
-    assert "sem licença comercial registrada" in checagem_sem.summary
+    assert "engine: indextts" in checagem.summary
 
 
 def test_ollama_reports_missing_models(settings, monkeypatch):

@@ -420,6 +420,7 @@ def produzir_avulso(
             ),
             audio_lufs_integrado=loudness_entregue if loudness_entregue is not None else loudness,
             musica_cobre_voz=False,
+            musica_ausente=True,
         ))
         selecao = obter_selecao_midias(
             raiz_projetos, preparacao.campanha_id, preparacao.pedido_id

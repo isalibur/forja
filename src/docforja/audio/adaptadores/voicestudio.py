@@ -18,30 +18,18 @@ import httpx
 
 from docforja.audio.adaptadores.base import AdaptadorTTS
 
-# Engines e modelos conhecidos no ecossistema de código aberto com licença restritiva (NC)
-ENGINES_NAO_COMERCIAIS = {
-    "f5-tts-nc",
-    "xtts-v2-nc",
-    "chatterbox-nc",
-    "coqui-nc",
-    "cosyvoice-nc",
-    "omnivoice-nc",
-}
-
 CAMINHO_SINTESE = "/v1/audio/speech"
 CAMINHO_MODELOS = "/v1/models"
 CAMINHO_VOZES = "/v1/audio/voices"
 
 
 class AdaptadorVoiceStudio(AdaptadorTTS):
-    """Adaptador para a API local do VoiceStudio, protegido por portão de licença comercial."""
+    """Adaptador para a API local do VoiceStudio, com os termos da engine registrados."""
 
     def __init__(
         self,
         base_url: str = "http://127.0.0.1:3900",
         engine: str = "omnivoice",
-        comercial_exigido: bool = True,
-        engines_comerciais: list[str] | None = None,
         api_key: str = "",
         instrucoes: str = "",
         timeout_s: float = 60.0,
@@ -50,10 +38,6 @@ class AdaptadorVoiceStudio(AdaptadorTTS):
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.engine = engine
-        self.comercial_exigido = comercial_exigido
-        self.engines_comerciais = {
-            item.strip().lower() for item in (engines_comerciais or []) if item.strip()
-        }
         self.api_key = api_key or os.environ.get("OMNIVOICE_API_KEY", "")
         self.instrucoes = instrucoes
         self.timeout_s = timeout_s
@@ -63,33 +47,17 @@ class AdaptadorVoiceStudio(AdaptadorTTS):
     def _cabecalhos(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
 
-    def verificar_licenca_comercial(self, voz_ou_engine: str | None) -> None:
-        """Bloqueia engines ou vozes NC quando o projeto for monetizado (AGENTS.md, Marco M7)."""
-        if not self.comercial_exigido:
-            return
-
-        identificador = (voz_ou_engine or "").strip().lower()
-        if identificador:
-            marcas_nc = ("-nc", "_nc", "non-commercial", "cc-by-nc")
-            if any(marca in identificador for marca in marcas_nc):
-                raise PermissionError(
-                    f"Bloqueio de licença comercial: a voz/engine '{voz_ou_engine}' no VoiceStudio "
-                    "possui licença não-comercial (NC), proibida para produções monetizadas."
-                )
-            if identificador in ENGINES_NAO_COMERCIAIS:
-                raise PermissionError(
-                    f"Bloqueio de licença comercial: a engine '{voz_ou_engine}' no VoiceStudio "
-                    "não possui licença comercial aprovada para produção monetizada (AGENTS.md)."
-                )
-
-        engine = self.engine.strip().lower()
-        if engine and engine not in self.engines_comerciais:
-            raise PermissionError(
-                f"Bloqueio de licença comercial: a engine '{self.engine}' do VoiceStudio não está "
-                "registrada como comercial em 'voicestudio.engines_comerciais'. O inventário do "
-                "app não libera saída comercial de nenhuma engine; registre aqui apenas as "
-                "engines cuja licença de saída você conferiu."
-            )
+    def termos_de_uso(self) -> dict[str, str]:
+        """Registra a engine e a voz escolhidas; os termos vêm do app e do projeto."""
+        return {
+            "motor": "voicestudio",
+            "engine": self.engine,
+            "servidor": self.base_url,
+            "origem_dos_pesos": (
+                "baixados pelo app a partir do catálogo dele; os termos de uso do modelo e "
+                "da saída são do upstream, não do DocForja"
+            ),
+        }
 
     def disponivel(self) -> bool:
         """Confere se o serviço local do VoiceStudio responde."""
@@ -146,9 +114,6 @@ class AdaptadorVoiceStudio(AdaptadorTTS):
         velocidade: float = 1.0,
     ) -> Path:
         """Sintetiza áudio via VoiceStudio e padroniza para WAV 24 kHz mono."""
-        # 1. Checagem obrigatória de licença comercial
-        self.verificar_licenca_comercial(voz)
-
         if not self.disponivel():
             raise RuntimeError(
                 f"O VoiceStudio não respondeu em {self.base_url}. Abra o app e tente de novo."

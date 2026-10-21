@@ -89,6 +89,7 @@ class ShortParaVerificar(ModeloShort):
     audio_lufs_integrado: float | None = None
     musica_mais_presente_que_longo: bool | None = None
     musica_cobre_voz: bool | None = None
+    musica_ausente: bool = False
 
 
 class ViolacaoDosagemShort(ModeloShort):

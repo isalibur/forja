@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -47,6 +48,7 @@ FPS = 30
 MAX_CHARS_LEGENDA = 42
 MAX_CHARS_LINHA_LEGENDA = 21
 GANHO_TRILHA_SHORT = 0.0648
+VERSAO_LAYOUT_PONTE = "cta-revelado-v2"
 
 
 class CaptionRemotion(BaseModel):
@@ -116,6 +118,39 @@ class ResultadoProducaoShort(BaseModel):
     qa_aprovado: bool
     falhas_qa: list[str] = Field(default_factory=list)
     cache: bool = False
+
+
+def _cenas_ponte(
+    palavras: list[dict[str, Any]],
+    inicio_s: float,
+    duracao_s: float,
+    titulo: str,
+    cta: str,
+) -> list[CenaRenderShort]:
+    """Revela um único CTA após o cartão inicial, com cortes visuais em até 2,5 s."""
+    if duracao_s <= 0:
+        return []
+    partes = max(1, math.ceil(duracao_s / 2.5))
+    cenas: list[CenaRenderShort] = []
+    for indice in range(partes):
+        inicio = inicio_s + duracao_s * indice / partes
+        fim = inicio_s + duracao_s * (indice + 1) / partes
+        inicio_frame = round(inicio * FPS)
+        fim_frame = round(fim * FPS)
+        cenas.append(
+            CenaRenderShort(
+                id="cta" if indice == partes - 1 else f"cta-intro-{indice + 1}",
+                inicio_frame=inicio_frame,
+                duracao_frames=max(1, fim_frame - inicio_frame),
+                props=PropsCenaShort(
+                    variante="V07",
+                    titulo=titulo,
+                    cta=cta if indice == partes - 1 else "",
+                    legendas=_captions_remotion(palavras, inicio, fim),
+                ),
+            )
+        )
+    return cenas
 
 
 def _executar(comando: list[str], *, cwd: Path, timeout: int = 3600) -> str:
@@ -539,8 +574,7 @@ def _srt(palavras: list[dict[str, Any]]) -> str:
     for idx, item in enumerate(grupos, 1):
         linhas = textwrap.wrap(str(item["text"]), width=42, break_long_words=False)
         entradas.append(
-            f"{idx}\n{timestamp(item['start'])} --> {timestamp(item['end'])}\n"
-            + "\n".join(linhas)
+            f"{idx}\n{timestamp(item['start'])} --> {timestamp(item['end'])}\n" + "\n".join(linhas)
         )
     return "\n\n".join(entradas) + "\n"
 
@@ -574,17 +608,13 @@ def _resolver_trilha_short(projeto: Projeto) -> Path | None:
             return candidata
 
     opcoes_audio = projeto.obter_opcoes().get("audio", {})
-    trilha_configurada = (
-        opcoes_audio.get("trilha") if isinstance(opcoes_audio, dict) else None
-    )
+    trilha_configurada = opcoes_audio.get("trilha") if isinstance(opcoes_audio, dict) else None
     if not trilha_configurada:
         return None
 
     from docforja.global_assets.resolucao import buscar_trilha_global, obter_pasta_global
 
-    resultado = buscar_trilha_global(
-        str(trilha_configurada), pasta_global=obter_pasta_global()
-    )
+    resultado = buscar_trilha_global(str(trilha_configurada), pasta_global=obter_pasta_global())
     return resultado[0] if resultado else None
 
 
@@ -701,9 +731,7 @@ def _mixar_audio(
         if isinstance(ganho_longo, (int, float)) and not isinstance(ganho_longo, bool):
             musica_mais_presente = volume_trilha_short > float(ganho_longo)
         else:
-            volume_longo = re.search(
-                r"(0[.,]\d+)", str(relatorio.get("sidechain_ducking", ""))
-            )
+            volume_longo = re.search(r"(0[.,]\d+)", str(relatorio.get("sidechain_ducking", "")))
             if volume_longo:
                 volume_referencia = float(volume_longo.group(1).replace(",", "."))
                 musica_mais_presente = volume_trilha_short > volume_referencia
@@ -885,6 +913,7 @@ def produzir_short_derivado(
                 "ganho_trilha": GANHO_TRILHA_SHORT,
                 "incluir_ponte": incluir_ponte,
             },
+            "layout_ponte": VERSAO_LAYOUT_PONTE,
         }
     )
     ordenados = pontuar_candidatos_do_plano(plano, segmentos_principal, limite=5)
@@ -999,6 +1028,7 @@ def produzir_short_derivado(
         else:
             shutil.copy2(trim, concat)
         voz_mix = public / "audio.wav"
+        sem_musica = trilha is None or not trilha.is_file()
         loudness, musica_mais_presente = _mixar_audio(
             concat,
             voz_mix,
@@ -1079,23 +1109,10 @@ def produzir_short_derivado(
                 a = duracao_base + duracao_ponte * idx / len(palavras_ponte)
                 b = duracao_base + duracao_ponte * (idx + 1) / len(palavras_ponte)
                 palavras.append({"text": palavra, "start": a, "end": b})
-        bridge_captions = (
-            _captions_remotion(palavras, duracao_base, duracao_total) if incluir_ponte else []
-        )
         texto_completo, texto_assista = _rotulos_cta(idioma)
         if incluir_ponte:
-            cenas.append(
-                CenaRenderShort(
-                    id="cta",
-                    inicio_frame=round(duracao_base * FPS),
-                    duracao_frames=max(1, round(duracao_ponte * FPS)),
-                    props=PropsCenaShort(
-                        variante="V07",
-                        titulo=texto_completo,
-                        cta=texto_assista,
-                        legendas=bridge_captions,
-                    ),
-                )
+            cenas.extend(
+                _cenas_ponte(palavras, duracao_base, duracao_ponte, texto_completo, texto_assista)
             )
         duracao_frames = max(1, round(duracao_total * FPS))
         props = PropsRenderShort(duracao_frames=duracao_frames, audio="audio.wav", cenas=cenas)
@@ -1138,8 +1155,10 @@ def produzir_short_derivado(
                 video_longo_id=projeto.slug,
                 audio_lufs_integrado=loudness,
                 musica_mais_presente_que_longo=musica_mais_presente,
-                # O ducking está ativo, mas ainda não há medição objetiva de mascaramento.
-                musica_cobre_voz=None,
+                # Sem trilha não há música que cubra a voz; com trilha a medição
+                # objetiva de mascaramento ainda não existe e DS9 fica pendente.
+                musica_cobre_voz=False if sem_musica else None,
+                musica_ausente=sem_musica,
             )
         )
         ativos_metadados: dict[str, Any] = {}
@@ -1152,9 +1171,7 @@ def produzir_short_derivado(
                 "descricao": ativo.descricao,
                 "licenca": ficha.model_dump(mode="json") if ficha else ativo.licenca,
             }
-        opcoes_metadados = _metadados(
-            projeto, candidato, ponte if incluir_ponte else "", idioma
-        )
+        opcoes_metadados = _metadados(projeto, candidato, ponte if incluir_ponte else "", idioma)
         metadados_dir = work / "metadados"
         metadados_dir.mkdir()
         atomic_write_json(

@@ -25,6 +25,7 @@ from docforja.shorts.modelos import (
 from docforja.shorts.producao import (
     _agrupar_palavras,
     _captions_remotion,
+    _cenas_ponte,
     _metadados,
     _mixar_audio,
     _resolver_trilha_short,
@@ -81,6 +82,36 @@ def test_trecho_com_cta_final_nao_duplica_chamada_para_video_completo() -> None:
     assert not _trecho_ja_tem_cta_video("Eles preservaram as cartas e chamaram especialistas.")
 
 
+def test_ponte_longa_revela_um_cta_com_mudanca_visual_em_ate_tres_segundos() -> None:
+    inicio = 26.625
+    duracao = 3.15
+    palavras = [
+        {
+            "text": palavra,
+            "start": inicio + indice * duracao / 6,
+            "end": inicio + (indice + 1) * duracao / 6,
+        }
+        for indice, palavra in enumerate(["O", "resto", "da", "história", "está", "aqui"])
+    ]
+
+    cenas = _cenas_ponte(palavras, inicio, duracao, "VÍDEO COMPLETO", "ASSISTA")
+
+    assert len(cenas) == 2
+    assert [cena.props.cta for cena in cenas] == ["", "ASSISTA"]
+    assert [cena.id for cena in cenas] == ["cta-intro-1", "cta"]
+    assert cenas[0].inicio_frame + cenas[0].duracao_frames == cenas[1].inicio_frame
+    assert cenas[1].inicio_frame + cenas[1].duracao_frames == round((inicio + duracao) * 30)
+    assert all(cena.duracao_frames <= 90 for cena in cenas)
+    assert all(cena.props.legendas for cena in cenas)
+
+
+def test_ponte_curta_mantem_um_unico_cartao_cta() -> None:
+    cenas = _cenas_ponte([], 20.0, 2.0, "VÍDEO COMPLETO", "ASSISTA")
+
+    assert len(cenas) == 1
+    assert cenas[0].props.cta == "ASSISTA"
+
+
 def test_short_nao_adiciona_trilha_provisoria_sem_escolha_explicita(tmp_path: Path) -> None:
     projeto = Projeto.criar(nome="Sem trilha", roteiro="Roteiro", raiz_projetos=tmp_path)
 
@@ -122,13 +153,15 @@ def test_mix_short_usa_trilha_reduzida_e_registra_volume(tmp_path: Path, monkeyp
         {"ganho_trilha_sob_fala": 0.12},
     )
     comandos = []
-    medicoes = json.dumps({
-        "input_i": "-22.0",
-        "input_tp": "-4.0",
-        "input_lra": "5.0",
-        "input_thresh": "-32.0",
-        "target_offset": "0.0",
-    })
+    medicoes = json.dumps(
+        {
+            "input_i": "-22.0",
+            "input_tp": "-4.0",
+            "input_lra": "5.0",
+            "input_thresh": "-32.0",
+            "target_offset": "0.0",
+        }
+    )
 
     def executar(comando, **_kwargs):
         comandos.append(comando)

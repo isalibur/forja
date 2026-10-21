@@ -244,7 +244,7 @@ class Doctor:
             )
 
     def _check_voicestudio(self) -> CheckResult:
-        """Confere o serviço local do VoiceStudio (opcional) e a engine registrada."""
+        """Confere o serviço local do VoiceStudio (opcional) e a engine em uso."""
         base_url = self.settings.voicestudio.base_url.rstrip("/")
         url = f"{base_url}/v1/models"
         try:
@@ -254,17 +254,11 @@ class Doctor:
         except (httpx.HTTPError, OSError, TimeoutError):
             online = False
             resumo = "offline ou inacessível"
-        engines = self.settings.voicestudio.engines_comerciais
-        comercial = (
-            "engine registrada como comercial"
-            if self.settings.voicestudio.engine.lower() in {item.lower() for item in engines}
-            else "engine sem licença comercial registrada (bloqueada em projeto monetizado)"
-        )
         return CheckResult(
             id="voicestudio",
             label="VoiceStudio (opcional)",
             status=CheckStatus.OK if online else CheckStatus.SKIPPED,
-            summary=f"{resumo} | {comercial}",
+            summary=f"{resumo} | engine: {self.settings.voicestudio.engine}",
             required=False,
         )
 

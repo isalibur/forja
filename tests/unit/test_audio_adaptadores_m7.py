@@ -76,28 +76,16 @@ def test_openai_compat_retry_apos_falha_temporaria(tmp_path: Path, httpx_mock):
     assert len(httpx_mock.get_requests()) == 2
 
 
-def test_voicestudio_bloqueio_licenca_nao_comercial(tmp_path: Path):
-    """Garante bloqueio de vozes/engines NC para projetos monetizados (AGENTS.md, Marco M7)."""
-    adaptador_monetizado = AdaptadorVoiceStudio(
-        comercial_exigido=True, engines_comerciais=["omnivoice"]
-    )
+def test_voicestudio_registra_origem_da_voz_sem_bloquear(tmp_path: Path):
+    """A voz do canal é escolhida pela qualidade; o adaptador registra a origem."""
+    adaptador = AdaptadorVoiceStudio(engine="omnivoice", base_url="http://127.0.0.1:3900")
 
-    # 1. Bloqueia sufixos explícitos de licença NC
-    with pytest.raises(PermissionError, match="não-comercial"):
-        adaptador_monetizado.gerar("Texto", tmp_path / "saida.wav", voz="modelo_clonado-nc")
+    termos = adaptador.termos_de_uso()
 
-    # 2. Bloqueia engines não comerciais conhecidas
-    with pytest.raises(PermissionError, match="não-comercial"):
-        adaptador_monetizado.gerar("Texto", tmp_path / "saida.wav", voz="f5-tts-nc")
-
-    # 3. Bloqueia a engine sem licença comercial registrada
-    with pytest.raises(PermissionError, match="engines_comerciais"):
-        AdaptadorVoiceStudio(comercial_exigido=True).verificar_licenca_comercial("perfil")
-
-    # 4. Permite quando o projeto explicitamente não for monetizado
-    adaptador_nao_monetizado = AdaptadorVoiceStudio(comercial_exigido=False)
-    # Não levanta PermissionError na checagem
-    adaptador_nao_monetizado.verificar_licenca_comercial("modelo_clonado-nc")
+    assert termos["motor"] == "voicestudio"
+    assert termos["engine"] == "omnivoice"
+    assert termos["servidor"] == "http://127.0.0.1:3900"
+    assert "termos de uso" in termos["origem_dos_pesos"]
 
 
 def test_voicestudio_sintese_usa_endpoint_compativel_com_openai(
@@ -116,14 +104,9 @@ def test_voicestudio_sintese_usa_endpoint_compativel_com_openai(
         status_code=200,
     )
 
-    adaptador = AdaptadorVoiceStudio(
-        base_url=base_url,
-        engine="omnivoice",
-        engines_comerciais=["omnivoice"],
-        comercial_exigido=True,
-    )
+    adaptador = AdaptadorVoiceStudio(base_url=base_url, engine="omnivoice")
     saida = tmp_path / "saida_voicestudio.wav"
-    res = adaptador.gerar("Texto narrado", saida_wav=saida, voz="locutor_comercial")
+    res = adaptador.gerar("Texto narrado", saida_wav=saida, voz="locutor")
 
     assert res.is_file()
     requisicao = httpx_mock.get_requests()[-1]
@@ -131,7 +114,7 @@ def test_voicestudio_sintese_usa_endpoint_compativel_com_openai(
     assert requisicao.method == "POST"
     assert requisicao.url.path == "/v1/audio/speech"
     assert corpo["model"] == "omnivoice"
-    assert corpo["voice"] == "locutor_comercial"
+    assert corpo["voice"] == "locutor"
     assert corpo["input"] == "Texto narrado"
     assert corpo["response_format"] == "wav"
 
@@ -150,9 +133,7 @@ def test_voicestudio_relata_erro_do_servico_e_servico_fora_do_ar(
         json={"error": {"message": "engine não instalada", "type": "invalid_request_error"}},
         status_code=400,
     )
-    adaptador = AdaptadorVoiceStudio(
-        base_url=base_url, engines_comerciais=["omnivoice"], comercial_exigido=True
-    )
+    adaptador = AdaptadorVoiceStudio(base_url=base_url)
     with pytest.raises(RuntimeError, match="engine não instalada"):
         adaptador.gerar("Texto", tmp_path / "saida.wav", voz="perfil")
 

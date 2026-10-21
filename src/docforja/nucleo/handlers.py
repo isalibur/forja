@@ -75,18 +75,13 @@ def _criar_orquestrador(
         base_url = llm_st.base_url if llm_st else "http://127.0.0.1:20128/v1"
         adaptador = AdaptadorOpenAITTS(base_url=base_url)
     elif motor_nome == "voicestudio":
-        comercial = True
-        if projeto:
-            comercial = projeto.obter_opcoes().get("monetizado", True)
         adaptador = AdaptadorVoiceStudio(
             base_url=settings.voicestudio.base_url,
             engine=settings.voicestudio.engine,
-            engines_comerciais=settings.voicestudio.engines_comerciais,
             instrucoes=settings.voicestudio.instrucoes,
             api_key=settings.voicestudio.api_key,
             timeout_s=settings.voicestudio.timeout_seconds,
             probe_timeout_s=settings.voicestudio.probe_timeout_seconds,
-            comercial_exigido=comercial,
         )
     elif motor_nome == "chatterbox":
         adaptador = AdaptadorChatterbox(python_path=settings.resolver_ambiente("chatterbox"))

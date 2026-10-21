@@ -40,11 +40,13 @@
 **Decisão:**
 | Uso | Status |
 |---|---|
-| Ferramenta à parte para você **testar vozes, desenhar uma voz, gravar/editar narração** e exportar WAV → entra no DocForja como **narração pronta** | ✔ Recomendado, desde que a engine usada tenha licença comercial conferida por você (receita em `09 §7.1`) |
-| **Adaptador `voicestudio`** (o DocForja chama a API local para sintetizar) | ✔ Conectado ao contrato real (`POST /v1/audio/speech`, formato OpenAI), com URL e engine configuráveis e trava de licença comercial; a engine precisa estar registrada em `voicestudio.engines_comerciais` para projeto monetizado |
-| Motor padrão de TTS do DocForja | ✘ Não (licenças das saídas não liberadas; mais uma aplicação grande para manter) |
+| Ferramenta à parte para você **testar vozes, desenhar uma voz, clonar a sua, gravar/editar narração** e exportar WAV → entra no DocForja como **narração pronta** | ✔ Recomendado (receita em `09 §7.1`) |
+| **Adaptador `voicestudio`** (o DocForja chama a API local para sintetizar) | ✔ Conectado ao contrato real (`POST /v1/audio/speech`, formato OpenAI), com URL e engine configuráveis; a voz do canal é o perfil escolhido por você |
+| Motor padrão de TTS do DocForja | ○ Não por padrão (Kokoro e Chatterbox cobrem o dia a dia); o VoiceStudio entra quando a voz pedida for melhor |
 | Tradução/dublagem pelo VoiceStudio | ✘ Não (NLLB não comercial) |
 | Transcrição pelo VoiceStudio | ✘ Desnecessário (WhisperX já cobre) |
+
+**Termos:** a licença do app (AGPL-3.0) cobre o programa e admite uso comercial; os pesos, as vozes e as condições da saída têm termos próprios, gerenciados pelo app. O DocForja registra no projeto o motor, a voz e a origem, e não bloqueia a produção por isso — a escolha é da qualidade da voz.
 
 ## 3. Alternativas mantidas em reserva
 

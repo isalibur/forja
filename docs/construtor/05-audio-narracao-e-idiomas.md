@@ -8,7 +8,7 @@
 | **Narração pronta** | Você envia um WAV/MP3 por idioma (sua voz, locutor, ou arquivo de outra ferramenta, ex.: VoiceStudio) — colocar em `00_entrada/narracao_<idioma>.wav`; instalação e uso do VoiceStudio em `09 §7.1` | Máxima qualidade/identidade |
 | **Adaptador externo** | Qualquer servidor local/remoto compatível (API local do VoiceStudio em `POST /v1/audio/speech`, formato OpenAI; servidor no padrão OpenAI `/v1/audio/speech`; API paga, se você quiser) | Testar outras vozes/engines sem mudar o sistema |
 
-**Voz do canal:** o kit guarda, por idioma, o motor, a voz/arquivo de referência e os parâmetros — a mesma voz em todos os vídeos. Clonagem de voz só com autorização escrita do dono da voz (arquivo de consentimento no kit).
+**Voz do canal:** o kit guarda, por idioma, o motor, a voz/arquivo de referência e os parâmetros — a mesma voz em todos os vídeos. O motor e a voz sintética são escolhidos pelo usuário pela qualidade da voz (Kokoro, Chatterbox ou VoiceStudio), com o registro da origem no projeto. Clonagem de voz só com autorização escrita do dono da voz (arquivo de consentimento no kit).
 
 **Fluxo TTS (enxuto):**
 1. Um arquivo por segmento, com o dicionário de pronúncia do idioma (`kits/<kit>/pronuncia/<idioma>.yaml`).

@@ -38,7 +38,6 @@ class VoiceStudioSettings(BaseModel):
 
     base_url: str = "http://127.0.0.1:3900"
     engine: str = "omnivoice"
-    engines_comerciais: list[str] = Field(default_factory=list)
     instrucoes: str = ""
     api_key: str = ""
     timeout_seconds: float = 60.0

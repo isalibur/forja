@@ -1680,7 +1680,6 @@ def obter_detalhes_sistema() -> dict[str, Any]:
             "voicestudio": {
                 "base_url": settings.voicestudio.base_url,
                 "engine": settings.voicestudio.engine,
-                "engines_comerciais": settings.voicestudio.engines_comerciais,
             },
         },
     }

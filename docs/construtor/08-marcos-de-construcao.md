@@ -116,7 +116,7 @@ Antigravity: telas "Produção" (14 §5.6), "Resultado" (§5.7, com títulos, de
 ```
 Implemente idiomas/ (tradução nos modos automatico, gemini_manual e arquivo; glossário; validação de IDs),
 narração por idioma, retime proporcional, i18n dos templates, render/mix/pacote por idioma e o modo "só legendas".
-Adaptadores extras: openai_compat (TTS por HTTP), voicestudio (API compatível com OpenAI do app local, atrás da checagem de licença comercial — ver `09 §7.1`), arquivo_pronta.
+Adaptadores extras: openai_compat (TTS por HTTP), voicestudio (API compatível com OpenAI do app local, com a voz do canal escolhida pelo usuário — ver `09 §7.1`), arquivo_pronta.
 Promoção de ativos para a biblioteca ao final do projeto. Hermes opcional (skill + notificador).
 ```
 **Pronto:** Vesúvio em pt-BR + en + es; trocar uma imagem refaz só o necessário nos três idiomas; um segundo vídeo reaproveita mapas e trilhas da pasta global.
