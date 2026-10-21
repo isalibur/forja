@@ -76,6 +76,18 @@ from docforja.shorts.producao import (
     executar_producao_background,
     obter_ponte_idioma_aprovada,
 )
+from docforja.shorts.producao_avulsos import (
+    executar_producao_background as executar_avulso_background,
+)
+from docforja.shorts.producao_avulsos import (
+    obter_artefato as obter_artefato_avulso,
+)
+from docforja.shorts.producao_avulsos import (
+    obter_estado as obter_estado_avulso,
+)
+from docforja.shorts.producao_avulsos import (
+    preparar_producao as preparar_producao_avulsa,
+)
 from docforja.shorts.verticalizar import verticalizar_plano
 
 app = FastAPI(title="DocForja API", version="0.1.0")
@@ -159,6 +171,10 @@ class RegistrarAlegacoesAvulsoPayload(BaseModel):
     revisao_roteiro: str = Field(pattern=r"^[a-f0-9]{64}$")
     revisao_midias: str = Field(pattern=r"^[a-f0-9]{64}$")
     dados: DadosAlegacoes
+
+
+class ProduzirAvulsoPayload(BaseModel):
+    codigo: str
 
 
 def _projeto_da_interface(slug: str) -> Projeto:
@@ -699,6 +715,65 @@ def registrar_alegacoes_short_avulso(
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return documentacao.model_dump(mode="json")
+
+
+@app.post("/api/shorts/avulsos/campanhas/{campanha_id}/pedidos/{pedido_id}/produzir")
+def produzir_short_avulso(
+    campanha_id: str, pedido_id: str, payload: ProduzirAvulsoPayload,
+    background_tasks: BackgroundTasks,
+) -> dict[str, Any]:
+    if payload.codigo != "PRODUZIR":
+        raise HTTPException(status_code=403, detail="Digite PRODUZIR para confirmar.")
+    raiz = load_settings().paths.projects
+    global_ = obter_pasta_global()
+    try:
+        preparacao = preparar_producao_avulsa(raiz, global_, campanha_id, pedido_id)
+        atual = obter_estado_avulso(raiz, campanha_id, pedido_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if atual.get("status") in {"aguardando", "executando"}:
+        raise HTTPException(status_code=409, detail="Já existe uma produção em andamento.")
+    estado = {"status": "aguardando", "revisao": preparacao.revisao}
+    pasta = raiz / "_campanhas_avulsas" / campanha_id / "saidas" / pedido_id
+    atomic_write_json(pasta / "producao_atual.json", estado)
+    background_tasks.add_task(executar_avulso_background, raiz, global_, preparacao)
+    return estado
+
+
+@app.get("/api/shorts/avulsos/campanhas/{campanha_id}/pedidos/{pedido_id}/producao")
+def consultar_producao_avulsa(campanha_id: str, pedido_id: str) -> dict[str, Any]:
+    try:
+        campanha = obter_campanha(load_settings().paths.projects, campanha_id)
+        if not any(item.id == pedido_id for item in campanha.pedidos):
+            raise ValueError("Pedido não pertence à campanha.")
+        estado = obter_estado_avulso(load_settings().paths.projects, campanha_id, pedido_id)
+        if estado.get("status") == "concluido":
+            try:
+                atual = preparar_producao_avulsa(
+                    load_settings().paths.projects, obter_pasta_global(), campanha_id, pedido_id
+                )
+                if estado.get("revisao") != atual.revisao:
+                    return {**estado, "status": "desatualizado"}
+            except ValueError:
+                return {**estado, "status": "desatualizado"}
+        return estado
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get(
+    "/api/shorts/avulsos/campanhas/{campanha_id}/pedidos/{pedido_id}/artefatos/{nome}"
+)
+def visualizar_artefato_avulso(campanha_id: str, pedido_id: str, nome: str) -> FileResponse:
+    try:
+        arquivo = obter_artefato_avulso(
+            load_settings().paths.projects, obter_pasta_global(), campanha_id, pedido_id, nome
+        )
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return FileResponse(arquivo)
 
 
 @app.get("/api/projetos/{slug}/shorts/derivados")

@@ -9,6 +9,7 @@ type PedidoAvulso = {
   formula_id: string;
   origem_roteiro: string;
   roteiro: string | null;
+  cta: string | null;
   pendencias: string[];
 };
 type Formula = { nome: string; estrutura: string[]; templates: string[] };
@@ -28,6 +29,7 @@ type DadosAlegacoes = {
   revisado_pelo_usuario: boolean;
 };
 type Documentacao = { revisao: string; dados: DadosAlegacoes; status: string };
+type ProducaoAvulsa = { status: string; revisao?: string; erro?: string; cache?: boolean };
 const FICHA_VAZIA: DadosAlegacoes = {
   fontes: [{ alegacao: "", fonte: "" }], sem_alegacoes_verificaveis: false,
   prova_real: null, fonte_preco: null, condicao_urgencia: null,
@@ -60,6 +62,8 @@ export const ShortsAvulsos: React.FC = () => {
   const [midiasDisponiveis, setMidiasDisponiveis] = useState<MidiaGlobal[]>([]);
   const [midiasEscolhidas, setMidiasEscolhidas] = useState<Record<string, string[]>>({});
   const [fichas, setFichas] = useState<Record<string, DadosAlegacoes>>({});
+  const [codigos, setCodigos] = useState<Record<string, string>>({});
+  const [producoes, setProducoes] = useState<Record<string, ProducaoAvulsa>>({});
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
 
@@ -73,6 +77,46 @@ export const ShortsAvulsos: React.FC = () => {
       .then((corpo) => setMidiasDisponiveis(corpo.midias))
       .catch(() => { /* A seleção informa que não há imagens elegíveis. */ });
   }, []);
+
+  useEffect(() => {
+    if (!resultado?.id) return;
+    const campanhaId = resultado.id;
+    const atualizar = () => {
+      resultado.pedidos.forEach((pedido) => {
+        void fetch(`/api/shorts/avulsos/campanhas/${campanhaId}/pedidos/${pedido.id}/producao`)
+          .then((resposta) => resposta.ok ? resposta.json() as Promise<ProducaoAvulsa> : null)
+          .then((estado) => {
+            if (estado) setProducoes((anteriores) => ({ ...anteriores, [`${campanhaId}:${pedido.id}`]: estado }));
+          })
+          .catch(() => { /* A produção pode ser consultada novamente ao reabrir. */ });
+      });
+    };
+    atualizar();
+    const timer = window.setInterval(atualizar, 5000);
+    return () => window.clearInterval(timer);
+  }, [resultado?.id, resultado?.pedidos]);
+
+  const produzirAvulso = async (pedido: PedidoAvulso) => {
+    if (!resultado?.id) return;
+    const chave = `${resultado.id}:${pedido.id}`;
+    setOcupado(true);
+    setErro("");
+    try {
+      const resposta = await fetch(`/api/shorts/avulsos/campanhas/${resultado.id}/pedidos/${pedido.id}/produzir`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo: codigos[chave] ?? "" }),
+      });
+      const corpo = await resposta.json() as ProducaoAvulsa & { detail?: string };
+      if (!resposta.ok) throw new Error(corpo.detail || t.erroPadrao);
+      setProducoes((anteriores) => ({ ...anteriores, [chave]: corpo }));
+      setCodigos((anteriores) => ({ ...anteriores, [chave]: "" }));
+    } catch (falha) {
+      setErro(falha instanceof Error ? falha.message : t.erroPadrao);
+    } finally {
+      setOcupado(false);
+    }
+  };
 
   const planejar = async (evento: React.FormEvent<HTMLFormElement>) => {
     evento.preventDefault();
@@ -289,7 +333,7 @@ export const ShortsAvulsos: React.FC = () => {
               </button>
             </div>
           )}
-          <p className="text-sm text-mut">{t.semProducao}</p>
+          <p className="text-sm text-mut">Produção avulsa: rascunhos educativos sem relação comercial, sujeitos a revisão final.</p>
           <div className="grid gap-4 md:grid-cols-2">
             {resultado.pedidos.map((pedido) => {
               const formula = resultado.formulas[pedido.formula_id];
@@ -297,6 +341,7 @@ export const ShortsAvulsos: React.FC = () => {
               const chave = `${resultado.id}:${pedido.id}`;
               const selecao = resultado.selecoes_midias?.[pedido.id];
               const documentacao = resultado.documentacoes_alegacoes?.[pedido.id];
+              const producao = producoes[chave];
               const ficha = fichas[chave] ?? documentacao?.dados ?? FICHA_VAZIA;
               const escolhidas = midiasEscolhidas[chave] ?? selecao?.midias.map((item) => item.id_global) ?? [];
               return (
@@ -451,6 +496,31 @@ export const ShortsAvulsos: React.FC = () => {
                         {t.registrarAlegacoes}
                       </button>
                       {documentacao && <p className="text-xs text-mut">{t.alegacoesRegistradas} · {documentacao.revisao.slice(0, 8)}</p>}
+                    </div>
+                  )}
+                  {resultado.id && (
+                    <div className="space-y-2 rounded-btn border border-line p-3">
+                      <p className="text-sm font-medium text-tx">Produzir rascunho vertical</p>
+                      <p className="text-xs text-mut">Somente educativo, sem relação comercial, com CTA no roteiro aprovado exatamente uma vez. Sem música nem publicação automática.</p>
+                      <p className="text-xs text-mut">CTA informado no CSV: {pedido.cta || "não informado"}</p>
+                      <label className="block text-xs text-tx">Confirmação: digite PRODUZIR
+                        <input value={codigos[chave] ?? ""} autoComplete="off"
+                          onChange={(evento) => setCodigos((anteriores) => ({ ...anteriores, [chave]: evento.target.value }))}
+                          className="mt-1 block w-full rounded-btn border border-line bg-bg p-2 text-tx" />
+                      </label>
+                      <button type="button" onClick={() => { void produzirAvulso(pedido); }}
+                        disabled={ocupado || codigos[chave] !== "PRODUZIR" || !aprovacao || !selecao || !documentacao || pedido.objetivo !== "educativo" || documentacao.dados.relacao_comercial !== "nenhuma" || producao?.status === "aguardando" || producao?.status === "executando"}
+                        className="rounded-btn border border-brasa px-3 py-2 text-sm font-semibold text-brasa disabled:opacity-50">
+                        Produzir rascunho
+                      </button>
+                      {producao && <p className="text-xs text-mut">Estado: {producao.status}{producao.erro ? ` — ${producao.erro}` : ""}</p>}
+                      {producao?.status === "concluido" && (
+                        <div className="space-y-2">
+                          <video controls preload="none" className="mx-auto max-h-[560px] w-auto max-w-full" src={`/api/shorts/avulsos/campanhas/${resultado.id}/pedidos/${pedido.id}/artefatos/video.mp4`} />
+                          <a className="text-sm text-brasa underline" href={`/api/shorts/avulsos/campanhas/${resultado.id}/pedidos/${pedido.id}/artefatos/legendas.srt`}>Baixar legendas</a>
+                          <p className="text-xs text-mut">Rascunho não autorizado para publicação; confira alegações, imagem, áudio e QA.</p>
+                        </div>
+                      )}
                     </div>
                   )}
                   <div>

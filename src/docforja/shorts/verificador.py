@@ -127,22 +127,28 @@ def verificar_short(short: ShortParaVerificar) -> ResultadoDosagemShort:
         )
     )
 
+    comparacao_musica_ok = (
+        short.musica_mais_presente_que_longo is True if short.derivado else True
+    )
     audio_ok = (
         short.audio_lufs_integrado is not None
         and abs(short.audio_lufs_integrado - (-14.0)) <= 1.0
-        and short.musica_mais_presente_que_longo is True
+        and comparacao_musica_ok
         and short.musica_cobre_voz is False
     )
     resultados.append(
         ViolacaoDosagemShort(
             regra="DS9",
             aprovada=audio_ok,
-            descricao="Mix próximo de -14 LUFS, música presente sem cobrir a voz.",
+            descricao=(
+                "Mix próximo de -14 LUFS, sem mascarar a voz; "
+                "comparar com o longo se derivado."
+            ),
             detalhes=(
                 "Loudness integrado ausente."
                 if short.audio_lufs_integrado is None
                 else "Comparação de nível da música com o longo ausente."
-                if short.musica_mais_presente_que_longo is None
+                if short.derivado and short.musica_mais_presente_que_longo is None
                 else "Mascaramento da voz ainda não foi medido."
                 if short.musica_cobre_voz is None
                 else f"Loudness integrado: {short.audio_lufs_integrado:.1f} LUFS"
