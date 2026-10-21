@@ -33,14 +33,14 @@ Todo template do catálogo (`02 §3`) tem layout `9x16` além do `16x9` (textos 
 | V01 | `GanchoTexto` | Frase de gancho gigante sobre imagem escurecida, entrando palavra a palavra |
 | V02 | `ImagemLegendada` | Imagem (Ken Burns/parallax) com legenda dinâmica em destaque |
 | V03 | `ItemLista` | "1 · 2 · 3" com número grande e frase curta |
-| V04 | `Oferta` | Produto/serviço: imagem, benefício, preço/condição, selo (ex.: "só até sexta") |
+| V04 | `Oferta` | Produto/serviço: imagem, benefício, condição documentada sem preço, selo (ex.: "só até sexta", se verdadeiro) |
 | V05 | `AntesDepois` | Comparação vertical (cima/baixo) |
 | V06 | `Pergunta` | Pergunta para comentários com opções (A/B) |
 | V07 | `CTA` | Inscreva-se / vídeo completo / link na bio / comente / salve — com ícone animado |
 | V08 | `Marca` | Logo/assinatura do canal (≤ 1 s) |
 | V09 | `ClipeProprio` | Um clipe de vídeo seu (ex.: você falando, demonstração do produto), recortado e legendado |
 | V10 | `Prova` | Depoimento, número de resultado, print — **só material real fornecido por você** |
-| V11 | `CartaoProduto` | Produto de afiliado: imagem, nome, até 3 benefícios, preço/condição (com fonte na planilha), selo da loja em texto |
+| V11 | `CartaoProduto` | Produto de afiliado: imagem, nome, até 3 benefícios, condição real documentada (sem preço), selo da loja em texto |
 
 ## 3. Short derivado ("âncora do canal")
 
@@ -105,13 +105,13 @@ final    PONTE+CTA  frase-ponte curta ("O resto dessa história está no vídeo 
 | `antes_depois` | antes → processo → depois → CTA | vendas, autoridade |
 | `bastidores` | "como fazemos X" → 3 cenas → CTA | bastidores, autoridade |
 | `anuncio` | novidade → o que muda → quando → CTA | anúncio |
-| `produto_afiliado` | gancho do problema → produto em uso → 3 benefícios → preço/condição (opcional) → CTA "link na bio/comentário" | afiliados (ver `15 §2.1`) |
+| `produto_afiliado` | gancho do problema → produto em uso → 3 benefícios → convite para conferir a oferta atual no link, sem preço → CTA "link na bio/comentário" | afiliados (ver `15 §2.1`) |
 
 Cada fórmula define: sequência de templates V/T, duração de cada parte, limites de texto, onde entra o CTA e o que o verificador exige.
 
 ### 4.3 Regras de honestidade (vendas e prova)
 
-- **Afiliados:** imagens só as permitidas pelo programa de afiliados ou fotos suas; preço só com fonte na planilha; aviso de publicidade/link de afiliado na legenda; o link vai nos metadados, nunca queimado no vídeo (`15 §2.1`).
+- **Afiliados:** imagens só as permitidas pelo programa de afiliados ou fotos suas; não incluir preço ou desconto numérico na planilha, narração, vídeo, legendas ou textos de publicação. Falar da oferta de forma genérica e encaminhar às condições atuais pelo link. Aviso de publicidade/link de afiliado nos textos de publicação; URL nos metadados e na agenda, nunca queimado no vídeo (`15 §2.1`).
 - Nada de depoimentos, números de resultado, prints ou avaliações inventados: `V10 Prova` só aceita material que **você** forneceu.
 - Urgência só se for verdadeira (o sistema pede a data/condição real).
 - Se for publicidade/parceria paga, o metadado inclui a marcação de conteúdo pago e o lembrete de ativar o recurso da plataforma.

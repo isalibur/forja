@@ -29,10 +29,10 @@ Critério: entra na v1 só se (a) reaproveita o que a v1 já produz, (b) custa p
 ## 2. O que entra na v1
 
 ### 2.1 Fórmula "produto/afiliado" (M8)
-- Nova fórmula em `global/formulas_shorts/produto_afiliado.yaml`: **gancho do problema** (0–2 s) → **produto em uso** → **3 benefícios** (ItemLista) → **preço/condição** (opcional) → **CTA** ("link na bio", "link no comentário fixado").
-- Novo template **V11 `CartaoProduto`**: imagem do produto, nome, até 3 benefícios, preço/condição e selo da loja (texto, sem logo de terceiros).
-- **Entrada em lote:** planilha CSV com `nome, descricao, beneficios, preco, link_afiliado, imagens, nicho, plataforma` → 1 short por linha. O link nunca vai queimado no vídeo; vai para os metadados e para a planilha de publicação.
-- Regras de honestidade (somam-se a `11 §4.3`): imagens só as que o programa de afiliados permite usar ou fotos suas; nada de "melhor do mundo", "garantido" ou preço inventado; aviso de publicidade/link de afiliado na legenda; o verificador recusa preço sem fonte na planilha.
+- Nova fórmula em `global/formulas_shorts/produto_afiliado.yaml`: **gancho do problema** (0–2 s) → **produto em uso** → **3 benefícios** (ItemLista) → **oferta sem preço** → **CTA** ("link na bio", "link no comentário fixado").
+- Novo template **V11 `CartaoProduto`**: imagem do produto, nome, até 3 benefícios, condição real documentada sem preço e selo da loja (texto, sem logo de terceiros).
+- **Entrada em lote:** planilha CSV com `nome, descricao, beneficios, link_afiliado, imagens, nicho, plataforma` → 1 short por linha. O URL nunca vai queimado no vídeo; vai para os textos de publicação, metadados e planilha de publicação.
+- Regras de honestidade (somam-se a `11 §4.3`): imagens só as que o programa de afiliados permite usar ou fotos suas; nada de "melhor do mundo", "garantido", preço ou desconto numérico. Fale genericamente da oferta e peça para conferir condições atuais pelo link. Aviso de publicidade/link de afiliado nos textos; planilhas e roteiros com preço são recusados.
 
 ### 2.2 Pacote para bancos de imagens (M6, opcional por projeto)
 - **Elegíveis:** só o que é **seu**: imagens geradas, cenas em loop, animações de mapa feitas pelo sistema, fundos e texturas do kit. **Nunca** fotos de acervo de terceiros, imagens da pasta manual sem licença própria, nem trechos com narração.

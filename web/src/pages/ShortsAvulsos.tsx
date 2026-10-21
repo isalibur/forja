@@ -79,7 +79,7 @@ const t = textos.shortsAvulsos;
 
 const relacaoPermitida = (pedido: PedidoAvulso, documentacao: Documentacao): boolean => {
   if (pedido.objetivo === "educativo") return documentacao.dados.relacao_comercial === "nenhuma";
-  return Boolean(pedido.produto) && documentacao.dados.relacao_comercial === "afiliado";
+  return Boolean(pedido.produto) && !pedido.produto?.preco && documentacao.dados.relacao_comercial === "afiliado";
 };
 
 const fichaInicial = (pedido: PedidoAvulso): DadosAlegacoes => {
@@ -87,10 +87,10 @@ const fichaInicial = (pedido: PedidoAvulso): DadosAlegacoes => {
   const produto = pedido.produto;
   return {
     ...FICHA_VAZIA,
-    fontes: produto.fonte_preco
-      ? [{ alegacao: `Preço informado de ${produto.nome}.`, fonte: produto.fonte_preco }]
+    fontes: produto.condicao && produto.fonte_preco
+      ? [{ alegacao: `Condição da oferta de ${produto.nome}.`, fonte: produto.fonte_preco }]
       : FICHA_VAZIA.fontes,
-    fonte_preco: produto.fonte_preco,
+    fonte_preco: produto.condicao ? produto.fonte_preco : null,
     relacao_comercial: "afiliado",
     marca: produto.marca,
     aviso_publicidade: true,
@@ -465,7 +465,7 @@ export const ShortsAvulsos: React.FC = () => {
                   {pedido.produto && (
                     <>
                       <p>{pedido.produto.beneficios.join(" · ")}</p>
-                      <p>{pedido.produto.preco ? `${t.preco}: ${pedido.produto.preco}` : t.semPreco}</p>
+                      <p>{pedido.produto.preco ? t.campanhaAntigaPreco : t.ofertaSemPreco}</p>
                       <p className="break-all">{pedido.produto.link_afiliado}</p>
                     </>
                   )}
@@ -502,7 +502,7 @@ export const ShortsAvulsos: React.FC = () => {
               </button>
             </div>
           )}
-          <p className="text-sm text-mut">Produção avulsa: rascunhos educativos sem relação comercial, sujeitos a revisão final.</p>
+          <p className="text-sm text-mut">Produção avulsa: rascunhos sujeitos a revisão final; afiliados mostram a oferta sem preço.</p>
           {resultado.id && resultado.pedidos.some((pedido) => pedido.produto) && (
             <div className="space-y-2 rounded-btn border border-line p-3">
               <p className="text-sm font-medium text-tx">{t.tituloAgenda}</p>
@@ -545,9 +545,7 @@ export const ShortsAvulsos: React.FC = () => {
                           <li key={beneficio}>{beneficio}</li>
                         ))}
                       </ul>
-                      {pedido.produto.preco && (
-                        <p>{t.preco}: {pedido.produto.preco}{pedido.produto.fonte_preco ? ` · ${t.fontePreco}: ${pedido.produto.fonte_preco}` : ""}</p>
-                      )}
+                      <p>{pedido.produto.preco ? t.campanhaAntigaPreco : t.ofertaSemPreco}</p>
                       <p>{t.plataforma}: {pedido.produto.plataforma}{pedido.produto.marca ? ` · ${pedido.produto.marca}` : ""}</p>
                       <p className="break-all">{t.linkAfiliado}: {pedido.produto.link_afiliado}</p>
                       <p>{t.linkNaoQueimado}</p>
@@ -703,7 +701,7 @@ export const ShortsAvulsos: React.FC = () => {
                       <p className="text-sm font-medium text-tx">Produzir rascunho vertical</p>
                       <p className="text-xs text-mut">
                         {pedido.produto
-                          ? "Short de afiliado: exige aviso de publicidade, marca da loja e fonte do preço na ficha. O link vai só nos metadados e na agenda."
+                          ? "Short de afiliado: exige aviso de publicidade, marca da loja e fontes das alegações. Não fala nem mostra preço; o link vai nos textos, metadados e agenda."
                           : "Somente educativo, sem relação comercial, com CTA no roteiro aprovado exatamente uma vez. Sem música nem publicação automática."}
                       </p>
                       <p className="text-xs text-mut">CTA informado no CSV: {pedido.cta || "não informado"}</p>

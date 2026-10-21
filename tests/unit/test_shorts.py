@@ -293,5 +293,8 @@ def test_catalogo_de_formulas_tem_ids_unicos_e_conteudo_afiliado() -> None:
     catalogo = carregar_formulas(Path("global/formulas_shorts"))
 
     assert len(catalogo) == 11
-    assert catalogo["produto_afiliado"].exige_fonte_preco
+    assert not catalogo["produto_afiliado"].exige_fonte_preco
+    assert "sem_preco" in catalogo["produto_afiliado"].regras
     assert "V11" in catalogo["produto_afiliado"].templates
+    assert not catalogo["oferta"].exige_fonte_preco
+    assert "sem_preco" in catalogo["oferta"].regras

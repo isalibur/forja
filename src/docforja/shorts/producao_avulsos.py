@@ -27,6 +27,7 @@ from docforja.shorts.afiliados import (
     gerar_agenda_csv,
     gerar_textos_plataforma,
     linha_agenda,
+    validar_sem_preco,
 )
 from docforja.shorts.alegacoes_avulsas import documentacao_vigente, obter_documentacao
 from docforja.shorts.campanhas import obter_aprovacao_roteiro, obter_campanha
@@ -128,8 +129,6 @@ def preparar_producao(
             raise ValueError("Short de afiliado exige aviso de publicidade na ficha.")
         if not (documentacao.dados.marca or "").strip():
             raise ValueError("Short de afiliado exige a marca da loja na ficha.")
-        if pedido.produto.preco and not (documentacao.dados.fonte_preco or "").strip():
-            raise ValueError("O preço exibido exige a fonte do preço na ficha.")
     else:
         raise ValueError(
             "Esta produção aceita avulsos educativos sem relação comercial "
@@ -137,6 +136,8 @@ def preparar_producao(
         )
     cta = " ".join((pedido.cta or "").split())
     texto = " ".join(aprovacao.texto.split())
+    if pedido.produto is not None:
+        validar_sem_preco(pedido.produto, texto)
     if not cta or len(cta.split()) > 6 or len(re.findall(re.escape(cta), texto, re.I)) != 1:
         raise ValueError(
             "Informe um CTA de até seis palavras que apareça uma vez no roteiro aprovado."
@@ -288,7 +289,6 @@ def _cenas_afiliado(
             indice,
             {
                 "itens": list(produto.beneficios[2:]),
-                "preco": produto.preco or "",
                 "condicao": produto.condicao or "",
                 "marca": produto.marca or "",
                 "aviso_publicidade": AVISO_PUBLICIDADE,
@@ -311,7 +311,6 @@ def _cenas_afiliado(
             variante=variante,
             titulo=hook if variante == "V01" else str(extra.get("titulo", "")),
             itens=list(extra.get("itens", [])),
-            preco=str(extra.get("preco", "")),
             condicao=str(extra.get("condicao", "")),
             marca=str(extra.get("marca", "")),
             aviso_publicidade=str(extra.get("aviso_publicidade", "")),
@@ -403,7 +402,7 @@ def produzir_avulso(
                 ElementoTelaShort(id="cta", x=0.08, y=0.18, largura=0.78, altura=0.40)
             )
             textos_tela.extend(
-                [produto.nome, *produto.beneficios, produto.preco or "", produto.condicao or ""]
+                [produto.nome, *produto.beneficios, produto.condicao or ""]
             )
             textos_tela.extend([produto.marca or "", AVISO_PUBLICIDADE, preparacao.cta])
         qa = verificar_short(ShortParaVerificar(
@@ -455,8 +454,6 @@ def produzir_avulso(
             metadados["produto"] = {
                 "nome": produto.nome,
                 "beneficios": list(produto.beneficios),
-                "preco": produto.preco,
-                "fonte_preco": produto.fonte_preco,
                 "condicao": produto.condicao,
                 "marca": produto.marca,
                 "nicho": produto.nicho,

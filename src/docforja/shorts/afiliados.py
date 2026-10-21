@@ -49,6 +49,11 @@ Plataforma = Literal["youtube_shorts", "instagram_reels", "ambas"]
 MAX_PALAVRAS_TELA = 6
 MAX_BENEFICIOS = 3
 CTA_PADRAO = "link na bio"
+PADRAO_PRECO = re.compile(
+    r"R\$|US\$|€|£|\bpre[cç]os?\b|\b\d+[.,]\d{2}\b|\b\d+\s*%|"
+    r"\b(?:reais|dólares|dolares|euros)\b|\b(?:por|a partir de)\s+\d+(?:[.,]\d+)?\b",
+    flags=re.IGNORECASE,
+)
 
 
 class ProdutoAfiliado(BaseModel):
@@ -118,6 +123,22 @@ def _dividir(valor: str) -> list[str]:
     return [item.strip() for item in valor.split("|") if item.strip()]
 
 
+def validar_sem_preco(produto: ProdutoAfiliado, roteiro: str | None = None) -> None:
+    """Impede valores voláteis em entradas novas e em campanhas antigas ao produzir."""
+    if (produto.preco or "").strip():
+        raise ValueError("Retire o preço da planilha; a oferta será consultada pelo link.")
+    textos = [
+        produto.nome,
+        produto.descricao,
+        *produto.beneficios,
+        produto.condicao or "",
+        produto.cta,
+        roteiro or "",
+    ]
+    if any(PADRAO_PRECO.search(texto) for texto in textos):
+        raise ValueError("Retire preços e descontos numéricos do texto; use o link da oferta.")
+
+
 def ler_planilha_produtos(texto_csv: str) -> list[ProdutoAfiliado]:
     """Lê a planilha de produtos e recusa linhas que quebrar as regras de honestidade."""
     leitor = csv.DictReader(io.StringIO(texto_csv.lstrip("\ufeff")))
@@ -139,25 +160,27 @@ def ler_planilha_produtos(texto_csv: str) -> list[ProdutoAfiliado]:
             continue
         dados = {chave: (valor or "").strip() for chave, valor in linha.items()}
         try:
-            produtos.append(
-                ProdutoAfiliado.model_validate(
-                    {
-                        "nome": dados["nome"],
-                        "descricao": dados["descricao"],
-                        "beneficios": _dividir(dados["beneficios"]),
-                        "preco": dados.get("preco") or None,
-                        "fonte_preco": dados.get("fonte_preco") or None,
-                        "condicao": dados.get("condicao") or None,
-                        "link_afiliado": dados["link_afiliado"],
-                        "imagens": _dividir(dados.get("imagens", "")),
-                        "nicho": dados.get("nicho") or None,
-                        "plataforma": dados.get("plataforma") or "ambas",
-                        "marca": dados.get("marca") or None,
-                        "cta": dados.get("cta") or CTA_PADRAO,
-                        "duracao_s": int(dados.get("duracao_s") or 30),
-                    }
-                )
+            if dados.get("preco"):
+                raise ValueError("Retire o preço da planilha; a oferta será consultada pelo link.")
+            produto = ProdutoAfiliado.model_validate(
+                {
+                    "nome": dados["nome"],
+                    "descricao": dados["descricao"],
+                    "beneficios": _dividir(dados["beneficios"]),
+                    "preco": dados.get("preco") or None,
+                    "fonte_preco": dados.get("fonte_preco") or None,
+                    "condicao": dados.get("condicao") or None,
+                    "link_afiliado": dados["link_afiliado"],
+                    "imagens": _dividir(dados.get("imagens", "")),
+                    "nicho": dados.get("nicho") or None,
+                    "plataforma": dados.get("plataforma") or "ambas",
+                    "marca": dados.get("marca") or None,
+                    "cta": dados.get("cta") or CTA_PADRAO,
+                    "duracao_s": int(dados.get("duracao_s") or 30),
+                }
             )
+            validar_sem_preco(produto)
+            produtos.append(produto)
         except (TypeError, ValueError) as exc:
             raise ValueError(f"Linha {numero} da planilha: {exc}") from exc
     if not produtos:
@@ -167,12 +190,11 @@ def ler_planilha_produtos(texto_csv: str) -> list[ProdutoAfiliado]:
 
 def roteiro_sugerido(produto: ProdutoAfiliado) -> str:
     """Roteiro sem promessa inventada; serve de rascunho para a aprovação do usuário."""
+    validar_sem_preco(produto)
     partes = [produto.descricao.strip()]
     for beneficio in produto.beneficios:
         partes.append(f"Em resumo, {beneficio}.")
-    if produto.preco:
-        partes.append(f"Hoje sai por {produto.preco}.")
-    partes.append(f"{produto.cta.capitalize()} para ver o detalhe.")
+    partes.append(f"Confira a oferta e as condições atuais: {produto.cta}.")
     return " ".join(partes)
 
 
@@ -253,22 +275,20 @@ def gerar_textos_plataforma(
     titulos = titulos_sugeridos(produto)
     titulo = titulos[0] if titulos else produto.nome
     beneficios = "\n".join(f"· {item}" for item in produto.beneficios)
-    preco = ""
-    if produto.preco:
-        preco = f"\n\nPreço informado: {produto.preco}"
-        if produto.fonte_preco:
-            preco += f"\nFonte do preço: {produto.fonte_preco}"
+    validar_sem_preco(produto, gancho)
     condicao = f"\n\nCondição: {produto.condicao}" if produto.condicao else ""
     aviso = f"\n\n{AVISO_PUBLICIDADE} — {produto.marca or 'marca declarada'}."
     youtube = (
-        f"# {titulo}\n\n{gancho}\n\n{beneficios}{preco}{condicao}{aviso}\n\n"
-        f"Link de afiliado (nos metadados, nunca no vídeo): {produto.link_afiliado}\n\n"
+        f"# {titulo}\n\n{gancho}\n\n{beneficios}{condicao}{aviso}\n\n"
+        "Confira a oferta e as condições atuais pelo link de afiliado:\n"
+        f"{produto.link_afiliado}\n\n"
         f"{cta.capitalize()}.\n\n{hashtags}\n"
         "\nRASCUNHO — não publicar sem revisão factual, visual, sonora e do QA.\n"
     )
     instagram = (
-        f"{gancho}\n\n{beneficios}{preco}{condicao}{aviso}\n\n"
-        f"{cta.capitalize()} — o link está na bio.\n\n{hashtags}\n"
+        f"{gancho}\n\n{beneficios}{condicao}{aviso}\n\n"
+        "Confira a oferta e as condições atuais pelo link de afiliado:\n"
+        f"{produto.link_afiliado}\n\n{cta.capitalize()}.\n\n{hashtags}\n"
         "\nRASCUNHO — não publicar sem revisão factual, visual, sonora e do QA.\n"
     )
     return {
@@ -322,4 +342,5 @@ __all__ = [
     "linha_agenda",
     "roteiro_sugerido",
     "titulos_sugeridos",
+    "validar_sem_preco",
 ]

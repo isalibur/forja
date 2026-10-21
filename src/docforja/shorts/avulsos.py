@@ -163,8 +163,6 @@ def ler_lote_afiliados(
             "aprovar mídias e licenças",
             "comprovar alegações exigidas pela fórmula",
         ]
-        if produto.preco:
-            pendencias.append("confirmar a fonte do preço")
         pedidos.append(
             PedidoShortAvulso.model_validate(
                 {

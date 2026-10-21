@@ -36,15 +36,15 @@ from ensaio_avulso_m8 import (
 from docforja.nucleo.etapas import calcular_hash_dados
 
 PLANILHA = (
-    "nome,descricao,beneficios,preco,fonte_preco,condicao,link_afiliado,imagens,nicho,"
+    "nome,descricao,beneficios,link_afiliado,imagens,nicho,"
     "plataforma,marca,duracao_s\n"
     "Furadeira Leve,Furadeira compacta para uso doméstico.,"
-    "Peso leve|Motor silencioso,\"149,90\",https://loja.exemplo.com/furadeira,,"
-    "https://loja.exemplo.com/furadeira?ref=docforja,global:imagens:produto-furadeira,"
+    "Peso leve|Motor silencioso,https://loja.exemplo.com/furadeira?ref=docforja,"
+    "global:imagens:produto-furadeira,"
     "ferramentas,youtube_shorts,Loja Exemplo,30\n"
     "Luminaria Mesa,Luminaria de mesa com luz ajustavel.,"
-    "Luz ajustavel|Bateria recarregavel,\"89,00\",https://loja.exemplo.com/luminaria,,"
-    "https://loja.exemplo.com/luminaria?ref=docforja,global:imagens:produto-luminaria,"
+    "Luz ajustavel|Bateria recarregavel,https://loja.exemplo.com/luminaria?ref=docforja,"
+    "global:imagens:produto-luminaria,"
     "decoracao,instagram_reels,Loja Exemplo,30\n"
 )
 
@@ -52,9 +52,8 @@ ROTEIRO_FURADEIRA = (
     "Furadeira compacta para uso doméstico. O peso baixo faz diferença em quem "
     "trabalha a tarde inteira, e o motor silencioso deixa o ambiente tranquilo. "
     "Ela ainda guarda a corda na caixa, o que evita ficar procurando tomada no "
-    "meio da obra. O cabo tem dois metros de alcance em mesas grandes. Hoje sai por "
-    "149,90, e esse "
-    "valor vem da página oficial da loja, registrada no link da bio. O modelo é o "
+    "meio da obra. O cabo tem dois metros de alcance em mesas grandes. Veja a oferta "
+    "e as condições atuais diretamente pelo link indicado na publicação. O modelo é o "
     "mesmo da foto, sem diferenças de acabamento. Link na bio para ver o detalhe "
     "e a ficha completa."
 )
@@ -64,7 +63,7 @@ ROTEIRO_LUMINARIA = (
     "quem trabalha de manhã cedo ou de noite sem acordar o vizinho. A bateria "
     "recarregável tira a preocupação de encontrar tomada perto da cama. Para quem "
     "passa a tarde na mesa, a diferença de conforto aparece na primeira semana "
-    "de uso. Hoje sai por 89,00, com o valor registrado na página oficial da loja. "
+    "de uso. Veja a oferta e as condições atuais no link da loja. "
     "O modelo é o mesmo da foto, sem diferenças de acabamento. Link na bio para "
     "ver o detalhe e a ficha completa."
 )
@@ -124,11 +123,10 @@ def _ficha_alegacoes(produto: dict[str, Any]) -> dict[str, Any]:
     return {
         "fontes": [
             {
-                "alegacao": f"Preço informado de {produto['nome']} na página do produto.",
-                "fonte": produto["fonte_preco"],
+                "alegacao": f"Benefícios descritos para {produto['nome']} no ensaio sintético.",
+                "fonte": produto["link_afiliado"],
             }
         ],
-        "fonte_preco": produto["fonte_preco"],
         "relacao_comercial": "afiliado",
         "marca": produto["marca"],
         "aviso_publicidade": True,
@@ -161,7 +159,6 @@ def executar_fluxo(base: str, raiz_saida: Path) -> dict[str, Any]:
             {
                 "id": pedido["id"],
                 "nome": produto["nome"],
-                "preco": produto["preco"],
                 "link_afiliado": produto["link_afiliado"],
                 "plataforma": produto["plataforma"],
             }
@@ -276,6 +273,8 @@ def main() -> int:
             metadados = json.loads((pasta / "metadados.json").read_text(encoding="utf-8"))
             srt = (pasta / "legendas.srt").read_text(encoding="utf-8")
             youtube = (pasta / "youtube.md").read_text(encoding="utf-8")
+            instagram = (pasta / "instagram.md").read_text(encoding="utf-8")
+            agenda = (pasta / "agenda.csv").read_text(encoding="utf-8")
             produto = metadados.get("produto", {})
             verificacoes[pedido_id]["metadados"] = {
                 "status": metadados.get("status"),
@@ -294,10 +293,25 @@ def main() -> int:
                 ],
                 "link_queimado_no_video": produto.get("link_queimado_no_video"),
                 "link_no_texto_publicacao": produto.get("link_afiliado", "") in youtube,
+                "link_no_instagram": produto.get("link_afiliado", "") in instagram,
                 "link_na_legenda": produto.get("link_afiliado", "") in srt,
+                "preco_ausente": not any(
+                    item in (srt + youtube + instagram + agenda + json.dumps(metadados))
+                    for item in ("149,90", "89,00", "Hoje sai por")
+                ),
             }
 
+    sucesso = set(verificacoes) == {"A001", "A002"} and all(
+        verificacao["metadados"]["qa_aprovado"]
+        and verificacao["metadados"]["preco_ausente"]
+        and verificacao["metadados"]["link_no_texto_publicacao"]
+        and verificacao["metadados"]["link_no_instagram"]
+        and verificacao["metadados"]["link_na_legenda"] is False
+        and verificacao["metadados"]["link_queimado_no_video"] is False
+        for verificacao in verificacoes.values()
+    )
     relatorio = {
+        "sucesso": sucesso,
         "raiz": str(raiz),
         "duracao_total_s": duracao_total,
         "planilha": PLANILHA,
@@ -309,7 +323,7 @@ def main() -> int:
         json.dumps(relatorio, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     print(json.dumps(relatorio, ensure_ascii=False, indent=2))
-    return 0
+    return 0 if sucesso else 1
 
 
 if __name__ == "__main__":

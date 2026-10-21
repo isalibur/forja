@@ -12,20 +12,21 @@ from fastapi.testclient import TestClient
 
 from docforja.api import app
 from docforja.shorts.afiliados import (
+    ProdutoAfiliado,
     gerar_agenda_csv,
     gerar_textos_plataforma,
     ler_planilha_produtos,
     linha_agenda,
     roteiro_sugerido,
+    validar_sem_preco,
 )
 from docforja.shorts.avulsos import ler_lote_afiliados
 from docforja.shorts.producao_avulsos import _criar_cenas, preparar_producao, produzir_avulso
 
 CSV_PRODUTOS = (
-    "nome,descricao,beneficios,preco,fonte_preco,condicao,link_afiliado,imagens,nicho,plataforma,marca\n"
+    "nome,descricao,beneficios,link_afiliado,imagens,nicho,plataforma,marca\n"
     "Furadeira Leve,Furadeira compacta para uso doméstico.,"
-    "Peso leve|Motor silencioso,\"149,90\",https://loja.exemplo.com/furadeira,,"
-    "https://loja.exemplo.com/a?ref=docforja,"
+    "Peso leve|Motor silencioso,https://loja.exemplo.com/a?ref=docforja,"
     "global:imagens:produto-furadeira,ferramentas,youtube_shorts,Loja Exemplo\n"
 )
 
@@ -34,18 +35,24 @@ def _planilha(invalida: str = "") -> str:
     return CSV_PRODUTOS.replace("Furadeira Leve", invalida) if invalida else CSV_PRODUTOS
 
 
-def test_planilha_exige_preco_com_fonte_e_recusa_promessa_inventada() -> None:
+def test_planilha_recusa_preco_e_promessa_inventada() -> None:
     produtos = ler_planilha_produtos(CSV_PRODUTOS)
     assert len(produtos) == 1
     assert produtos[0].beneficios == ["Peso leve", "Motor silencioso"]
-    assert produtos[0].preco == "149,90"
+    assert produtos[0].preco is None
     assert produtos[0].link_afiliado.startswith("https://")
 
-    sem_fonte = CSV_PRODUTOS.replace(
-        "\"149,90\",https://loja.exemplo.com/furadeira,,", "\"149,90\",,,"
+    com_preco = CSV_PRODUTOS.replace(
+        "beneficios,link_afiliado", "beneficios,preco,link_afiliado"
+    ).replace("Peso leve|Motor silencioso,https", "Peso leve|Motor silencioso,149.90,https")
+    with pytest.raises(ValueError, match="Retire o preço"):
+        ler_planilha_produtos(com_preco)
+
+    com_preco_no_texto = CSV_PRODUTOS.replace(
+        "Furadeira compacta para uso doméstico.", "Furadeira por R$ 149."
     )
-    with pytest.raises(ValueError, match="fonte do preço"):
-        ler_planilha_produtos(sem_fonte)
+    with pytest.raises(ValueError, match="preços"):
+        ler_planilha_produtos(com_preco_no_texto)
 
     with pytest.raises(ValueError, match="não permitida"):
         ler_planilha_produtos(_planilha("Furadeira o melhor"))
@@ -61,12 +68,13 @@ def test_planilha_exige_preco_com_fonte_e_recusa_promessa_inventada() -> None:
         )
 
 
-def test_roteiro_sugerido_nao_inventa_preco_nem_link() -> None:
+def test_roteiro_sugerido_fala_da_oferta_sem_preco_nem_link_literal() -> None:
     produto = ler_planilha_produtos(CSV_PRODUTOS)[0]
     texto = roteiro_sugerido(produto)
 
     assert produto.link_afiliado not in texto
-    assert "149,90" in texto
+    assert "oferta e as condições atuais" in texto
+    assert "149,90" not in texto
     assert texto.lower().count(produto.cta.lower()) == 1
 
 
@@ -84,11 +92,11 @@ def test_lote_afiliado_cria_pedido_com_produto_e_roteiro_sugerido() -> None:
 
 
 def test_planilha_com_dez_produtos_gera_dez_pedidos_e_uma_agenda() -> None:
-    linhas = ["nome,descricao,beneficios,preco,fonte_preco,link_afiliado,imagens,plataforma,marca"]
+    linhas = ["nome,descricao,beneficios,link_afiliado,imagens,plataforma,marca"]
     for indice in range(1, 11):
         linhas.append(
             f"Produto {indice},Descricao do produto {indice}.,"
-            f"Beneficio um|Beneficio dois,\"1{indice},00\",https://loja.exemplo.com/p{indice},"
+            "Beneficio um|Beneficio dois,"
             f"https://loja.exemplo.com/p{indice}?ref=docforja,"
             f"global:imagens:produto-{indice},ambas,Loja Exemplo"
         )
@@ -115,10 +123,21 @@ def test_textos_e_agenda_mantem_o_link_fora_do_video() -> None:
     agenda = gerar_agenda_csv([linha])
 
     assert produto.link_afiliado in textos["youtube"]
+    assert produto.link_afiliado in textos["instagram"]
     assert produto.link_afiliado in agenda
     assert "Publicidade" in textos["youtube"]
     assert "Publicidade" in linha["aviso_publicidade"]
     assert "Furadeira leve para casa" in textos["instagram"]
+    assert "149,90" not in textos["youtube"] + textos["instagram"] + agenda
+
+
+def test_campanha_antiga_com_preco_e_bloqueada_sem_apagar_snapshot() -> None:
+    produto = ProdutoAfiliado.model_validate({
+        **ler_planilha_produtos(CSV_PRODUTOS)[0].model_dump(mode="json"),
+        "preco": "149,90", "fonte_preco": "https://loja.exemplo.com/produto",
+    })
+    with pytest.raises(ValueError, match="Retire o preço"):
+        validar_sem_preco(produto)
 
 
 def _campanha_afiliada(
@@ -154,7 +173,7 @@ def _campanha_afiliada(
     resposta = client.post(f"{base}/roteiro/aprovar", json={
         "texto": (
             "Furadeira leve para casa. Peso leve e motor silencioso. "
-            "Hoje sai por 149,90. Link na bio para ver o detalhe."
+            "Confira a oferta e as condições atuais. Link na bio para ver o detalhe."
         ),
         "hash_campanha": campanha["hash_conteudo"],
     })
@@ -173,10 +192,9 @@ def _campanha_afiliada(
         "revisao_midias": revisao_midias,
         "dados": {
             "fontes": [{
-                "alegacao": "Preço de 149,90 na página do produto.",
+                "alegacao": "Peso leve e motor silencioso conforme ficha do produto.",
                 "fonte": "https://loja.exemplo.com/furadeira",
             }],
-            "fonte_preco": "https://loja.exemplo.com/furadeira",
             "relacao_comercial": "afiliado",
             "marca": "Loja Exemplo",
             "aviso_publicidade": True,
@@ -206,12 +224,13 @@ def test_producao_afiliada_monta_cartao_v11_sem_queimar_o_link(
     assert len(cartoes) == 2
     assert cartoes[0].props.titulo == "Furadeira Leve"
     assert cartoes[0].props.itens == ["Peso leve", "Motor silencioso"]
-    assert cartoes[1].props.preco == "149,90"
+    assert cartoes[1].props.preco == ""
     assert "Publicidade" in cartoes[1].props.aviso_publicidade
     assert all(cena.duracao_frames <= 3 * 30 for cena in cenas)
     assert preparacao.produto.link_afiliado not in json.dumps(
         [cena.props.model_dump(mode="json") for cena in cenas]
     )
+    assert "149,90" not in json.dumps([cena.props.model_dump(mode="json") for cena in cenas])
 
 
 def test_producao_afiliada_publica_agenda_e_texto_com_link(
@@ -269,6 +288,8 @@ def test_producao_afiliada_publica_agenda_e_texto_com_link(
 
     assert preparacao.produto.link_afiliado in agenda
     assert preparacao.produto.link_afiliado in youtube
+    assert "149,90" not in agenda + youtube + json.dumps(metadados)
+    assert "preco" not in metadados["produto"]
     assert metadados["produto"]["link_queimado_no_video"] is False
     assert metadados["relacao_comercial"] == "afiliado"
     assert metadados["publicacao_autorizada"] is False
@@ -288,8 +309,10 @@ def test_avulso_sem_aviso_de_publicidade_nao_produz(
         "revisao_roteiro": revisao_roteiro,
         "revisao_midias": selecao["revisao"],
         "dados": {
-            "fontes": [{"alegacao": "Preço na página do produto.", "fonte": "loja.exemplo.com"}],
-            "fonte_preco": "https://loja.exemplo.com/furadeira",
+            "fontes": [{
+                "alegacao": "Benefícios descritos na ficha do produto.",
+                "fonte": "loja.exemplo.com",
+            }],
             "relacao_comercial": "afiliado",
             "marca": "Loja Exemplo",
             "aviso_publicidade": False,

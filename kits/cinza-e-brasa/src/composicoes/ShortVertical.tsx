@@ -261,7 +261,6 @@ export const ShortVertical: React.FC<PropsShortVertical> = (props) => {
           <>
             <Texto grande>{props.titulo}</Texto>
             <Texto>{props.subtitulo}</Texto>
-            {props.preco ? <Texto cor={tokens.color.ochre}>{props.preco}</Texto> : null}
             {props.condicao ? <Texto>{props.condicao}</Texto> : null}
             {props.aviso_publicidade ? <Texto>{props.aviso_publicidade}</Texto> : null}
           </>
@@ -304,7 +303,6 @@ export const ShortVertical: React.FC<PropsShortVertical> = (props) => {
                 <Texto>{item}</Texto>
               </div>
             ))}
-            {props.preco ? <Texto cor={tokens.color.ochre}>{props.preco}</Texto> : null}
             {props.condicao ? <Texto>{props.condicao}</Texto> : null}
             {props.marca ? <Texto>{props.marca}</Texto> : null}
             {props.aviso_publicidade ? (

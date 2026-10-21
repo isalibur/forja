@@ -1,9 +1,9 @@
 id: produto_afiliado
 nome: Produto de afiliado
-estrutura: [problema, produto_em_uso, beneficio_1, beneficio_2, beneficio_3, preco_opcional, CTA]
+estrutura: [problema, produto_em_uso, beneficio_1, beneficio_2, beneficio_3, oferta_sem_preco, CTA]
 objetivos: [vendas]
 templates: [V01, V11, V07]
 duracao_min_s: 15
 duracao_max_s: 60
-regras: [imagem_autorizada, preco_com_fonte, aviso_de_afiliado, link_apenas_metadados]
-exige_fonte_preco: true
+regras: [imagem_autorizada, sem_preco, aviso_de_afiliado, link_apenas_metadados]
+exige_fonte_preco: false
