@@ -229,9 +229,30 @@ def test_pacote_saida_completo_e_promocao_global(tmp_path: Path):
 
 
 @pytest.mark.anyio
-async def test_producao_pipeline_handlers_e_execucao(tmp_path):
+async def test_producao_pipeline_handlers_e_execucao(tmp_path, monkeypatch):
     """Verifica que o pipeline M6 avanca apos REVISAO e conclui R1-R10."""
+    import shutil
+
+    import docforja.producao.execucao as execucao
+    from docforja.audio.mixagem import RelatorioMix
     from docforja.nucleo.handlers import criar_executor_projeto
+
+    def simular_mix(narracao, destino, idioma, trilha=None):
+        shutil.copyfile(narracao, destino)
+        return RelatorioMix(
+            idioma=idioma,
+            medido_lufs=-14.0,
+            true_peak_dbtp=-1.0,
+            lra_lu=7.0,
+            ganho_trilha_sob_fala=0.12 if trilha else None,
+            sidechain_ducking="teste",
+            hash_mix="hash-mock",
+            hash_narracao="hash-voz",
+            hash_trilha="hash-trilha" if trilha else None,
+            hash_config="hash-config",
+        )
+
+    monkeypatch.setattr(execucao, "mixar_audio", simular_mix)
 
     proj = Projeto.criar(
         nome="teste_producao_m6",

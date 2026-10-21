@@ -117,6 +117,10 @@ def test_mix_short_usa_trilha_reduzida_e_registra_volume(tmp_path: Path, monkeyp
         trilha.with_name(f"{trilha.name}.licenca.json"),
         {"licenca": "CC0-1.0", "comercial": True},
     )
+    atomic_write_json(
+        tmp_path / "relatorio_mix.json",
+        {"ganho_trilha_sob_fala": 0.12},
+    )
     comandos = []
     monkeypatch.setattr("docforja.shorts.producao.shutil.which", lambda _: "ffmpeg")
     monkeypatch.setattr(
@@ -130,7 +134,7 @@ def test_mix_short_usa_trilha_reduzida_e_registra_volume(tmp_path: Path, monkeyp
 
     assert "volume=0.0648" in comandos[0][comandos[0].index("-filter_complex") + 1]
     assert lufs == -14.0
-    assert mais_presente is None
+    assert mais_presente is False
 
 
 def test_metadados_short_oferecem_titulos_exatos_e_limites(tmp_path: Path) -> None:

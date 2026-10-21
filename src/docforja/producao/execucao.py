@@ -11,6 +11,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from docforja.audio.mixagem import mixar_audio
 from docforja.audio.trilha import resolver_trilha_provisoria
 from docforja.esquemas import Ativo, Bloco, Plano
 from docforja.global_assets.promocao import avaliar_ativos_para_promocao
@@ -231,43 +232,35 @@ def executar_r6_mix(ctx: ContextoEtapa) -> None:
         pasta_audio = ctx.projeto.pastas.audio / idioma
         pasta_audio.mkdir(parents=True, exist_ok=True)
         if eh_modo_so_legendas(ctx.projeto, idioma):
-            # No modo só legendas, reutiliza o mix do idioma principal
+            # No modo só legendas, reutiliza mix e medições do idioma principal.
             audio_base = ctx.projeto.pastas.audio / principal / "mix_final.wav"
-            if not audio_base.is_file():
-                audio_base = ctx.projeto.pastas.audio / principal / "narracao_completa.wav"
             dest_mix = pasta_audio / "mix_final.wav"
-            if audio_base.is_file() and (
+            relatorio_base = audio_base.with_name("relatorio_mix.json")
+            if not audio_base.is_file() or not relatorio_base.is_file():
+                raise FileNotFoundError("Mix medida do idioma principal ausente para só legendas.")
+            if (
                 not dest_mix.is_file()
                 or calcular_hash_dados(dest_mix) != calcular_hash_dados(audio_base)
             ):
-                shutil.copyfile(audio_base, dest_mix)
-            atomic_write_json(pasta_audio / "relatorio_mix.json", {
-                "etapa": "R6_mix",
+                temporario = dest_mix.with_name(f"{dest_mix.stem}.tmp{dest_mix.suffix}")
+                shutil.copyfile(audio_base, temporario)
+                os.replace(temporario, dest_mix)
+            dados_base = json.loads(relatorio_base.read_text(encoding="utf-8"))
+            dados_base.update({
                 "idioma": idioma,
                 "modo": "so_legendas",
                 "reutiliza_audio_de": principal,
-                "hash_mix": calcular_hash_dados(dest_mix) if dest_mix.is_file() else None,
+                "hash_mix": calcular_hash_dados(dest_mix),
             })
+            atomic_write_json(pasta_audio / "relatorio_mix.json", dados_base)
             continue
 
         wav_origem = pasta_audio / "narracao_completa.wav"
         if not wav_origem.is_file():
             raise FileNotFoundError(f"Narração ausente para mix em {idioma}.")
         dest_mix = pasta_audio / "mix_final.wav"
-        if (
-            not dest_mix.is_file()
-            or calcular_hash_dados(dest_mix) != calcular_hash_dados(wav_origem)
-        ):
-            shutil.copyfile(wav_origem, dest_mix)
-        atomic_write_json(pasta_audio / "relatorio_mix.json", {
-            "etapa": "R6_mix",
-            "idioma": idioma,
-            "alvo_lufs": -14.0,
-            "medido_lufs": -14.1,
-            "true_peak_dbfs": -1.0,
-            "sidechain_ducking": "ativo (0.12 sob fala)",
-            "hash_mix": calcular_hash_dados(dest_mix),
-        })
+        trilha = ctx.projeto.pastas.audio / "trilha" / "trilha_definitiva.wav"
+        mixar_audio(wav_origem, dest_mix, idioma, trilha if trilha.is_file() else None)
 
 
 def renderizar_video_remotion(
@@ -289,6 +282,8 @@ def renderizar_video_remotion(
     manifesto = montar_manifesto_previa(
         plano, segmentos, ativos, tem_trilha_provisoria=tem_trilha
     )
+    # R6 já entrega a faixa completa; a composição final não deve sobrepor música outra vez.
+    manifesto["tem_trilha_provisoria"] = False
 
     # Injeta i18n e idioma no manifesto para o Remotion
     i18n_path = projeto.pastas.plano / "i18n" / f"{idioma}.json"
@@ -316,7 +311,7 @@ def renderizar_video_remotion(
     ):
         shutil.copyfile(wav_mix, audio_publico)
 
-    if tem_trilha and trilha:
+    if manifesto["tem_trilha_provisoria"] and tem_trilha and trilha:
         audio_trilha = public / "trilha_provisoria.wav"
         if (
             not audio_trilha.is_file()

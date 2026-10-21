@@ -1,6 +1,7 @@
 """Narração extra e retime preservam IDs e proporções sem alterar o plano mestre."""
 
 import json
+import shutil
 import wave
 from pathlib import Path
 from types import SimpleNamespace
@@ -11,6 +12,7 @@ from docforja.esquemas import Bloco, Plano, Shot
 from docforja.idiomas.narracao import executar_narracoes_extras, narracoes_extras_validas
 from docforja.idiomas.retime import retimar_plano
 from docforja.idiomas.traducao import executar_traducao_projeto
+from docforja.io import atomic_write_json
 from docforja.nucleo.banco import BancoProjeto
 from docforja.nucleo.etapas import DefinicaoEtapa
 from docforja.nucleo.executor import ContextoEtapa, ExecutorPipeline
@@ -33,6 +35,28 @@ INGLES = """## B0 — Introduction
 **B0-S01** Vesuvius wakes.
 **B0-S02** The city watches.
 """
+
+
+def _instalar_mix_fake(monkeypatch):
+    def mix_fake(narracao, destino, idioma, trilha=None):
+        shutil.copyfile(narracao, destino)
+        atomic_write_json(
+            destino.with_name("relatorio_mix.json"),
+            {
+                "etapa": "R6_mix",
+                "idioma": idioma,
+                "medido_lufs": -14.0,
+                "true_peak_dbtp": -1.0,
+                "lra_lu": 7.0,
+                "ganho_trilha_sob_fala": 0.12 if trilha else None,
+                "sidechain_ducking": "teste",
+                "hash_mix": "hash-mock",
+                "hash_narracao": "hash-voz",
+                "hash_trilha": "hash-trilha" if trilha else None,
+            },
+        )
+
+    monkeypatch.setattr("docforja.producao.execucao.mixar_audio", mix_fake)
 
 
 class TTSFake:
@@ -221,6 +245,7 @@ def test_producao_multilingue_gera_artefatos_separados(tmp_path, monkeypatch):
         return SimpleNamespace(returncode=0, stderr="")
 
     monkeypatch.setattr("docforja.producao.execucao.subprocess.run", subprocess_fake)
+    _instalar_mix_fake(monkeypatch)
     executar_r5_montagem(contexto)
     executar_r6_mix(contexto)
     executar_r7_render(contexto)
@@ -332,6 +357,7 @@ def test_modo_so_legendas_sem_tts_e_sincronizado_ao_base(tmp_path, monkeypatch):
         etapa=DefinicaoEtapa(id="R7_render"),
         banco=BancoProjeto(projeto.banco_file),
     )
+    _instalar_mix_fake(monkeypatch)
     executar_r5_montagem(contexto)
     executar_r6_mix(contexto)
     executar_r7_render(contexto)
@@ -432,6 +458,7 @@ def test_render_remotion_consome_plano_retimado_e_i18n(tmp_path, monkeypatch):
         return SimpleNamespace(returncode=0, stderr="")
 
     monkeypatch.setattr("docforja.producao.execucao.subprocess.run", subprocess_spy)
+    _instalar_mix_fake(monkeypatch)
 
     executar_r5_montagem(contexto)
     executar_r6_mix(contexto)
@@ -441,6 +468,7 @@ def test_render_remotion_consome_plano_retimado_e_i18n(tmp_path, monkeypatch):
     assert len(comando_capturado) == 1
     props_en = props_capturadas[0]
     assert props_en["idioma"] == "en"
+    assert props_en["tem_trilha_provisoria"] is False
     assert props_en["i18n"]["B0-S01"] == "Vesuvius wakes."
     assert props_en["shots"][0]["texto"] == "Vesuvius wakes."
     assert props_en["duracao_frames"] == 84  # 3.5s * 24 fps

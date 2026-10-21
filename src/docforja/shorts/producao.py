@@ -644,10 +644,16 @@ def _mixar_audio(
     musica_mais_presente: bool | None = None
     if trilha and trilha.is_file() and relatorio_longo.is_file():
         relatorio = json.loads(relatorio_longo.read_text(encoding="utf-8"))
-        volume_longo = re.search(r"(0[.,]\d+)", str(relatorio.get("sidechain_ducking", "")))
-        if volume_longo:
-            volume_referencia = float(volume_longo.group(1).replace(",", "."))
-            musica_mais_presente = volume_trilha_short > volume_referencia
+        ganho_longo = relatorio.get("ganho_trilha_sob_fala")
+        if isinstance(ganho_longo, (int, float)) and not isinstance(ganho_longo, bool):
+            musica_mais_presente = volume_trilha_short > float(ganho_longo)
+        else:
+            volume_longo = re.search(
+                r"(0[.,]\d+)", str(relatorio.get("sidechain_ducking", ""))
+            )
+            if volume_longo:
+                volume_referencia = float(volume_longo.group(1).replace(",", "."))
+                musica_mais_presente = volume_trilha_short > volume_referencia
     return lufs, musica_mais_presente
 
 
@@ -1083,7 +1089,8 @@ def produzir_short_derivado(
                 video_longo_id=projeto.slug,
                 audio_lufs_integrado=loudness,
                 musica_mais_presente_que_longo=musica_mais_presente,
-                musica_cobre_voz=False,
+                # O ducking está ativo, mas ainda não há medição objetiva de mascaramento.
+                musica_cobre_voz=None,
             )
         )
         ativos_metadados: dict[str, Any] = {}

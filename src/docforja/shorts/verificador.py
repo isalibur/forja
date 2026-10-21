@@ -139,10 +139,12 @@ def verificar_short(short: ShortParaVerificar) -> ResultadoDosagemShort:
             aprovada=audio_ok,
             descricao="Mix próximo de -14 LUFS, música presente sem cobrir a voz.",
             detalhes=(
-                "Medição de loudness ou relação voz/música ausente."
+                "Loudness integrado ausente."
                 if short.audio_lufs_integrado is None
-                or short.musica_mais_presente_que_longo is None
-                or short.musica_cobre_voz is None
+                else "Comparação de nível da música com o longo ausente."
+                if short.musica_mais_presente_que_longo is None
+                else "Mascaramento da voz ainda não foi medido."
+                if short.musica_cobre_voz is None
                 else f"Loudness integrado: {short.audio_lufs_integrado:.1f} LUFS"
             ),
         )

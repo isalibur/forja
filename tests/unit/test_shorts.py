@@ -224,6 +224,32 @@ def test_verificador_reprova_cta_ponte_e_elemento_fora_safe_area() -> None:
     assert {"DS1", "DS2", "DS4", "DS5", "DS8", "DS9"} <= falhas
 
 
+def test_ds9_informa_quando_mascaramento_da_voz_nao_foi_medido() -> None:
+    short = ShortParaVerificar(
+        duracao_s=30,
+        duracao_alvo_s=30,
+        inicio_gancho_visual_s=0,
+        inicio_gancho_textual_s=0,
+        inicio_gancho_falado_s=0,
+        mudancas_visuais_s=list(range(3, 30, 3)),
+        elementos=[ElementoTelaShort(id="titulo", x=0.1, y=0.2, largura=0.7, altura=0.1)],
+        legendas=[
+            IntervaloLegendaShort(inicio_s=0, fim_s=30, texto="legenda de teste"),
+        ],
+        textos_tela=["Texto de teste"],
+        quantidade_ctas_principais=1,
+        audio_lufs_integrado=-14.0,
+        musica_mais_presente_que_longo=False,
+        musica_cobre_voz=None,
+    )
+
+    resultado = verificar_short(short)
+    ds9 = next(item for item in resultado.violacoes if item.regra == "DS9")
+
+    assert not ds9.aprovada
+    assert ds9.detalhes == "Mascaramento da voz ainda não foi medido."
+
+
 def test_catalogo_de_formulas_tem_ids_unicos_e_conteudo_afiliado() -> None:
     catalogo = carregar_formulas(Path("global/formulas_shorts"))
 
