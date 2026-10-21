@@ -32,6 +32,7 @@ uv pip install -e ".[gpu,dev]"
 - Núcleo: typer, fastapi, uvicorn, jinja2, python-multipart, sqlmodel, pydantic, litellm, httpx, tenacity, structlog, watchdog, python-docx, pillow, pyyaml, opentimelineio.
 - `[gpu]`: torch (CUDA 12.x), whisperx, chatterbox-tts, kokoro, rembg (com BiRefNet), realesrgan, librosa, jiwer, pyloudnorm, rasterio, colour-science, open_clip (busca na biblioteca).
 - **Ambientes separados** (chamados por subprocesso): `envs/depthflow` (`uv pip install depthflow`) e, se o torch conflitar, `envs/tts` e `envs/align`.
+- **Alinhamento em português no Windows:** o ambiente `envs/align` também precisa dos dados NLTK `punkt_tab/portuguese` em `envs/align/nltk_data/tokenizers/`. Reaproveite a cópia local já instalada ou instale-os nesse diretório na preparação do ambiente. Evite depender de `%APPDATA%/nltk_data` quando o aplicativo virtualiza essa pasta: o NLTK pode localizar o arquivo, mas recusar sua abertura por segurança. Confira com `.\envs\align\Scripts\python.exe -c "import nltk; nltk.data.load('tokenizers/punkt_tab/portuguese.pickle'); print('punkt OK')"` antes de produzir vídeos.
 
 ## 5. Remotion + skills
 ```powershell

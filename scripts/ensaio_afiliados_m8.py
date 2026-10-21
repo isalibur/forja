@@ -54,7 +54,8 @@ ROTEIRO_FURADEIRA = (
     "Ela ainda guarda a corda na caixa, o que evita ficar procurando tomada no "
     "meio da obra. O cabo tem dois metros de alcance em mesas grandes. Veja a oferta "
     "e as condições atuais diretamente pelo link indicado na publicação. O modelo é o "
-    "mesmo da foto, sem diferenças de acabamento. Link na bio para ver o detalhe "
+    "mesmo da foto, sem diferenças de acabamento. Antes de escolher, confira "
+    "medidas, acessórios e detalhes na página. Link na bio para ver o detalhe "
     "e a ficha completa."
 )
 
@@ -64,7 +65,8 @@ ROTEIRO_LUMINARIA = (
     "recarregável tira a preocupação de encontrar tomada perto da cama. Para quem "
     "passa a tarde na mesa, a diferença de conforto aparece na primeira semana "
     "de uso. Veja a oferta e as condições atuais no link da loja. "
-    "O modelo é o mesmo da foto, sem diferenças de acabamento. Link na bio para "
+    "O modelo é o mesmo da foto, sem diferenças de acabamento. Antes de escolher, "
+    "confira medidas, acessórios e detalhes na página. Link na bio para "
     "ver o detalhe e a ficha completa."
 )
 

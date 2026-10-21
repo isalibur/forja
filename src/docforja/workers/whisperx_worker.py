@@ -63,13 +63,14 @@ def processar_alinhamento(
             segments, model_a, metadata, audio, device, return_char_alignments=False
         )
         aligned_segments = aligned.get("segments", segments)
-    except Exception as e:
-        print(f"Aviso no alinhamento fonético, usando segmentos diretos: {e}", file=sys.stderr)
-        aligned_segments = segments
+    except Exception as exc:
+        raise RuntimeError(f"O alinhamento fonético falhou: {exc}") from exc
 
     palavras_lista, segmentos_lista = montar_saida_alinhamento(
         aligned_segments, segments if segmentos_input else None
     )
+    if not palavras_lista:
+        raise RuntimeError("O alinhador não retornou palavras; revise áudio, idioma e modelo.")
 
     saida_palavras.parent.mkdir(parents=True, exist_ok=True)
     with open(saida_palavras, "w", encoding="utf-8") as f:
