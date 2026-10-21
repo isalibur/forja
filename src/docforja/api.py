@@ -43,6 +43,7 @@ from docforja.nucleo.handlers import criar_executor_projeto
 from docforja.nucleo.projeto import Projeto
 from docforja.settings import load_settings
 from docforja.shorts.avulsos import PASTA_FORMULAS_PADRAO, ler_lote_avulsos_texto
+from docforja.shorts.campanhas import listar_campanhas, obter_campanha, salvar_campanha
 from docforja.shorts.candidatos import (
     aprovar_frase_ponte,
     gerar_frases_ponte,
@@ -116,6 +117,10 @@ class ManifestoShortPayload(BaseModel):
 
 class PlanejarLoteAvulsosPayload(BaseModel):
     csv_texto: str = Field(min_length=1, max_length=262144)
+
+
+class SalvarLoteAvulsosPayload(PlanejarLoteAvulsosPayload):
+    nome: str = Field(min_length=1, max_length=120)
 
 
 def _projeto_da_interface(slug: str) -> Projeto:
@@ -499,6 +504,39 @@ def planejar_lote_shorts_avulsos(payload: PlanejarLoteAvulsosPayload) -> dict[st
         },
         "status": "aguardando_revisao",
     }
+
+
+@app.post("/api/shorts/avulsos/campanhas", status_code=201)
+def criar_campanha_avulsa(payload: SalvarLoteAvulsosPayload) -> dict[str, Any]:
+    """Persiste somente o plano editorial; não aprova roteiro, mídia ou publicação."""
+    try:
+        pedidos = ler_lote_avulsos_texto(payload.csv_texto)
+        campanha = salvar_campanha(
+            load_settings().paths.projects,
+            payload.nome,
+            pedidos,
+            carregar_formulas(PASTA_FORMULAS_PADRAO),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return campanha.model_dump(mode="json")
+
+
+@app.get("/api/shorts/avulsos/campanhas")
+def consultar_campanhas_avulsas() -> list[dict[str, Any]]:
+    return [
+        campanha.model_dump(mode="json")
+        for campanha in listar_campanhas(load_settings().paths.projects)
+    ]
+
+
+@app.get("/api/shorts/avulsos/campanhas/{campanha_id}")
+def consultar_campanha_avulsa(campanha_id: str) -> dict[str, Any]:
+    try:
+        campanha = obter_campanha(load_settings().paths.projects, campanha_id)
+    except (ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return campanha.model_dump(mode="json")
 
 
 @app.get("/api/projetos/{slug}/shorts/derivados")

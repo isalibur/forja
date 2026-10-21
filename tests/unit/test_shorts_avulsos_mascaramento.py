@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from docforja.api import app
 from docforja.shorts.avulsos import ler_lote_avulsos, ler_lote_avulsos_texto
+from docforja.shorts.campanhas import obter_campanha
 from docforja.shorts.mascaramento import medir_mascaramento
 
 
@@ -53,6 +54,52 @@ def test_api_retorna_erro_de_linha_sem_gravar_pedido() -> None:
 
     assert resposta.status_code == 400
     assert "Linha 2" in resposta.json()["detail"]
+
+
+def test_campanha_avulsa_persiste_snapshot_sem_aprovacao_ou_producao(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def mock_settings() -> object:
+        return type("Settings", (), {"paths": type("Paths", (), {"projects": tmp_path})()})()
+    monkeypatch.setattr("docforja.api.load_settings", mock_settings)
+    client = TestClient(app)
+    payload = {
+        "nome": "Ensaio editorial",
+        "csv_texto": (
+            "tema,objetivo,duracao_s,roteiro\n"
+            'Pompeia,educativo,30,"A cidade foi soterrada pela erupção."\n'
+        ),
+    }
+    primeira = client.post("/api/shorts/avulsos/campanhas", json=payload)
+    segunda = client.post("/api/shorts/avulsos/campanhas", json=payload)
+
+    assert primeira.status_code == 201
+    assert segunda.json() == primeira.json()
+    campanha = primeira.json()
+    assert campanha["status"] == "aguardando_revisao"
+    assert campanha["pedidos"][0]["roteiro"] == "A cidade foi soterrada pela erupção."
+    assert "aprovar roteiro" in campanha["pedidos"][0]["pendencias"]
+    assert client.get("/api/shorts/avulsos/campanhas").json() == [campanha]
+    assert client.get(f"/api/shorts/avulsos/campanhas/{campanha['id']}").json() == campanha
+    assert obter_campanha(tmp_path, campanha["id"]).id == campanha["id"]
+    assert list((tmp_path / "_campanhas_avulsas").glob("*.json"))
+    assert not list(tmp_path.glob("*/05_saida"))
+
+
+def test_campanha_avulsa_invalida_nao_grava_e_id_invalido_falha(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def mock_settings() -> object:
+        return type("Settings", (), {"paths": type("Paths", (), {"projects": tmp_path})()})()
+    monkeypatch.setattr("docforja.api.load_settings", mock_settings)
+    client = TestClient(app)
+    resposta = client.post(
+        "/api/shorts/avulsos/campanhas",
+        json={"nome": "Teste", "csv_texto": "tema,objetivo,duracao_s\nA,educativo,90\n"},
+    )
+    assert resposta.status_code == 400
+    assert not (tmp_path / "_campanhas_avulsas").exists()
+    assert client.get("/api/shorts/avulsos/campanhas/nao-valido").status_code == 404
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import textos from "../i18n/pt-BR.json";
 
 type PedidoAvulso = {
@@ -13,6 +13,8 @@ type PedidoAvulso = {
 };
 type Formula = { nome: string; estrutura: string[]; templates: string[] };
 type Resultado = {
+  id?: string;
+  nome?: string;
   quantidade: number;
   pedidos: PedidoAvulso[];
   formulas: Record<string, Formula>;
@@ -23,9 +25,18 @@ const t = textos.shortsAvulsos;
 
 export const ShortsAvulsos: React.FC = () => {
   const [csvTexto, setCsvTexto] = useState("");
+  const [nome, setNome] = useState("");
   const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [campanhas, setCampanhas] = useState<Resultado[]>([]);
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
+
+  useEffect(() => {
+    void fetch("/api/shorts/avulsos/campanhas")
+      .then((resposta) => resposta.ok ? resposta.json() as Promise<Resultado[]> : [])
+      .then(setCampanhas)
+      .catch(() => { /* A prévia continua disponível sem histórico. */ });
+  }, []);
 
   const planejar = async (evento: React.FormEvent<HTMLFormElement>) => {
     evento.preventDefault();
@@ -41,6 +52,27 @@ export const ShortsAvulsos: React.FC = () => {
       const corpo = await resposta.json();
       if (!resposta.ok) throw new Error(corpo.detail || t.erroPadrao);
       setResultado(corpo as Resultado);
+    } catch (falha) {
+      setErro(falha instanceof Error ? falha.message : t.erroPadrao);
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  const salvar = async () => {
+    setOcupado(true);
+    setErro("");
+    try {
+      const resposta = await fetch("/api/shorts/avulsos/campanhas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, csv_texto: csvTexto }),
+      });
+      const corpo = await resposta.json();
+      if (!resposta.ok) throw new Error(corpo.detail || t.erroPadrao);
+      const campanha = corpo as Resultado;
+      setResultado(campanha);
+      setCampanhas((anteriores) => [campanha, ...anteriores.filter((item) => item.id !== campanha.id)]);
     } catch (falha) {
       setErro(falha instanceof Error ? falha.message : t.erroPadrao);
     } finally {
@@ -76,7 +108,20 @@ export const ShortsAvulsos: React.FC = () => {
       {erro && <p role="alert" className="rounded-btn border border-red-500 p-3 text-sm text-red-500">{erro}</p>}
       {resultado && (
         <div className="space-y-4" aria-live="polite">
-          <h2 className="text-lg font-semibold text-tx">{resultado.quantidade} {t.resultado}</h2>
+          <h2 className="text-lg font-semibold text-tx">{resultado.pedidos.length} {t.resultado}</h2>
+          {resultado.id ? <p className="text-sm text-mut">{t.salvo}: {resultado.nome} · {resultado.id}</p> : (
+            <div className="flex flex-wrap items-end gap-3 rounded-card border border-line bg-surf p-4">
+              <label className="text-sm text-tx">{t.nomeCampanha}
+                <input className="ml-2 rounded-btn border border-line bg-bg p-2 text-tx" maxLength={120}
+                  value={nome} onChange={(evento) => setNome(evento.target.value)} />
+              </label>
+              <button type="button" disabled={ocupado || !nome.trim()}
+                onClick={() => { void salvar(); }}
+                className="rounded-btn bg-brasa px-4 py-2 font-semibold text-bg disabled:opacity-50">
+                {t.salvar}
+              </button>
+            </div>
+          )}
           <p className="text-sm text-mut">{t.semProducao}</p>
           <div className="grid gap-4 md:grid-cols-2">
             {resultado.pedidos.map((pedido) => {
@@ -113,6 +158,21 @@ export const ShortsAvulsos: React.FC = () => {
             })}
           </div>
         </div>
+      )}
+      {campanhas.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold text-tx">{t.historico}</h2>
+          <ul className="space-y-2">
+            {campanhas.map((campanha) => (
+              <li key={campanha.id}>
+                <button type="button" onClick={() => setResultado(campanha)}
+                  className="w-full rounded-btn border border-line bg-surf p-3 text-left text-sm text-tx">
+                  {campanha.nome} · {campanha.pedidos.length} {t.resultado} · {campanha.id}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </section>
   );
