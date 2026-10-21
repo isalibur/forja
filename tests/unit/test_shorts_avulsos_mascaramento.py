@@ -102,6 +102,75 @@ def test_campanha_avulsa_invalida_nao_grava_e_id_invalido_falha(
     assert client.get("/api/shorts/avulsos/campanhas/nao-valido").status_code == 404
 
 
+def test_aprovacao_de_roteiro_avulso_e_versionada_sem_alterar_campanha(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def mock_settings() -> object:
+        return type("Settings", (), {"paths": type("Paths", (), {"projects": tmp_path})()})()
+
+    monkeypatch.setattr("docforja.api.load_settings", mock_settings)
+    client = TestClient(app)
+    campanha = client.post(
+        "/api/shorts/avulsos/campanhas",
+        json={
+            "nome": "Campanha",
+            "csv_texto": "tema,objetivo,duracao_s\nPompeia,educativo,30\n",
+        },
+    ).json()
+    caminho_snapshot = tmp_path / "_campanhas_avulsas" / f"{campanha['id']}.json"
+    snapshot_original = caminho_snapshot.read_bytes()
+    url = f"/api/shorts/avulsos/campanhas/{campanha['id']}/pedidos/A001/roteiro/aprovar"
+    payload = {"texto": "Texto revisado pelo usuário.", "hash_campanha": campanha["hash_conteudo"]}
+
+    primeira = client.post(url, json=payload)
+    assert primeira.status_code == 200
+    aprovacao = primeira.json()
+    assert aprovacao["status"] == "roteiro_aprovado"
+    assert aprovacao["texto"] == "Texto revisado pelo usuário."
+    assert client.post(url, json=payload).json() == aprovacao
+
+    segunda = client.post(
+        url, json={"texto": "Outra revisão humana.", "hash_campanha": campanha["hash_conteudo"]}
+    )
+    assert segunda.status_code == 200
+    assert segunda.json()["revisao"] != aprovacao["revisao"]
+    pasta_revisoes = tmp_path / "_campanhas_avulsas" / campanha["id"] / "roteiros" / "A001"
+    assert len(list((pasta_revisoes / "revisoes").glob("*.json"))) == 2
+    reaberta = client.get(f"/api/shorts/avulsos/campanhas/{campanha['id']}").json()
+    assert reaberta["aprovacoes_roteiro"]["A001"] == segunda.json()
+    assert caminho_snapshot.read_bytes() == snapshot_original
+    assert reaberta["pedidos"][0]["roteiro"] is None
+    assert "aprovar mídias e licenças" in reaberta["pedidos"][0]["pendencias"]
+
+
+def test_aprovacao_avulsa_bloqueia_campanha_obsoleta_e_pedido_estranho(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def mock_settings() -> object:
+        return type("Settings", (), {"paths": type("Paths", (), {"projects": tmp_path})()})()
+
+    monkeypatch.setattr("docforja.api.load_settings", mock_settings)
+    client = TestClient(app)
+    campanha = client.post(
+        "/api/shorts/avulsos/campanhas",
+        json={"nome": "Campanha", "csv_texto": "tema,objetivo,duracao_s\nA,educativo,30\n"},
+    ).json()
+    base = f"/api/shorts/avulsos/campanhas/{campanha['id']}/pedidos"
+    assert client.post(
+        f"{base}/A001/roteiro/aprovar",
+        json={"texto": "Roteiro", "hash_campanha": "0" * 64},
+    ).status_code == 409
+    assert client.post(
+        f"{base}/A002/roteiro/aprovar",
+        json={"texto": "Roteiro", "hash_campanha": campanha["hash_conteudo"]},
+    ).status_code == 409
+    assert client.post(
+        f"{base}/A001/roteiro/aprovar",
+        json={"texto": "   ", "hash_campanha": campanha["hash_conteudo"]},
+    ).status_code == 409
+    assert not (tmp_path / "_campanhas_avulsas" / campanha["id"]).exists()
+
+
 @pytest.mark.parametrize(
     ("conteudo", "erro"),
     [

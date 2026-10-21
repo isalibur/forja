@@ -43,7 +43,14 @@ from docforja.nucleo.handlers import criar_executor_projeto
 from docforja.nucleo.projeto import Projeto
 from docforja.settings import load_settings
 from docforja.shorts.avulsos import PASTA_FORMULAS_PADRAO, ler_lote_avulsos_texto
-from docforja.shorts.campanhas import listar_campanhas, obter_campanha, salvar_campanha
+from docforja.shorts.campanhas import (
+    CampanhaAvulsa,
+    aprovacoes_da_campanha,
+    aprovar_roteiro,
+    listar_campanhas,
+    obter_campanha,
+    salvar_campanha,
+)
 from docforja.shorts.candidatos import (
     aprovar_frase_ponte,
     gerar_frases_ponte,
@@ -121,6 +128,11 @@ class PlanejarLoteAvulsosPayload(BaseModel):
 
 class SalvarLoteAvulsosPayload(PlanejarLoteAvulsosPayload):
     nome: str = Field(min_length=1, max_length=120)
+
+
+class AprovarRoteiroAvulsoPayload(BaseModel):
+    texto: str = Field(min_length=1, max_length=20000)
+    hash_campanha: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
 def _projeto_da_interface(slug: str) -> Projeto:
@@ -519,15 +531,25 @@ def criar_campanha_avulsa(payload: SalvarLoteAvulsosPayload) -> dict[str, Any]:
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return campanha.model_dump(mode="json")
+    return _resposta_campanha(campanha)
+
+
+def _resposta_campanha(campanha: CampanhaAvulsa) -> dict[str, Any]:
+    raiz = load_settings().paths.projects
+    return {
+        **campanha.model_dump(mode="json"),
+        "quantidade": len(campanha.pedidos),
+        "aprovacoes_roteiro": {
+            pedido_id: aprovacao.model_dump(mode="json")
+            for pedido_id, aprovacao in aprovacoes_da_campanha(raiz, campanha).items()
+        },
+    }
 
 
 @app.get("/api/shorts/avulsos/campanhas")
 def consultar_campanhas_avulsas() -> list[dict[str, Any]]:
-    return [
-        campanha.model_dump(mode="json")
-        for campanha in listar_campanhas(load_settings().paths.projects)
-    ]
+    campanhas = listar_campanhas(load_settings().paths.projects)
+    return [_resposta_campanha(campanha) for campanha in campanhas]
 
 
 @app.get("/api/shorts/avulsos/campanhas/{campanha_id}")
@@ -536,7 +558,26 @@ def consultar_campanha_avulsa(campanha_id: str) -> dict[str, Any]:
         campanha = obter_campanha(load_settings().paths.projects, campanha_id)
     except (ValueError, FileNotFoundError) as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return campanha.model_dump(mode="json")
+    return _resposta_campanha(campanha)
+
+
+@app.post("/api/shorts/avulsos/campanhas/{campanha_id}/pedidos/{pedido_id}/roteiro/aprovar")
+def aprovar_roteiro_short_avulso(
+    campanha_id: str, pedido_id: str, payload: AprovarRoteiroAvulsoPayload
+) -> dict[str, Any]:
+    try:
+        aprovacao = aprovar_roteiro(
+            load_settings().paths.projects,
+            campanha_id,
+            pedido_id,
+            payload.texto,
+            payload.hash_campanha,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return aprovacao.model_dump(mode="json")
 
 
 @app.get("/api/projetos/{slug}/shorts/derivados")

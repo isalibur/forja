@@ -12,9 +12,12 @@ type PedidoAvulso = {
   pendencias: string[];
 };
 type Formula = { nome: string; estrutura: string[]; templates: string[] };
+type AprovacaoRoteiro = { texto: string; revisao: string; status: string };
 type Resultado = {
   id?: string;
   nome?: string;
+  hash_conteudo?: string;
+  aprovacoes_roteiro?: Record<string, AprovacaoRoteiro>;
   quantidade: number;
   pedidos: PedidoAvulso[];
   formulas: Record<string, Formula>;
@@ -28,6 +31,7 @@ export const ShortsAvulsos: React.FC = () => {
   const [nome, setNome] = useState("");
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [campanhas, setCampanhas] = useState<Resultado[]>([]);
+  const [roteiros, setRoteiros] = useState<Record<string, string>>({});
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
 
@@ -73,6 +77,35 @@ export const ShortsAvulsos: React.FC = () => {
       const campanha = corpo as Resultado;
       setResultado(campanha);
       setCampanhas((anteriores) => [campanha, ...anteriores.filter((item) => item.id !== campanha.id)]);
+    } catch (falha) {
+      setErro(falha instanceof Error ? falha.message : t.erroPadrao);
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  const aprovarRoteiro = async (pedido: PedidoAvulso) => {
+    if (!resultado?.id || !resultado.hash_conteudo) return;
+    const campanhaId = resultado.id;
+    const chave = `${campanhaId}:${pedido.id}`;
+    const texto = roteiros[chave] ?? resultado.aprovacoes_roteiro?.[pedido.id]?.texto ?? pedido.roteiro ?? "";
+    setOcupado(true);
+    setErro("");
+    try {
+      const resposta = await fetch(`/api/shorts/avulsos/campanhas/${campanhaId}/pedidos/${pedido.id}/roteiro/aprovar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto, hash_campanha: resultado.hash_conteudo }),
+      });
+      const corpo = await resposta.json();
+      if (!resposta.ok) throw new Error(corpo.detail || t.erroPadrao);
+      const aprovacao = corpo as AprovacaoRoteiro;
+      const atualizado = {
+        ...resultado,
+        aprovacoes_roteiro: { ...resultado.aprovacoes_roteiro, [pedido.id]: aprovacao },
+      };
+      setResultado(atualizado);
+      setCampanhas((anteriores) => anteriores.map((item) => item.id === campanhaId ? atualizado : item));
     } catch (falha) {
       setErro(falha instanceof Error ? falha.message : t.erroPadrao);
     } finally {
@@ -126,6 +159,8 @@ export const ShortsAvulsos: React.FC = () => {
           <div className="grid gap-4 md:grid-cols-2">
             {resultado.pedidos.map((pedido) => {
               const formula = resultado.formulas[pedido.formula_id];
+              const aprovacao = resultado.aprovacoes_roteiro?.[pedido.id];
+              const chave = `${resultado.id}:${pedido.id}`;
               return (
                 <article key={pedido.id} className="rounded-card border border-line bg-surf p-5 space-y-3">
                   <div className="flex items-start justify-between gap-3">
@@ -147,10 +182,29 @@ export const ShortsAvulsos: React.FC = () => {
                     </div>
                   </div>
                   <p className="text-xs text-mut">{pedido.roteiro ? t.roteiroProprio : t.roteiroPendente}</p>
+                  {resultado.id && (
+                    <div className="space-y-2">
+                      <label htmlFor={`roteiro-${pedido.id}`} className="block text-sm font-medium text-tx">
+                        {t.revisarRoteiro}
+                      </label>
+                      <textarea id={`roteiro-${pedido.id}`} maxLength={20000}
+                        className="min-h-28 w-full rounded-btn border border-line bg-bg p-3 text-sm text-tx"
+                        value={roteiros[chave] ?? aprovacao?.texto ?? pedido.roteiro ?? ""}
+                        onChange={(evento) => setRoteiros((anteriores) => ({ ...anteriores, [chave]: evento.target.value }))}
+                      />
+                      <button type="button" disabled={ocupado || !(roteiros[chave] ?? aprovacao?.texto ?? pedido.roteiro ?? "").trim()}
+                        onClick={() => { void aprovarRoteiro(pedido); }}
+                        className="rounded-btn border border-brasa px-3 py-2 text-sm font-semibold text-brasa disabled:opacity-50">
+                        {aprovacao ? t.aprovarNovaRevisao : t.aprovarRoteiro}
+                      </button>
+                      {aprovacao && <p className="text-xs text-mut">{t.roteiroAprovado} · {aprovacao.revisao.slice(0, 8)}</p>}
+                    </div>
+                  )}
                   <div>
                     <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-mut">{t.pendencias}</p>
                     <ul className="list-disc pl-5 text-sm text-mut">
-                      {pedido.pendencias.map((item) => <li key={item}>{item}</li>)}
+                      {pedido.pendencias.filter((item) => !(aprovacao && item === "aprovar roteiro"))
+                        .map((item) => <li key={item}>{item}</li>)}
                     </ul>
                   </div>
                 </article>
