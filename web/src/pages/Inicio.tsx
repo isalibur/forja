@@ -125,7 +125,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavegar, onSelecionarProjeto }
             </div>
             <h4 className="font-semibold text-tx">Canal de música</h4>
             <p className="text-xs text-mut mt-1">
-              Vídeos de 1 h com loops visuais animados e ficha de direitos.
+              Vídeos de 1 h com suas músicas e loops visuais animados.
             </p>
           </button>
         </div>

@@ -43,7 +43,7 @@ R10_biblioteca:     {needs: [R9_pacote], opcional: true}           # propor ativ
 | `longo` | as de cima |
 | `short_derivado` | `S1_candidatos` (pontua trechos do plano longo) → `S2_ponte` (frases-ponte para aprovar) → `S3_verticalizar` (reenquadra ativos, layout 9:16) → `P6_verificador` (regras DS) → `R5…R9` em 9:16 com legendas queimadas |
 | `short_avulso` | `E00_entrada` → `SA1_roteiro` (seu, por fórmula ou Gemini manual) → `P1…P8` com templates V/T e regras DS → `REVISAO` → `R1…R9` em 9:16; suporta **lote** (CSV de temas → N projetos) |
-| `musica` | `MU1_faixas` (fichas de direito, ordem, normalização) → `MU2_cena` (imagens, máscaras, animações L01–L06) → `MU3_loop` (clipe que emenda) → `REVISAO` → `MU4_audio` (crossfades, ambiente) → `MU5_montagem` (stream_loop + sobreposições, NVENC) → `R8_qa` → `R9_pacote` (tracklist, metadados, thumbs, shorts opcionais) |
+| `musica` | `MU1_faixas` (declaração geral do usuário, ordem, normalização; sem ficha por faixa) → `MU2_cena` (imagens, máscaras, animações L01–L06) → `MU3_loop` (clipe que emenda) → `REVISAO` → `MU4_audio` (crossfades, ambiente) → `MU5_montagem` (stream_loop + sobreposições, NVENC) → `R8_qa` → `R9_pacote` (tracklist, metadados, thumbs, shorts opcionais) |
 
 Ao final de qualquer tipo: `R10_global` propõe o que promover para a pasta global (`13 §3`).
 
@@ -147,7 +147,7 @@ D:\DocForja\projetos\<slug>\
 | **Produção** | Progresso por etapa e idioma, tempo restante |
 | **Resultado** | Player por idioma, arquivos, relatório, "refazer shot", "promover à biblioteca" |
 | **Shorts** | Candidatos do vídeo longo (com nota e motivo), frases-ponte para aprovar; criação de short avulso por tema/objetivo/fórmula |
-| **Música** | Lista de faixas com fichas de direito, imagens, máscaras, prévia do loop, tracklist |
+| **Música** | Lista de faixas, imagens, máscaras, prévia do loop e tracklist; sem ficha individual das músicas inseridas pelo usuário |
 | **Pasta global** | Kits, imagens, personagens, mapas, loops, trilhas, SFX, vozes, CTAs, fórmulas de shorts, blocos de metadados |
 
 **CLI** (para automação e Hermes): `docforja novo [--tipo longo|short|musica] | planejar | status | produzir --codigo | refazer | shorts candidatos <slug> | shorts lote <arquivo.csv> | exportar-traducao | importar-traducao | exportar-metadados | global promover | doctor | benchmark`.

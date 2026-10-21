@@ -140,7 +140,7 @@ Antigravity: tela "Shorts" (14 §5.8, com prévias em moldura de celular e diagr
 ### M9 — Canal de música
 **Docs:** `12`
 ```
-Implemente musica/: fichas de direito por faixa (bloqueia faixa sem ficha), ordem e normalização, crossfades,
+Implemente musica/: declaração geral do usuário para as faixas que ele inserir (sem ficha ou bloqueio por faixa), ordem e normalização, crossfades,
 ambiente opcional; cena com 1–2 imagens, máscaras sugeridas pela visão local e editáveis, animações L01–L06
 (DepthFlow em ciclo e componentes Remotion com semente e ciclo exato); render do clipe em loop uma vez + checagem
 da emenda; montagem longa com FFmpeg -stream_loop e sobreposições com transparência (nome da faixa, troca de imagem,

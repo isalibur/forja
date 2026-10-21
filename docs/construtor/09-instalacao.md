@@ -57,7 +57,7 @@ ollama pull qwen2.5vl:7b
 - **DaVinci Resolve (gratuito):** para abrir o `projeto.otio` e finalizar à mão, se quiser.
 
 ## 8. Bibliotecas iniciais
-- Música: 60–100 faixas com licença para vídeos monetizados (YouTube Audio Library, Pixabay Music, Free Music Archive CC BY, Incompetech) com `license.json` → `docforja biblioteca indexar`.
+- Música: as faixas inseridas pelo usuário podem ser indexadas com sua declaração geral de autorização, sem `license.json` individual. Para faixas obtidas de bibliotecas de terceiros, manter a licença comercial e os créditos exigidos pela fonte.
 - SFX: pacotes royalty-free (ex.: os pacotes anuais gratuitos da Sonniss) + sons do kit.
 
 ## 9. `.env`

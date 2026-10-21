@@ -193,7 +193,7 @@ uv run docforja doctor
 
 ### M6 — Produção completa · OpenCode + Antigravity · ~4–6 dias → **vídeo completo**
 **Objetivo:** clicar em "Produzir" e receber o vídeo final com tudo pronto.
-**Antes de começar:** baixe 30–60 músicas com licença para vídeos monetizados (YouTube Audio Library, Pixabay Music) em `D:\DocForja\global\musica\`, e alguns pacotes gratuitos de efeitos sonoros. Preencha as chaves de Freesound, OpenTopography e Copernicus no `.env`.
+**Antes de começar:** coloque suas músicas autorizadas na biblioteca do projeto, se quiser usá-las. A declaração geral do usuário basta para as faixas que ele inserir; não é necessária ficha individual. Músicas obtidas de bibliotecas de terceiros continuam exigindo licença compatível. Separe também efeitos sonoros autorizados e configure as chaves opcionais de Freesound, OpenTopography e Copernicus no `.env`.
 **Você confere:**
 - [ ] Clique em Produzir e não faça mais nada: em até cerca de 2 h aparece `05_saida\pt-BR\` com vídeo, legendas, thumbnails e metadados.
 - [ ] **Assista ao vídeo inteiro.** Anote os minutos em que algo incomoda e peça as correções (ou ajustes nas regras).

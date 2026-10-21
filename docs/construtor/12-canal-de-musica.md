@@ -9,7 +9,7 @@ Você insere uma lista de músicas e 1–2 imagens. O sistema junta as faixas nu
 | Campo | Detalhe |
 |---|---|
 | Músicas | Arquivos (WAV/FLAC/MP3) ou uma pasta; ordem manual ou automática |
-| Ficha de cada faixa | Título, artista, **direito de uso** (composição própria · licenciada · domínio público · CC BY com crédito · gerada por IA com licença comercial), link da licença |
+| Dados opcionais de cada faixa | Título e artista para a tracklist; se omitidos, usar o nome do arquivo |
 | Imagens | 1 ou 2 (suas, da pasta global ou geradas pelo sistema a partir de uma descrição) |
 | Estilo | `lofi` · `piano` · `ambiente` · `estudo/foco` · `dormir` · `jazz` · `épico` · outro (define o tipo de animação e a paleta) |
 | Duração alvo | "só a playlist" ou repetir a playlist até X horas |
@@ -65,7 +65,7 @@ projetos\musica-<slug>\05_saida\
 ├── audio/mix.wav                        # a playlist mixada
 ├── elementos/cena_loop.mp4 · imagem_1.png · imagem_2.png · mascaras/
 ├── tracklist.txt                        # 00:00 Faixa 1 — Artista ...
-├── creditos.txt                         # licença de cada faixa e imagem
+├── creditos.txt                         # declaração geral do usuário e créditos de terceiros, se houver
 ├── metadados/ titulos.md · descricao.md (com a tracklist) · tags.txt · thumbs_briefing.md · comentario_fixado.md · metadados.json
 ├── thumbnails/ (3 opções prontas a partir da cena)
 └── shorts/ (opcional: 2–3 cortes verticais de 15–30 s de uma faixa sobre a cena reenquadrada, com CTA para o vídeo)
@@ -73,7 +73,8 @@ projetos\musica-<slug>\05_saida\
 
 A cena em loop e as máscaras vão para a pasta global (`global/loops/`) para reaproveitar em novos vídeos da mesma série.
 
-## 6. Direitos (obrigatório)
+## 6. Declaração de uso das músicas
 
-- O sistema não aceita uma faixa sem ficha de direito de uso; faixas "geradas por IA" precisam indicar a ferramenta e a licença comercial.
-- Aviso automático no relatório: sistemas de identificação de conteúdo (Content ID) podem reivindicar faixas de bibliotecas mesmo licenciadas — guardar os comprovantes em `creditos.txt`.
+- As faixas inseridas pelo usuário são tratadas conforme sua declaração geral de que ele possui autorização de uso e de que foram geradas por IA. Registrar a declaração uma vez nos metadados do projeto, sem pedir ficha, comprovante, ferramenta de geração ou licença individual por faixa. A ausência desses documentos não bloqueia o fluxo M9.
+- A autorização declarada não equivale à aprovação editorial para publicação no canal; respeitar restrições de publicação informadas pelo usuário.
+- Se o sistema incorporar música, imagem ou efeito de terceiros, manter a verificação de licença comercial e os créditos aplicáveis a esses ativos. O aviso sobre possíveis reivindicações de Content ID pode aparecer no relatório, mas não é um portão de produção para as faixas inseridas pelo usuário.

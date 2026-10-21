@@ -102,7 +102,7 @@ O A07 valida cada termo ouvindo o take (ou transcrevendo e comparando) — erro 
 
 ## 4. Trilha musical (cue sheet)
 
-Fonte: biblioteca com licença comercial para YouTube (Epidemic Sound, Artlist, Musicbed ou similar). Música gerada por IA só se a ferramenta conceder licença comercial explícita no plano usado — registrar em `licenses.csv`. **Nunca** usar trilhas de filmes/séries.
+Fonte: as músicas inseridas pelo usuário são usadas conforme sua declaração geral de autorização, sem ficha ou `licenses.csv` por faixa. Se o sistema buscar música de biblioteca de terceiros, exigir licença comercial compatível e os créditos aplicáveis. **Nunca** usar trilhas de filmes/séries sem autorização.
 
 | Cue | Bloco | Duração aprox. | Caráter | BPM / pulso | Instrumentação | Palavras-chave de busca | Pontos de sync |
 |---|---|---|---|---|---|---|---|

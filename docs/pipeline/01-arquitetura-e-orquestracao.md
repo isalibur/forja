@@ -32,7 +32,7 @@
 | Motion graphics / composição | **Remotion** (React + TypeScript) | After Effects + scripts JSX | Remotion é preferido: é código, logo é gerável e revisável por IA |
 | Mapas 3D / terreno | Blender (Python API) + DEM TINITALY 10 m ou Copernicus GLO-30 | QGIS + Mapbox | Render em EXR/PNG sequence |
 | SFX | Biblioteca licenciada (Epidemic Sound / Artlist / Soundly) + ElevenLabs Sound Effects + Freesound (apenas CC0) | — | Ver `08` |
-| Música | Biblioteca licenciada (Epidemic / Artlist / Musicbed) | Música gerada por IA **somente** com licença comercial explícita | Ver `08` |
+| Música | Faixas inseridas pelo usuário sob declaração geral de autorização | Biblioteca de terceiros com licença comercial e créditos aplicáveis | Ver `08` |
 | Mix | Pipeline FFmpeg + `pyloudnorm` / ou DAW (Reaper via ReaScript) | — | Alvo −14 LUFS integrado, −1 dBTP |
 | QA visual | Modelo com visão (Claude) sobre frames amostrados | — | Ver `09` |
 | QA técnico | FFmpeg (`blackdetect`, `silencedetect`, `ebur128`, `freezedetect`) | — | Ver `09` |
