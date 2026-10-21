@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from docforja.io import atomic_write_json
 from docforja.nucleo.etapas import calcular_hash_dados
 
-GANHO_TRILHA_SOB_FALA = 0.12
+GANHO_TRILHA_SOB_FALA = 0.034
 
 
 class RelatorioMix(BaseModel):

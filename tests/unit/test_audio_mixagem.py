@@ -48,7 +48,8 @@ def test_mixar_audio_executa_dois_passes_e_registra_medicoes_reais(tmp_path, mon
     assert "measured_I=-20.0" in chamadas[1][chamadas[1].index("-filter_complex") + 1]
     assert relatorio.medido_lufs == -14.0
     assert relatorio.true_peak_dbtp == -1.0
-    assert relatorio.ganho_trilha_sob_fala == 0.12
+    assert relatorio.ganho_trilha_sob_fala == 0.034
+    assert "volume=0.034" in chamadas[0][chamadas[0].index("-filter_complex") + 1]
     assert relatorio.hash_trilha is not None
     assert destino.read_bytes() == b"mix renderizada"
     dados = json.loads(destino.with_name("relatorio_mix.json").read_text(encoding="utf-8"))
