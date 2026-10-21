@@ -15,6 +15,25 @@ type Formula = { nome: string; estrutura: string[]; templates: string[] };
 type AprovacaoRoteiro = { texto: string; revisao: string; status: string };
 type MidiaGlobal = { id_global: string; descricao: string; licenca: string; credito: string; hash_arquivo: string };
 type SelecaoMidias = { revisao: string; midias: MidiaGlobal[]; status: string };
+type FonteAlegacao = { alegacao: string; fonte: string };
+type DadosAlegacoes = {
+  fontes: FonteAlegacao[];
+  sem_alegacoes_verificaveis: boolean;
+  prova_real: FonteAlegacao | null;
+  fonte_preco: string | null;
+  condicao_urgencia: string | null;
+  relacao_comercial: "nenhuma" | "produto_proprio" | "afiliado" | "parceria_paga";
+  marca: string | null;
+  aviso_publicidade: boolean;
+  revisado_pelo_usuario: boolean;
+};
+type Documentacao = { revisao: string; dados: DadosAlegacoes; status: string };
+const FICHA_VAZIA: DadosAlegacoes = {
+  fontes: [{ alegacao: "", fonte: "" }], sem_alegacoes_verificaveis: false,
+  prova_real: null, fonte_preco: null, condicao_urgencia: null,
+  relacao_comercial: "nenhuma", marca: null, aviso_publicidade: false,
+  revisado_pelo_usuario: false,
+};
 type Resultado = {
   id?: string;
   nome?: string;
@@ -22,6 +41,8 @@ type Resultado = {
   aprovacoes_roteiro?: Record<string, AprovacaoRoteiro>;
   selecoes_midias?: Record<string, SelecaoMidias>;
   midias_desatualizadas?: string[];
+  documentacoes_alegacoes?: Record<string, Documentacao>;
+  alegacoes_desatualizadas?: string[];
   quantidade: number;
   pedidos: PedidoAvulso[];
   formulas: Record<string, Formula>;
@@ -38,6 +59,7 @@ export const ShortsAvulsos: React.FC = () => {
   const [roteiros, setRoteiros] = useState<Record<string, string>>({});
   const [midiasDisponiveis, setMidiasDisponiveis] = useState<MidiaGlobal[]>([]);
   const [midiasEscolhidas, setMidiasEscolhidas] = useState<Record<string, string[]>>({});
+  const [fichas, setFichas] = useState<Record<string, DadosAlegacoes>>({});
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
 
@@ -120,6 +142,13 @@ export const ShortsAvulsos: React.FC = () => {
           && resultado.aprovacoes_roteiro?.[pedido.id]?.revisao !== aprovacao.revisao
           ? [...new Set([...(resultado.midias_desatualizadas ?? []), pedido.id])]
           : resultado.midias_desatualizadas,
+        documentacoes_alegacoes: resultado.aprovacoes_roteiro?.[pedido.id]?.revisao === aprovacao.revisao
+          ? resultado.documentacoes_alegacoes
+          : Object.fromEntries(Object.entries(resultado.documentacoes_alegacoes ?? {}).filter(([id]) => id !== pedido.id)),
+        alegacoes_desatualizadas: resultado.documentacoes_alegacoes?.[pedido.id]
+          && resultado.aprovacoes_roteiro?.[pedido.id]?.revisao !== aprovacao.revisao
+          ? [...new Set([...(resultado.alegacoes_desatualizadas ?? []), pedido.id])]
+          : resultado.alegacoes_desatualizadas,
       };
       setResultado(atualizado);
       setCampanhas((anteriores) => anteriores.map((item) => item.id === campanhaId ? atualizado : item));
@@ -152,6 +181,62 @@ export const ShortsAvulsos: React.FC = () => {
         ...resultado,
         selecoes_midias: { ...resultado.selecoes_midias, [pedido.id]: selecao },
         midias_desatualizadas: resultado.midias_desatualizadas?.filter((id) => id !== pedido.id),
+        documentacoes_alegacoes: resultado.selecoes_midias?.[pedido.id]?.revisao === selecao.revisao
+          ? resultado.documentacoes_alegacoes
+          : Object.fromEntries(Object.entries(resultado.documentacoes_alegacoes ?? {}).filter(([id]) => id !== pedido.id)),
+        alegacoes_desatualizadas: resultado.documentacoes_alegacoes?.[pedido.id]
+          && resultado.selecoes_midias?.[pedido.id]?.revisao !== selecao.revisao
+          ? [...new Set([...(resultado.alegacoes_desatualizadas ?? []), pedido.id])]
+          : resultado.alegacoes_desatualizadas,
+      };
+      setResultado(atualizado);
+      setCampanhas((anteriores) => anteriores.map((item) => item.id === campanhaId ? atualizado : item));
+    } catch (falha) {
+      setErro(falha instanceof Error ? falha.message : t.erroPadrao);
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  const atualizarFicha = (chave: string, atual: DadosAlegacoes, mudancas: Partial<DadosAlegacoes>) => {
+    setFichas((anteriores) => ({ ...anteriores, [chave]: { ...atual, ...mudancas } }));
+  };
+
+  const registrarAlegacoes = async (pedido: PedidoAvulso, dados: DadosAlegacoes) => {
+    if (!resultado?.id || !resultado.hash_conteudo) return;
+    const aprovacao = resultado.aprovacoes_roteiro?.[pedido.id];
+    const selecao = resultado.selecoes_midias?.[pedido.id];
+    if (!aprovacao || !selecao) return;
+    const campanhaId = resultado.id;
+    setOcupado(true);
+    setErro("");
+    try {
+      const resposta = await fetch(`/api/shorts/avulsos/campanhas/${campanhaId}/pedidos/${pedido.id}/alegacoes/registrar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hash_campanha: resultado.hash_conteudo,
+          revisao_roteiro: aprovacao.revisao,
+          revisao_midias: selecao.revisao,
+          dados: {
+            ...dados,
+            fontes: dados.sem_alegacoes_verificaveis ? []
+              : dados.fontes.filter((item) => item.alegacao.trim() || item.fonte.trim()),
+            prova_real: dados.prova_real?.alegacao || dados.prova_real?.fonte ? dados.prova_real : null,
+          },
+        }),
+      });
+      const corpo = await resposta.json();
+      if (!resposta.ok) {
+        const detalhe = typeof corpo.detail === "string" ? corpo.detail
+          : Array.isArray(corpo.detail) ? corpo.detail[0]?.msg : t.erroPadrao;
+        throw new Error(detalhe || t.erroPadrao);
+      }
+      const documentacao = corpo as Documentacao;
+      const atualizado = {
+        ...resultado,
+        documentacoes_alegacoes: { ...resultado.documentacoes_alegacoes, [pedido.id]: documentacao },
+        alegacoes_desatualizadas: resultado.alegacoes_desatualizadas?.filter((id) => id !== pedido.id),
       };
       setResultado(atualizado);
       setCampanhas((anteriores) => anteriores.map((item) => item.id === campanhaId ? atualizado : item));
@@ -211,6 +296,8 @@ export const ShortsAvulsos: React.FC = () => {
               const aprovacao = resultado.aprovacoes_roteiro?.[pedido.id];
               const chave = `${resultado.id}:${pedido.id}`;
               const selecao = resultado.selecoes_midias?.[pedido.id];
+              const documentacao = resultado.documentacoes_alegacoes?.[pedido.id];
+              const ficha = fichas[chave] ?? documentacao?.dados ?? FICHA_VAZIA;
               const escolhidas = midiasEscolhidas[chave] ?? selecao?.midias.map((item) => item.id_global) ?? [];
               return (
                 <article key={pedido.id} className="rounded-card border border-line bg-surf p-5 space-y-3">
@@ -288,12 +375,91 @@ export const ShortsAvulsos: React.FC = () => {
                       {selecao && <p className="text-xs text-mut">{t.midiasSelecionadas} · {selecao.midias.length} · {selecao.revisao.slice(0, 8)}</p>}
                     </div>
                   )}
+                  {resultado.id && aprovacao && selecao && (
+                    <div className="space-y-3 rounded-btn border border-line p-3">
+                      <p className="text-sm font-medium text-tx">{t.tituloAlegacoes}</p>
+                      <p className="text-xs text-mut">{t.avisoAlegacoes}</p>
+                      {resultado.alegacoes_desatualizadas?.includes(pedido.id) && (
+                        <p className="text-xs text-red-500">{t.alegacoesDesatualizadas}</p>
+                      )}
+                      <label className="flex gap-2 text-xs text-tx">
+                        <input type="checkbox" checked={ficha.sem_alegacoes_verificaveis}
+                          onChange={(evento) => atualizarFicha(chave, ficha, {
+                            sem_alegacoes_verificaveis: evento.target.checked,
+                            fontes: evento.target.checked ? [] : ficha.fontes.length ? ficha.fontes : [{ alegacao: "", fonte: "" }],
+                          })} />
+                        {t.semAlegacoes}
+                      </label>
+                      {!ficha.sem_alegacoes_verificaveis && ficha.fontes.map((fonte, indice) => (
+                        <div key={indice} className="space-y-1 border-t border-line pt-2">
+                          <input aria-label={`${t.alegacao} ${indice + 1}`} placeholder={t.alegacao}
+                            className="w-full rounded-btn border border-line bg-bg p-2 text-xs text-tx"
+                            value={fonte.alegacao} onChange={(evento) => atualizarFicha(chave, ficha, {
+                              fontes: ficha.fontes.map((item, i) => i === indice ? { ...item, alegacao: evento.target.value } : item),
+                            })} />
+                          <input aria-label={`${t.fonte} ${indice + 1}`} placeholder={t.fonte}
+                            className="w-full rounded-btn border border-line bg-bg p-2 text-xs text-tx"
+                            value={fonte.fonte} onChange={(evento) => atualizarFicha(chave, ficha, {
+                              fontes: ficha.fontes.map((item, i) => i === indice ? { ...item, fonte: evento.target.value } : item),
+                            })} />
+                        </div>
+                      ))}
+                      {!ficha.sem_alegacoes_verificaveis && (
+                        <button type="button" onClick={() => atualizarFicha(chave, ficha, { fontes: [...ficha.fontes, { alegacao: "", fonte: "" }] })}
+                          className="text-xs text-brasa">{t.adicionarFonte}</button>
+                      )}
+                      <input placeholder={t.provaReal} aria-label={t.provaReal}
+                        className="w-full rounded-btn border border-line bg-bg p-2 text-xs text-tx"
+                        value={ficha.prova_real?.alegacao ?? ""} onChange={(evento) => atualizarFicha(chave, ficha, {
+                          prova_real: { alegacao: evento.target.value, fonte: ficha.prova_real?.fonte ?? "" },
+                        })} />
+                      <input placeholder={t.fonteProva} aria-label={t.fonteProva}
+                        className="w-full rounded-btn border border-line bg-bg p-2 text-xs text-tx"
+                        value={ficha.prova_real?.fonte ?? ""} onChange={(evento) => atualizarFicha(chave, ficha, {
+                          prova_real: { alegacao: ficha.prova_real?.alegacao ?? "", fonte: evento.target.value },
+                        })} />
+                      <input placeholder={t.fontePreco} aria-label={t.fontePreco}
+                        className="w-full rounded-btn border border-line bg-bg p-2 text-xs text-tx"
+                        value={ficha.fonte_preco ?? ""} onChange={(evento) => atualizarFicha(chave, ficha, { fonte_preco: evento.target.value || null })} />
+                      <input placeholder={t.condicaoUrgencia} aria-label={t.condicaoUrgencia}
+                        className="w-full rounded-btn border border-line bg-bg p-2 text-xs text-tx"
+                        value={ficha.condicao_urgencia ?? ""} onChange={(evento) => atualizarFicha(chave, ficha, { condicao_urgencia: evento.target.value || null })} />
+                      <label className="block text-xs text-tx">{t.relacaoComercial}
+                        <select value={ficha.relacao_comercial}
+                          onChange={(evento) => atualizarFicha(chave, ficha, { relacao_comercial: evento.target.value as DadosAlegacoes["relacao_comercial"] })}
+                          className="mt-1 w-full rounded-btn border border-line bg-bg p-2 text-tx">
+                          <option value="nenhuma">{t.semRelacao}</option>
+                          <option value="produto_proprio">{t.produtoProprio}</option>
+                          <option value="afiliado">{t.afiliado}</option>
+                          <option value="parceria_paga">{t.parceriaPaga}</option>
+                        </select>
+                      </label>
+                      {ficha.relacao_comercial === "parceria_paga" && (
+                        <input placeholder={t.marca} aria-label={t.marca}
+                          className="w-full rounded-btn border border-line bg-bg p-2 text-xs text-tx"
+                          value={ficha.marca ?? ""} onChange={(evento) => atualizarFicha(chave, ficha, { marca: evento.target.value || null })} />
+                      )}
+                      <label className="flex gap-2 text-xs text-tx"><input type="checkbox" checked={ficha.aviso_publicidade}
+                        onChange={(evento) => atualizarFicha(chave, ficha, { aviso_publicidade: evento.target.checked })} />
+                        {t.avisoPublicidade}</label>
+                      <label className="flex gap-2 text-xs text-tx"><input type="checkbox" checked={ficha.revisado_pelo_usuario}
+                        onChange={(evento) => atualizarFicha(chave, ficha, { revisado_pelo_usuario: evento.target.checked })} />
+                        {t.confirmacaoHumana}</label>
+                      <button type="button" disabled={ocupado || !ficha.revisado_pelo_usuario}
+                        onClick={() => { void registrarAlegacoes(pedido, ficha); }}
+                        className="rounded-btn border border-brasa px-3 py-2 text-sm font-semibold text-brasa disabled:opacity-50">
+                        {t.registrarAlegacoes}
+                      </button>
+                      {documentacao && <p className="text-xs text-mut">{t.alegacoesRegistradas} · {documentacao.revisao.slice(0, 8)}</p>}
+                    </div>
+                  )}
                   <div>
                     <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-mut">{t.pendencias}</p>
                     <ul className="list-disc pl-5 text-sm text-mut">
                       {pedido.pendencias.filter((item) => !(
                         (aprovacao && item === "aprovar roteiro")
                         || (selecao && item === "aprovar mídias e licenças")
+                        || (documentacao && item === "comprovar alegações exigidas pela fórmula")
                       ))
                         .map((item) => <li key={item}>{item}</li>)}
                     </ul>

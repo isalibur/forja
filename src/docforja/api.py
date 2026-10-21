@@ -42,6 +42,12 @@ from docforja.nucleo.gpu import semaforo_gpu
 from docforja.nucleo.handlers import criar_executor_projeto
 from docforja.nucleo.projeto import Projeto
 from docforja.settings import load_settings
+from docforja.shorts.alegacoes_avulsas import (
+    DadosAlegacoes,
+    documentacao_vigente,
+    obter_documentacao,
+    registrar_documentacao,
+)
 from docforja.shorts.avulsos import PASTA_FORMULAS_PADRAO, ler_lote_avulsos_texto
 from docforja.shorts.campanhas import (
     CampanhaAvulsa,
@@ -146,6 +152,13 @@ class SelecionarMidiasAvulsoPayload(BaseModel):
     ids_globais: list[str] = Field(min_length=1, max_length=20)
     hash_campanha: str = Field(pattern=r"^[a-f0-9]{64}$")
     revisao_roteiro: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+class RegistrarAlegacoesAvulsoPayload(BaseModel):
+    hash_campanha: str = Field(pattern=r"^[a-f0-9]{64}$")
+    revisao_roteiro: str = Field(pattern=r"^[a-f0-9]{64}$")
+    revisao_midias: str = Field(pattern=r"^[a-f0-9]{64}$")
+    dados: DadosAlegacoes
 
 
 def _projeto_da_interface(slug: str) -> Projeto:
@@ -553,15 +566,27 @@ def _resposta_campanha(campanha: CampanhaAvulsa) -> dict[str, Any]:
     raiz_global = obter_pasta_global()
     selecoes: dict[str, Any] = {}
     midias_desatualizadas: list[str] = []
+    documentacoes: dict[str, Any] = {}
+    alegacoes_desatualizadas: list[str] = []
     for pedido in campanha.pedidos:
         selecao = obter_selecao_midias(raiz, campanha.id, pedido.id)
-        if selecao is None:
-            continue
+        documentacao = obter_documentacao(raiz, campanha.id, pedido.id)
         aprovacao = aprovacoes.get(pedido.id)
+        if selecao is None:
+            if documentacao is not None:
+                alegacoes_desatualizadas.append(pedido.id)
+            continue
         if aprovacao and selecao_vigente(raiz_global, selecao, aprovacao.revisao):
             selecoes[pedido.id] = selecao.model_dump(mode="json")
+            if documentacao is not None:
+                if documentacao_vigente(documentacao, aprovacao.revisao, selecao.revisao):
+                    documentacoes[pedido.id] = documentacao.model_dump(mode="json")
+                else:
+                    alegacoes_desatualizadas.append(pedido.id)
         else:
             midias_desatualizadas.append(pedido.id)
+            if documentacao is not None:
+                alegacoes_desatualizadas.append(pedido.id)
     return {
         **campanha.model_dump(mode="json"),
         "quantidade": len(campanha.pedidos),
@@ -571,6 +596,8 @@ def _resposta_campanha(campanha: CampanhaAvulsa) -> dict[str, Any]:
         },
         "selecoes_midias": selecoes,
         "midias_desatualizadas": midias_desatualizadas,
+        "documentacoes_alegacoes": documentacoes,
+        "alegacoes_desatualizadas": alegacoes_desatualizadas,
     }
 
 
@@ -648,6 +675,30 @@ def selecionar_midias_short_avulso(
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return selecao.model_dump(mode="json")
+
+
+@app.post(
+    "/api/shorts/avulsos/campanhas/{campanha_id}/pedidos/{pedido_id}/alegacoes/registrar"
+)
+def registrar_alegacoes_short_avulso(
+    campanha_id: str, pedido_id: str, payload: RegistrarAlegacoesAvulsoPayload
+) -> dict[str, Any]:
+    try:
+        documentacao = registrar_documentacao(
+            load_settings().paths.projects,
+            obter_pasta_global(),
+            campanha_id,
+            pedido_id,
+            payload.hash_campanha,
+            payload.revisao_roteiro,
+            payload.revisao_midias,
+            payload.dados,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return documentacao.model_dump(mode="json")
 
 
 @app.get("/api/projetos/{slug}/shorts/derivados")
