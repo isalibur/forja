@@ -17,6 +17,7 @@ from docforja.audio.adaptadores import (
     AdaptadorVoiceStudio,
     processar_narracao_pronta_completa,
 )
+from docforja.audio.adaptadores.multi import AdaptadorMultiIdioma
 from docforja.audio.alinhamento import AlinhadorWhisperX
 from docforja.audio.catalogo import resolver_voz
 from docforja.audio.metricas import calcular_wer
@@ -62,22 +63,20 @@ from docforja.producao import (
     executar_r9_pacote,
     executar_r10_biblioteca,
 )
-from docforja.settings import load_settings
+from docforja.settings import AppSettings, load_settings
 
 
-def _criar_orquestrador(
-    motor_tts: str | None = None, projeto: Projeto | None = None
-) -> OrquestradorNarracao:
-    settings = load_settings()
-    motor_nome = (motor_tts or "kokoro").lower()
-    adaptador: AdaptadorTTS
-
-    if motor_nome == "openai_compat":
+def _adaptador_por_motor(
+    motor_nome: str, settings: AppSettings, voz: str
+) -> AdaptadorTTS:
+    """Constrói o adaptador de TTS de um motor, com a voz pedida quando ela existe."""
+    motor = motor_nome.lower()
+    if motor == "openai_compat":
         llm_st = settings.llm.get("structured")
         base_url = llm_st.base_url if llm_st else "http://127.0.0.1:20128/v1"
-        adaptador = AdaptadorOpenAITTS(base_url=base_url)
-    elif motor_nome == "voicestudio":
-        adaptador = AdaptadorVoiceStudio(
+        return AdaptadorOpenAITTS(base_url=base_url)
+    if motor == "voicestudio":
+        return AdaptadorVoiceStudio(
             base_url=settings.voicestudio.base_url,
             engine=settings.voicestudio.engine,
             instrucoes=settings.voicestudio.instrucoes,
@@ -85,17 +84,16 @@ def _criar_orquestrador(
             timeout_s=settings.voicestudio.timeout_seconds,
             probe_timeout_s=settings.voicestudio.probe_timeout_seconds,
         )
-    elif motor_nome == "chatterbox":
-        adaptador = AdaptadorChatterbox(python_path=settings.resolver_ambiente("chatterbox"))
-    elif motor_nome == "omnivoice":
-        voz = str(projeto.obter_opcoes().get("voz") or "") if projeto else ""
+    if motor == "chatterbox":
+        return AdaptadorChatterbox(python_path=settings.resolver_ambiente("chatterbox"))
+    if motor == "omnivoice":
         dados_voz = resolver_voz("omnivoice", voz) if voz else None
         if dados_voz is None:
             raise ValueError(
                 "OmniVoice exige uma voz clonada do catálogo (config/modelos.yaml)."
             )
         cache = settings.omnivoice.cache
-        adaptador = AdaptadorOmniVoice(
+        return AdaptadorOmniVoice(
             python_path=settings.resolver_ambiente("omnivoice"),
             prompt=Path(str(dados_voz.get("path", ""))),
             modelo_repo=settings.omnivoice.modelo,
@@ -103,8 +101,30 @@ def _criar_orquestrador(
             velocidade=settings.omnivoice.velocidade,
             passos=settings.omnivoice.passos,
         )
-    else:
-        adaptador = AdaptadorKokoro(python_path=settings.resolver_ambiente("kokoro"))
+    return AdaptadorKokoro(python_path=settings.resolver_ambiente("kokoro"))
+
+
+def _criar_orquestrador(
+    motor_tts: str | None = None, projeto: Projeto | None = None
+) -> OrquestradorNarracao:
+    settings = load_settings()
+    opcoes = projeto.obter_opcoes() if projeto else {}
+    motor_nome = (motor_tts or str(opcoes.get("motor_tts") or "kokoro")).lower()
+    vozes = opcoes.get("vozes", {}) if isinstance(opcoes.get("vozes"), dict) else {}
+    voz_padrao = str(opcoes.get("voz") or "")
+    adaptador = _adaptador_por_motor(motor_nome, settings, voz_padrao)
+
+    declarados = opcoes.get("motores", {})
+    if isinstance(declarados, dict) and declarados:
+        motores = {
+            str(idioma): _adaptador_por_motor(
+                str(motor), settings, str(vozes.get(idioma) or "")
+            )
+            for idioma, motor in declarados.items()
+            if isinstance(motor, str)
+        }
+        if motores:
+            adaptador = AdaptadorMultiIdioma(motores, adaptador)
 
     whisperx = AlinhadorWhisperX(
         python_path=settings.resolver_ambiente("whisperx"),

@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from docforja.audio.adaptadores.kokoro import AdaptadorKokoro
+from docforja.audio.adaptadores.multi import AdaptadorMultiIdioma
 from docforja.audio.adaptadores.omnivoice import AdaptadorOmniVoice
 from docforja.audio.catalogo import listar_vozes, resolver_voz
 from docforja.nucleo.handlers import _criar_orquestrador
@@ -114,6 +116,33 @@ def test_handler_monta_o_motor_omnivoice_com_a_voz_do_projeto(
     assert orquestrador.tts.modelo_repo == "k2-fsa/OmniVoice"
     assert orquestrador.tts.prompt is not None
     assert orquestrador.tts.prompt.name == "nova_ref_7s.pt"
+
+
+def test_motores_por_idioma_despacham_a_voz_clonada_para_o_pt(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """O projeto pode usar a voz clonada no pt-BR e outro motor nos demais idiomas."""
+    projeto = Projeto.criar(
+        nome="teste_omnivoice_multilingue",
+        roteiro=ROTEIRO_VALIDO,
+        raiz_projetos=tmp_path,
+        opcoes_adicionais={
+            "motor_tts": "kokoro",
+            "motores": {"pt-BR": "omnivoice"},
+            "vozes": {"pt-BR": "nova_ref_7s", "en": "af_sarah"},
+        },
+    )
+    monkeypatch.setattr(
+        "docforja.nucleo.handlers.load_settings",
+        lambda: AppSettings(omnivoice=OmniVoiceSettings(cache=str(tmp_path / "cache"))),
+    )
+
+    orquestrador = _criar_orquestrador(None, projeto)
+    adaptador = orquestrador.tts
+
+    assert isinstance(adaptador, AdaptadorMultiIdioma)
+    assert isinstance(adaptador.motor_do_idioma("pt-BR"), AdaptadorOmniVoice)
+    assert isinstance(adaptador.motor_do_idioma("en"), AdaptadorKokoro)
 
 
 def test_handler_recusa_voz_que_nao_esta_no_catalogo(tmp_path: Path, monkeypatch) -> None:
