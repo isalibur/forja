@@ -107,6 +107,41 @@ voicestudio:
 - **Termos de uso:** a licença do app (AGPL-3.0) cobre o programa e admite uso comercial; os **pesos, as vozes e as condições da saída** têm termos próprios, gerenciados pelo app e exibidos no Model Manager. O DocForja não bloqueia a produção por isso e registra no projeto o motor, a voz e a origem usados.
 - `docforja doctor` mostra o estado do serviço e a engine em uso; `docforja benchmark` faz um ping em `/v1/models`.
 
+**Voz clonada do usuário (OmniVoice)**
+O canal usa a voz do próprio dono, clonada no OmniVoice (`k2-fsa/OmniVoice`, 613M), que já roda local na máquina:
+
+```yaml
+# config/adaptadores.yaml
+python_environments:
+  omnivoice: D:/IA/audio_factory/.venv/Scripts/python.exe   # precisa do pacote `omnivoice`
+omnivoice:
+  modelo: k2-fsa/OmniVoice
+  cache: D:/IA/audio_factory/models/voice_clone            # raiz do cache (HF_HOME)
+  velocidade: 0.92
+  passos: 64
+```
+```yaml
+# config/modelos.yaml (tts)
+- id: omnivoice-613m
+  adaptador: omnivoice
+  benchmark:
+    model_repo: k2-fsa/OmniVoice
+    voices:
+      - id: nova_ref_7s
+        language: pt-BR
+        path: D:/IA/audio_factory/voices/nova_ref_7s.pt
+        reference: D:/IA/audio_factory/voices/minha_voz_corte_7s.wav
+```
+E no projeto:
+```yaml
+# 00_entrada/opcoes.yaml
+motor_tts: omnivoice
+voz: nova_ref_7s
+```
+- O `.pt` é o **prompt de clonagem** (tokens da referência); o `.wav` é a referência de áudio. Os dois ficam no seu acervo de vozes, **fora do repositório**, e o consentimento do dono da voz (a sua) fica no kit, conforme `05 §1`.
+- Medição real do caminho completo: 11,74 s de áudio em 28,8 s (com carga do modelo na GPU) e **WER 0,00 %** na checagem de qualidade do pipeline.
+- O motor carrega o modelo a cada segmento: para um vídeo longo de muitos segmentos, o custo de carga se repete — nesse caso, prefira a "narração pronta" ou um motor mais leve.
+
 **Limites conhecidos**
 - O app é AGPL-3.0 e roda separado do DocForja; usá-lo como ferramenta local não impõe AGPL ao áudio nem aos vídeos gerados.
 - A clonagem de voz de terceiros continua proibida sem autorização do dono da voz.

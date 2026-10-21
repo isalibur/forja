@@ -1,6 +1,7 @@
 from docforja.audio.adaptadores.base import AdaptadorTTS
 from docforja.audio.adaptadores.chatterbox import AdaptadorChatterbox
 from docforja.audio.adaptadores.kokoro import AdaptadorKokoro
+from docforja.audio.adaptadores.omnivoice import AdaptadorOmniVoice
 from docforja.audio.adaptadores.openai_compat import AdaptadorOpenAITTS
 from docforja.audio.adaptadores.pronta import (
     AdaptadorNarracaoPronta,
@@ -12,6 +13,7 @@ __all__ = [
     "AdaptadorChatterbox",
     "AdaptadorKokoro",
     "AdaptadorNarracaoPronta",
+    "AdaptadorOmniVoice",
     "AdaptadorOpenAITTS",
     "AdaptadorTTS",
     "AdaptadorVoiceStudio",

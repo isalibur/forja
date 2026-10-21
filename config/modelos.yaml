@@ -54,6 +54,17 @@ tts:
         base_url: http://127.0.0.1:3900
         # As vozes sao os perfis de voz instalados no app; veja GET /v1/audio/voices.
         voices: []
+    - id: omnivoice-613m
+      adaptador: omnivoice
+      benchmark:
+        model_repo: k2-fsa/OmniVoice
+        voices:
+          - id: nova_ref_7s
+            language: pt-BR
+            lang_code: p
+            path: D:/IA/audio_factory/voices/nova_ref_7s.pt
+            reference: D:/IA/audio_factory/voices/minha_voz_corte_7s.wav
+            description: Voz clonada do usuario a partir da referencia de 7 s.
 alinhamento:
   candidatos:
     - id: whisper-large-v3-turbo-local

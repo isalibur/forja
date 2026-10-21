@@ -6,9 +6,18 @@
 |---|---|---|
 | **TTS local** (padrão) | Adaptador `chatterbox` (Chatterbox Multilingual, MIT — tem variante pt-BR) ou `kokoro` (Kokoro-82M, Apache-2.0 — vozes pt-BR, inglês, espanhol, francês, italiano e outros) | Produção rápida, sem custo |
 | **Narração pronta** | Você envia um WAV/MP3 por idioma (sua voz, locutor, ou arquivo de outra ferramenta, ex.: VoiceStudio) — colocar em `00_entrada/narracao_<idioma>.wav`; instalação e uso do VoiceStudio em `09 §7.1` | Máxima qualidade/identidade |
+| **Voz clonada (OmniVoice)** | Adaptador `omnivoice` (`k2-fsa/OmniVoice`, 613M): sintetiza a partir de um prompt de clonagem (`.pt`) feito com uma referência sua | A voz do próprio canal |
 | **Adaptador externo** | Qualquer servidor local/remoto compatível (API local do VoiceStudio em `POST /v1/audio/speech`, formato OpenAI; servidor no padrão OpenAI `/v1/audio/speech`; API paga, se você quiser) | Testar outras vozes/engines sem mudar o sistema |
 
-**Voz do canal:** o kit guarda, por idioma, o motor, a voz/arquivo de referência e os parâmetros — a mesma voz em todos os vídeos. O motor e a voz sintética são escolhidos pelo usuário pela qualidade da voz (Kokoro, Chatterbox ou VoiceStudio), com o registro da origem no projeto. Clonagem de voz só com autorização escrita do dono da voz (arquivo de consentimento no kit).
+**Voz do canal:** o kit guarda, por idioma, o motor, a voz/arquivo de referência e os parâmetros — a mesma voz em todos os vídeos. O motor e a voz sintética são escolhidos pelo usuário pela qualidade da voz (Kokoro, Chatterbox, OmniVoice ou VoiceStudio), com o registro da origem no projeto. Clonagem de voz só com autorização escrita do dono da voz (arquivo de consentimento no kit).
+
+**Voz clonada no OmniVoice (motor do canal escolhido em 21/10/2026):** o perfil de voz fica em `config/modelos.yaml` (candidato `omnivoice-613m`), com o caminho do prompt de clonagem (`.pt`) e da referência de áudio. O projeto liga o motor por `00_entrada/opcoes.yaml`:
+
+```yaml
+motor_tts: omnivoice
+voz: nova_ref_7s
+```
+O worker `workers/omnivoice_worker.py` roda no ambiente `omnivoice` (`config/adaptadores.yaml`), carrega o modelo do cache local e sintetiza em 24 kHz mono. O prompt e a referência ficam **fora do repositório**, no seu acervo de vozes; o consentimento do dono da voz (a sua, neste caso) fica no kit. Medição real: 11,74 s de áudio em 28,8 s de síntese (com carga do modelo) e **WER 0,00 %** na checagem de qualidade.
 
 **Fluxo TTS (enxuto):**
 1. Um arquivo por segmento, com o dicionário de pronúncia do idioma (`kits/<kit>/pronuncia/<idioma>.yaml`).

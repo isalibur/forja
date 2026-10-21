@@ -11,12 +11,14 @@ from pathlib import Path
 from docforja.audio.adaptadores import (
     AdaptadorChatterbox,
     AdaptadorKokoro,
+    AdaptadorOmniVoice,
     AdaptadorOpenAITTS,
     AdaptadorTTS,
     AdaptadorVoiceStudio,
     processar_narracao_pronta_completa,
 )
 from docforja.audio.alinhamento import AlinhadorWhisperX
+from docforja.audio.catalogo import resolver_voz
 from docforja.audio.metricas import calcular_wer
 from docforja.audio.narracao import OrquestradorNarracao, ResultadoSegmentoAudio
 from docforja.audio.trilha import resolver_trilha_provisoria
@@ -85,6 +87,22 @@ def _criar_orquestrador(
         )
     elif motor_nome == "chatterbox":
         adaptador = AdaptadorChatterbox(python_path=settings.resolver_ambiente("chatterbox"))
+    elif motor_nome == "omnivoice":
+        voz = str(projeto.obter_opcoes().get("voz") or "") if projeto else ""
+        dados_voz = resolver_voz("omnivoice", voz) if voz else None
+        if dados_voz is None:
+            raise ValueError(
+                "OmniVoice exige uma voz clonada do catálogo (config/modelos.yaml)."
+            )
+        cache = settings.omnivoice.cache
+        adaptador = AdaptadorOmniVoice(
+            python_path=settings.resolver_ambiente("omnivoice"),
+            prompt=Path(str(dados_voz.get("path", ""))),
+            modelo_repo=settings.omnivoice.modelo,
+            cache=Path(cache) if cache else None,
+            velocidade=settings.omnivoice.velocidade,
+            passos=settings.omnivoice.passos,
+        )
     else:
         adaptador = AdaptadorKokoro(python_path=settings.resolver_ambiente("kokoro"))
 

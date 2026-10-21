@@ -44,6 +44,15 @@ class VoiceStudioSettings(BaseModel):
     probe_timeout_seconds: float = 3.0
 
 
+class OmniVoiceSettings(BaseModel):
+    """OmniVoice local (clonagem de voz a partir de uma referência do usuário)."""
+
+    modelo: str = "k2-fsa/OmniVoice"
+    cache: str = ""
+    velocidade: float = 0.92
+    passos: int = 64
+
+
 class AppSettings(BaseModel):
     minimum_free_disk_gb: int = 200
     paths: PathSettings = Field(default_factory=PathSettings)
@@ -52,6 +61,7 @@ class AppSettings(BaseModel):
     llm: dict[str, LlmSettings] = Field(default_factory=dict)
     alinhamento: AlignmentSettings = Field(default_factory=AlignmentSettings)
     voicestudio: VoiceStudioSettings = Field(default_factory=VoiceStudioSettings)
+    omnivoice: OmniVoiceSettings = Field(default_factory=OmniVoiceSettings)
 
     def resolver_ambiente(self, nome: str) -> Path | None:
         """Resolve o interpretador do ambiente; caminhos relativos partem da raiz do repositório."""
