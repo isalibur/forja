@@ -3,8 +3,10 @@ from array import array
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 
-from docforja.shorts.avulsos import ler_lote_avulsos
+from docforja.api import app
+from docforja.shorts.avulsos import ler_lote_avulsos, ler_lote_avulsos_texto
 from docforja.shorts.mascaramento import medir_mascaramento
 
 
@@ -26,6 +28,31 @@ def test_csv_cinco_temas_cria_pedidos_revisaveis_sem_inventar_roteiro(tmp_path: 
     assert len({pedido.formula_id for pedido in pedidos}) >= 4
     assert all(pedido.roteiro is None for pedido in pedidos)
     assert all("aprovar roteiro" in pedido.pendencias for pedido in pedidos)
+
+
+def test_api_planeja_csv_colado_e_expoe_estrutura_para_revisao() -> None:
+    texto = "tema,objetivo,duracao_s\nVesúvio,educativo,30\nPompeia,engajamento,30\n"
+    resposta = TestClient(app).post(
+        "/api/shorts/avulsos/planejar", json={"csv_texto": texto}
+    )
+
+    assert resposta.status_code == 200
+    dados = resposta.json()
+    assert dados["status"] == "aguardando_revisao"
+    assert dados["quantidade"] == 2
+    assert set(dados["formulas"]) == {item["formula_id"] for item in dados["pedidos"]}
+    assert all(dados["formulas"][item["formula_id"]]["estrutura"] for item in dados["pedidos"])
+    assert ler_lote_avulsos_texto(texto)[0].tema == "Vesúvio"
+
+
+def test_api_retorna_erro_de_linha_sem_gravar_pedido() -> None:
+    resposta = TestClient(app).post(
+        "/api/shorts/avulsos/planejar",
+        json={"csv_texto": "tema,objetivo,duracao_s\nVesúvio,educativo,90\n"},
+    )
+
+    assert resposta.status_code == 400
+    assert "Linha 2" in resposta.json()["detail"]
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,10 @@
 """Ferramentas estruturais para criação e validação de shorts."""
 
-from docforja.shorts.avulsos import PedidoShortAvulso, ler_lote_avulsos
+from docforja.shorts.avulsos import (
+    PedidoShortAvulso,
+    ler_lote_avulsos,
+    ler_lote_avulsos_texto,
+)
 from docforja.shorts.candidatos import (
     gerar_frases_ponte,
     pontuar_candidatos,
@@ -31,6 +35,7 @@ __all__ = [
     "calcular_recorte_vertical",
     "gerar_frases_ponte",
     "ler_lote_avulsos",
+    "ler_lote_avulsos_texto",
     "medir_mascaramento",
     "pontuar_candidatos",
     "pontuar_candidatos_do_plano",

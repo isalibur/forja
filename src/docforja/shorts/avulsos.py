@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import io
 from pathlib import Path
 from typing import Literal
 
@@ -69,55 +70,71 @@ def _escolher_formula(
     )
 
 
-def ler_lote_avulsos(
-    caminho_csv: Path, pasta_formulas: Path = Path("global/formulas_shorts")
+PASTA_FORMULAS_PADRAO = Path(__file__).resolve().parents[3] / "global" / "formulas_shorts"
+
+
+def _ler_lote(
+    leitor: csv.DictReader[str], formulas: dict[str, FormulaShort]
 ) -> list[PedidoShortAvulso]:
-    """Importa temas sem criar projetos, gerar afirmações ou acessar a rede."""
-    formulas = carregar_formulas(pasta_formulas)
     pedidos: list[PedidoShortAvulso] = []
-    with caminho_csv.open("r", encoding="utf-8-sig", newline="") as arquivo:
-        leitor = csv.DictReader(arquivo)
-        cabecalho = leitor.fieldnames or []
-        if len(cabecalho) != len(set(cabecalho)):
-            raise ValueError("Cabeçalho CSV contém colunas duplicadas.")
-        obrigatorias = {"tema", "objetivo", "duracao_s"}
-        if obrigatorias - set(cabecalho):
-            raise ValueError("CSV exige as colunas tema, objetivo e duracao_s.")
-        if set(cabecalho) - COLUNAS:
-            raise ValueError(f"Colunas CSV desconhecidas: {sorted(set(cabecalho) - COLUNAS)}")
-        for numero_linha, linha in enumerate(leitor, start=2):
-            if None in linha:
-                raise ValueError(f"Linha {numero_linha} do CSV tem mais valores que colunas.")
-            if all(not (valor or "").strip() for valor in linha.values()):
-                continue
-            try:
-                tema = (linha.get("tema") or "").strip()
-                objetivo = (linha.get("objetivo") or "").strip()
-                duracao = int((linha.get("duracao_s") or "").strip())
-                origem = (linha.get("origem_roteiro") or "").strip() or (
-                    "proprio" if (linha.get("roteiro") or "").strip() else "formula"
-                )
-                formula = _escolher_formula(
-                    formulas, objetivo, duracao, (linha.get("formula") or "").strip()
-                )
-                pendencias = ["aprovar roteiro", "aprovar mídias e licenças"]
-                if formula.regras or formula.exige_prova_real or formula.exige_fonte_preco:
-                    pendencias.append("comprovar alegações exigidas pela fórmula")
-                pedidos.append(
-                    PedidoShortAvulso.model_validate({
-                        "id": f"A{len(pedidos) + 1:03d}",
-                        "tema": tema,
-                        "objetivo": objetivo,
-                        "duracao_s": duracao,
-                        "formula_id": formula.id,
-                        "origem_roteiro": origem,
-                        "roteiro": linha.get("roteiro") or None,
-                        "cta": (linha.get("cta") or "").strip() or None,
-                        "pendencias": pendencias,
-                    })
-                )
-            except (TypeError, ValueError) as exc:
-                raise ValueError(f"Linha {numero_linha} do CSV: {exc}") from exc
+    cabecalho = leitor.fieldnames or []
+    if len(cabecalho) != len(set(cabecalho)):
+        raise ValueError("Cabeçalho CSV contém colunas duplicadas.")
+    obrigatorias = {"tema", "objetivo", "duracao_s"}
+    if obrigatorias - set(cabecalho):
+        raise ValueError("CSV exige as colunas tema, objetivo e duracao_s.")
+    if set(cabecalho) - COLUNAS:
+        raise ValueError(f"Colunas CSV desconhecidas: {sorted(set(cabecalho) - COLUNAS)}")
+    for numero_linha, linha in enumerate(leitor, start=2):
+        if None in linha:
+            raise ValueError(f"Linha {numero_linha} do CSV tem mais valores que colunas.")
+        if all(not (valor or "").strip() for valor in linha.values()):
+            continue
+        try:
+            tema = (linha.get("tema") or "").strip()
+            objetivo = (linha.get("objetivo") or "").strip()
+            duracao = int((linha.get("duracao_s") or "").strip())
+            origem = (linha.get("origem_roteiro") or "").strip() or (
+                "proprio" if (linha.get("roteiro") or "").strip() else "formula"
+            )
+            formula = _escolher_formula(
+                formulas, objetivo, duracao, (linha.get("formula") or "").strip()
+            )
+            pendencias = ["aprovar roteiro", "aprovar mídias e licenças"]
+            if formula.regras or formula.exige_prova_real or formula.exige_fonte_preco:
+                pendencias.append("comprovar alegações exigidas pela fórmula")
+            pedidos.append(
+                PedidoShortAvulso.model_validate({
+                    "id": f"A{len(pedidos) + 1:03d}",
+                    "tema": tema,
+                    "objetivo": objetivo,
+                    "duracao_s": duracao,
+                    "formula_id": formula.id,
+                    "origem_roteiro": origem,
+                    "roteiro": linha.get("roteiro") or None,
+                    "cta": (linha.get("cta") or "").strip() or None,
+                    "pendencias": pendencias,
+                })
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Linha {numero_linha} do CSV: {exc}") from exc
     if not pedidos:
         raise ValueError("CSV não contém pedidos de shorts avulsos.")
     return pedidos
+
+
+def ler_lote_avulsos(
+    caminho_csv: Path, pasta_formulas: Path = PASTA_FORMULAS_PADRAO
+) -> list[PedidoShortAvulso]:
+    """Importa CSV local sem criar projetos, gerar afirmações ou acessar a rede."""
+    formulas = carregar_formulas(pasta_formulas)
+    with caminho_csv.open("r", encoding="utf-8-sig", newline="") as arquivo:
+        return _ler_lote(csv.DictReader(arquivo), formulas)
+
+
+def ler_lote_avulsos_texto(
+    texto_csv: str, pasta_formulas: Path = PASTA_FORMULAS_PADRAO
+) -> list[PedidoShortAvulso]:
+    """Valida CSV colado na interface, sem gravar o conteúdo recebido."""
+    formulas = carregar_formulas(pasta_formulas)
+    return _ler_lote(csv.DictReader(io.StringIO(texto_csv.lstrip("\ufeff"))), formulas)

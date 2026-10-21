@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ErroCarregamento } from "../components/ErroCarregamento";
 import { usePlano } from "../hooks/usePlano";
+import textos from "../i18n/pt-BR.json";
+import { ShortsAvulsos } from "./ShortsAvulsos";
 
 type FrasePonte = { texto: string; aprovada: boolean };
 type Candidato = {
@@ -77,7 +79,7 @@ async function medirImagem(url: string): Promise<[number, number]> {
   });
 }
 
-export const Shorts: React.FC<{ slug: string }> = ({ slug }) => {
+const ShortsDerivados: React.FC<{ slug: string }> = ({ slug }) => {
   const queryClient = useQueryClient();
   const plano = usePlano(slug);
   const [escolhas, setEscolhas] = useState<Record<string, string>>({});
@@ -399,6 +401,30 @@ export const Shorts: React.FC<{ slug: string }> = ({ slug }) => {
           })}
         </div>
       )}
+    </div>
+  );
+};
+
+export const Shorts: React.FC<{ slug: string }> = ({ slug }) => {
+  const [aba, setAba] = useState<"derivados" | "avulsos">("derivados");
+  const t = textos.shortsAvulsos;
+  return (
+    <div>
+      <nav aria-label={t.navegacao} className="flex gap-2 px-6 pt-6 xl:px-8">
+        <button
+          type="button"
+          aria-pressed={aba === "derivados"}
+          className={`rounded-btn border px-4 py-2 text-sm ${aba === "derivados" ? "border-brasa text-brasa" : "border-line text-mut"}`}
+          onClick={() => setAba("derivados")}
+        >{t.abaDerivados}</button>
+        <button
+          type="button"
+          aria-pressed={aba === "avulsos"}
+          className={`rounded-btn border px-4 py-2 text-sm ${aba === "avulsos" ? "border-brasa text-brasa" : "border-line text-mut"}`}
+          onClick={() => setAba("avulsos")}
+        >{t.abaAvulsos}</button>
+      </nav>
+      {aba === "derivados" ? <ShortsDerivados slug={slug} /> : <ShortsAvulsos />}
     </div>
   );
 };

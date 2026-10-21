@@ -1,0 +1,32 @@
+{
+  "shortsAvulsos": {
+    "abaDerivados": "Do vídeo longo",
+    "abaAvulsos": "Avulsos e campanhas",
+    "navegacao": "Tipos de short",
+    "titulo": "Planejar shorts avulsos",
+    "descricao": "Cole linhas CSV para revisar temas, objetivos e fórmulas. Nenhum vídeo é criado nesta etapa.",
+    "rotuloCsv": "Temas em CSV",
+    "ajudaCsv": "Colunas obrigatórias: tema,objetivo,duracao_s. Opcionais: formula,origem_roteiro,roteiro,cta.",
+    "exemploCsv": "tema,objetivo,duracao_s\nVesúvio,educativo,30\nPompeia,engajamento,30",
+    "planejar": "Revisar lote",
+    "planejando": "Validando temas…",
+    "resultado": "pedidos para revisão",
+    "formula": "Fórmula",
+    "estrutura": "Estrutura",
+    "pendencias": "Antes de produzir",
+    "roteiroProprio": "Roteiro fornecido",
+    "roteiroPendente": "Roteiro ainda pendente",
+    "semProducao": "Esta prévia não aprova roteiros, mídias ou licenças e não inicia a produção.",
+    "erroPadrao": "Não foi possível validar o CSV.",
+    "objetivos": {
+      "vendas": "Vendas",
+      "promocao_canal": "Promoção do canal",
+      "engajamento": "Engajamento",
+      "educativo": "Educativo",
+      "anuncio": "Anúncio",
+      "bastidores": "Bastidores",
+      "autoridade": "Autoridade",
+      "outro": "Outro"
+    }
+  }
+}

@@ -42,11 +42,13 @@ from docforja.nucleo.gpu import semaforo_gpu
 from docforja.nucleo.handlers import criar_executor_projeto
 from docforja.nucleo.projeto import Projeto
 from docforja.settings import load_settings
+from docforja.shorts.avulsos import PASTA_FORMULAS_PADRAO, ler_lote_avulsos_texto
 from docforja.shorts.candidatos import (
     aprovar_frase_ponte,
     gerar_frases_ponte,
     pontuar_candidatos_do_plano,
 )
+from docforja.shorts.formulas import carregar_formulas
 from docforja.shorts.modelos import CandidatoShort, FrasePonte
 from docforja.shorts.producao import (
     aprovar_ponte_short_idioma,
@@ -110,6 +112,10 @@ class ManifestoShortPayload(BaseModel):
     dimensoes: dict[str, tuple[int, int]]
     focos: dict[str, tuple[float, float]] = Field(default_factory=dict)
     estrategia: Literal["recorte", "fundo_desfocado"] = "recorte"
+
+
+class PlanejarLoteAvulsosPayload(BaseModel):
+    csv_texto: str = Field(min_length=1, max_length=262144)
 
 
 def _projeto_da_interface(slug: str) -> Projeto:
@@ -474,6 +480,25 @@ def selecionar_candidata(
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return selecao.model_dump(mode="json")
+
+
+@app.post("/api/shorts/avulsos/planejar")
+def planejar_lote_shorts_avulsos(payload: PlanejarLoteAvulsosPayload) -> dict[str, Any]:
+    """Exibe um plano revisável; não cria projeto nem inicia produção."""
+    try:
+        pedidos = ler_lote_avulsos_texto(payload.csv_texto)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    formulas = carregar_formulas(PASTA_FORMULAS_PADRAO)
+    return {
+        "quantidade": len(pedidos),
+        "pedidos": [pedido.model_dump(mode="json") for pedido in pedidos],
+        "formulas": {
+            id_: formulas[id_].model_dump(mode="json")
+            for id_ in sorted({pedido.formula_id for pedido in pedidos})
+        },
+        "status": "aguardando_revisao",
+    }
 
 
 @app.get("/api/projetos/{slug}/shorts/derivados")
