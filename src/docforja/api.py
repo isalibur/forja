@@ -57,6 +57,13 @@ from docforja.shorts.candidatos import (
     pontuar_candidatos_do_plano,
 )
 from docforja.shorts.formulas import carregar_formulas
+from docforja.shorts.midias_avulsas import (
+    listar_imagens_globais,
+    obter_selecao_midias,
+    resolver_imagem_global,
+    selecao_vigente,
+    selecionar_midias,
+)
 from docforja.shorts.modelos import CandidatoShort, FrasePonte
 from docforja.shorts.producao import (
     aprovar_ponte_short_idioma,
@@ -133,6 +140,12 @@ class SalvarLoteAvulsosPayload(PlanejarLoteAvulsosPayload):
 class AprovarRoteiroAvulsoPayload(BaseModel):
     texto: str = Field(min_length=1, max_length=20000)
     hash_campanha: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+class SelecionarMidiasAvulsoPayload(BaseModel):
+    ids_globais: list[str] = Field(min_length=1, max_length=20)
+    hash_campanha: str = Field(pattern=r"^[a-f0-9]{64}$")
+    revisao_roteiro: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
 def _projeto_da_interface(slug: str) -> Projeto:
@@ -536,13 +549,28 @@ def criar_campanha_avulsa(payload: SalvarLoteAvulsosPayload) -> dict[str, Any]:
 
 def _resposta_campanha(campanha: CampanhaAvulsa) -> dict[str, Any]:
     raiz = load_settings().paths.projects
+    aprovacoes = aprovacoes_da_campanha(raiz, campanha)
+    raiz_global = obter_pasta_global()
+    selecoes: dict[str, Any] = {}
+    midias_desatualizadas: list[str] = []
+    for pedido in campanha.pedidos:
+        selecao = obter_selecao_midias(raiz, campanha.id, pedido.id)
+        if selecao is None:
+            continue
+        aprovacao = aprovacoes.get(pedido.id)
+        if aprovacao and selecao_vigente(raiz_global, selecao, aprovacao.revisao):
+            selecoes[pedido.id] = selecao.model_dump(mode="json")
+        else:
+            midias_desatualizadas.append(pedido.id)
     return {
         **campanha.model_dump(mode="json"),
         "quantidade": len(campanha.pedidos),
         "aprovacoes_roteiro": {
             pedido_id: aprovacao.model_dump(mode="json")
-            for pedido_id, aprovacao in aprovacoes_da_campanha(raiz, campanha).items()
+            for pedido_id, aprovacao in aprovacoes.items()
         },
+        "selecoes_midias": selecoes,
+        "midias_desatualizadas": midias_desatualizadas,
     }
 
 
@@ -578,6 +606,48 @@ def aprovar_roteiro_short_avulso(
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return aprovacao.model_dump(mode="json")
+
+
+@app.get("/api/shorts/avulsos/midias-disponiveis")
+def consultar_midias_avulsas_disponiveis() -> dict[str, Any]:
+    return {
+        "midias": [
+            midia.model_dump(mode="json")
+            for midia in listar_imagens_globais(obter_pasta_global())
+        ]
+    }
+
+
+@app.get("/api/shorts/avulsos/midias/{categoria}/{item_id}/imagem")
+def visualizar_midia_avulsa(categoria: str, item_id: str) -> FileResponse:
+    try:
+        arquivo, _ = resolver_imagem_global(
+            obter_pasta_global(), f"global:{categoria}:{item_id}"
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return FileResponse(arquivo)
+
+
+@app.post("/api/shorts/avulsos/campanhas/{campanha_id}/pedidos/{pedido_id}/midias/selecionar")
+def selecionar_midias_short_avulso(
+    campanha_id: str, pedido_id: str, payload: SelecionarMidiasAvulsoPayload
+) -> dict[str, Any]:
+    try:
+        selecao = selecionar_midias(
+            load_settings().paths.projects,
+            obter_pasta_global(),
+            campanha_id,
+            pedido_id,
+            payload.ids_globais,
+            payload.hash_campanha,
+            payload.revisao_roteiro,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return selecao.model_dump(mode="json")
 
 
 @app.get("/api/projetos/{slug}/shorts/derivados")

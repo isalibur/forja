@@ -1,3 +1,4 @@
+import json
 import wave
 from array import array
 from pathlib import Path
@@ -9,6 +10,7 @@ from docforja.api import app
 from docforja.shorts.avulsos import ler_lote_avulsos, ler_lote_avulsos_texto
 from docforja.shorts.campanhas import obter_campanha
 from docforja.shorts.mascaramento import medir_mascaramento
+from docforja.shorts.midias_avulsas import listar_imagens_globais, resolver_imagem_global
 
 
 def test_csv_cinco_temas_cria_pedidos_revisaveis_sem_inventar_roteiro(tmp_path: Path) -> None:
@@ -169,6 +171,103 @@ def test_aprovacao_avulsa_bloqueia_campanha_obsoleta_e_pedido_estranho(
         json={"texto": "   ", "hash_campanha": campanha["hash_conteudo"]},
     ).status_code == 409
     assert not (tmp_path / "_campanhas_avulsas" / campanha["id"]).exists()
+
+
+def _imagem_global(raiz: Path, item_id: str, **campos: object) -> Path:
+    pasta = raiz / "imagens"
+    pasta.mkdir(parents=True, exist_ok=True)
+    imagem = pasta / f"{item_id}.png"
+    imagem.write_bytes(b"imagem-de-teste")
+    ficha = {
+        "id": item_id,
+        "arquivo": imagem.name,
+        "descricao": "Ilustração de teste",
+        "licenca": "CC0-1.0",
+        "comercial": True,
+        **campos,
+    }
+    (pasta / f"{item_id}.json").write_text(json.dumps(ficha), encoding="utf-8")
+    return imagem
+
+
+def test_catalogo_avulso_bloqueia_fichas_inseguras(tmp_path: Path) -> None:
+    _imagem_global(tmp_path, "liberada")
+    _imagem_global(tmp_path, "nao-comercial", licenca="CC BY-NC")
+    _imagem_global(tmp_path, "sem-confirmacao", comercial=False)
+    _imagem_global(tmp_path, "restrita", restricao_editorial="não publicar")
+    _imagem_global(tmp_path, "patrimonio", patrimonio_restrito=True)
+    _imagem_global(tmp_path, "hash-divergente", sha256="0" * 64)
+    _imagem_global(tmp_path, "arquivo-externo", arquivo="../fora.png")
+
+    disponiveis = listar_imagens_globais(tmp_path)
+
+    assert [item.id_global for item in disponiveis] == ["global:imagens:liberada"]
+    with pytest.raises(ValueError, match="inválido"):
+        resolver_imagem_global(tmp_path, "global:imagens:../segredo")
+
+
+def test_selecao_de_midia_avulsa_invalida_ao_trocar_roteiro_ou_arquivo(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    projetos = tmp_path / "projetos"
+    global_dir = tmp_path / "global"
+    imagem = _imagem_global(global_dir, "cena")
+
+    def mock_settings() -> object:
+        return type("Settings", (), {"paths": type("Paths", (), {"projects": projetos})()})()
+
+    monkeypatch.setattr("docforja.api.load_settings", mock_settings)
+    monkeypatch.setattr("docforja.api.obter_pasta_global", lambda: global_dir)
+    client = TestClient(app)
+    campanha = client.post(
+        "/api/shorts/avulsos/campanhas",
+        json={"nome": "Campanha", "csv_texto": "tema,objetivo,duracao_s\nA,educativo,30\n"},
+    ).json()
+    base = f"/api/shorts/avulsos/campanhas/{campanha['id']}/pedidos/A001"
+    rota = f"{base}/midias/selecionar"
+    payload_roteiro = {"texto": "Texto A", "hash_campanha": campanha["hash_conteudo"]}
+    aprovacao = client.post(f"{base}/roteiro/aprovar", json=payload_roteiro).json()
+    payload = {
+        "ids_globais": ["global:imagens:cena"],
+        "hash_campanha": campanha["hash_conteudo"],
+        "revisao_roteiro": aprovacao["revisao"],
+    }
+
+    resposta = client.post(rota, json=payload)
+    assert resposta.status_code == 200
+    assert client.post(rota, json=payload).json() == resposta.json()
+    assert resposta.json()["midias"][0]["hash_arquivo"]
+    assert client.get("/api/shorts/avulsos/midias-disponiveis").json()["midias"]
+    assert client.get("/api/shorts/avulsos/midias/imagens/cena/imagem").status_code == 200
+    assert client.get(f"/api/shorts/avulsos/campanhas/{campanha['id']}").json()[
+        "selecoes_midias"
+    ]["A001"] == resposta.json()
+
+    client.post(
+        f"{base}/roteiro/aprovar",
+        json={"texto": "Texto B", "hash_campanha": campanha["hash_conteudo"]},
+    )
+    reaberta = client.get(f"/api/shorts/avulsos/campanhas/{campanha['id']}").json()
+    assert reaberta["selecoes_midias"] == {}
+    assert reaberta["midias_desatualizadas"] == ["A001"]
+    assert client.post(rota, json=payload).status_code == 409
+
+    nova_aprovacao = reaberta["aprovacoes_roteiro"]["A001"]
+    payload["revisao_roteiro"] = nova_aprovacao["revisao"]
+    assert client.post(rota, json=payload).status_code == 200
+    imagem.write_bytes(b"imagem-mudou")
+    reaberta = client.get(f"/api/shorts/avulsos/campanhas/{campanha['id']}").json()
+    assert reaberta["selecoes_midias"] == {}
+    assert reaberta["midias_desatualizadas"] == ["A001"]
+    assert client.post(rota, json=payload).status_code == 200
+    ficha = global_dir / "imagens" / "cena.json"
+    dados_ficha = json.loads(ficha.read_text(encoding="utf-8"))
+    dados_ficha["licenca"] = "CC BY-NC"
+    ficha.write_text(json.dumps(dados_ficha), encoding="utf-8")
+    reaberta = client.get(f"/api/shorts/avulsos/campanhas/{campanha['id']}").json()
+    assert reaberta["selecoes_midias"] == {}
+    assert reaberta["midias_desatualizadas"] == ["A001"]
+    assert client.post(rota, json=payload).status_code == 409
 
 
 @pytest.mark.parametrize(

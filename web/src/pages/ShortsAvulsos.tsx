@@ -13,11 +13,15 @@ type PedidoAvulso = {
 };
 type Formula = { nome: string; estrutura: string[]; templates: string[] };
 type AprovacaoRoteiro = { texto: string; revisao: string; status: string };
+type MidiaGlobal = { id_global: string; descricao: string; licenca: string; credito: string; hash_arquivo: string };
+type SelecaoMidias = { revisao: string; midias: MidiaGlobal[]; status: string };
 type Resultado = {
   id?: string;
   nome?: string;
   hash_conteudo?: string;
   aprovacoes_roteiro?: Record<string, AprovacaoRoteiro>;
+  selecoes_midias?: Record<string, SelecaoMidias>;
+  midias_desatualizadas?: string[];
   quantidade: number;
   pedidos: PedidoAvulso[];
   formulas: Record<string, Formula>;
@@ -32,6 +36,8 @@ export const ShortsAvulsos: React.FC = () => {
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [campanhas, setCampanhas] = useState<Resultado[]>([]);
   const [roteiros, setRoteiros] = useState<Record<string, string>>({});
+  const [midiasDisponiveis, setMidiasDisponiveis] = useState<MidiaGlobal[]>([]);
+  const [midiasEscolhidas, setMidiasEscolhidas] = useState<Record<string, string[]>>({});
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
 
@@ -40,6 +46,10 @@ export const ShortsAvulsos: React.FC = () => {
       .then((resposta) => resposta.ok ? resposta.json() as Promise<Resultado[]> : [])
       .then(setCampanhas)
       .catch(() => { /* A prévia continua disponível sem histórico. */ });
+    void fetch("/api/shorts/avulsos/midias-disponiveis")
+      .then((resposta) => resposta.ok ? resposta.json() as Promise<{ midias: MidiaGlobal[] }> : { midias: [] })
+      .then((corpo) => setMidiasDisponiveis(corpo.midias))
+      .catch(() => { /* A seleção informa que não há imagens elegíveis. */ });
   }, []);
 
   const planejar = async (evento: React.FormEvent<HTMLFormElement>) => {
@@ -103,6 +113,45 @@ export const ShortsAvulsos: React.FC = () => {
       const atualizado = {
         ...resultado,
         aprovacoes_roteiro: { ...resultado.aprovacoes_roteiro, [pedido.id]: aprovacao },
+        selecoes_midias: resultado.aprovacoes_roteiro?.[pedido.id]?.revisao === aprovacao.revisao
+          ? resultado.selecoes_midias
+          : Object.fromEntries(Object.entries(resultado.selecoes_midias ?? {}).filter(([id]) => id !== pedido.id)),
+        midias_desatualizadas: resultado.selecoes_midias?.[pedido.id]
+          && resultado.aprovacoes_roteiro?.[pedido.id]?.revisao !== aprovacao.revisao
+          ? [...new Set([...(resultado.midias_desatualizadas ?? []), pedido.id])]
+          : resultado.midias_desatualizadas,
+      };
+      setResultado(atualizado);
+      setCampanhas((anteriores) => anteriores.map((item) => item.id === campanhaId ? atualizado : item));
+    } catch (falha) {
+      setErro(falha instanceof Error ? falha.message : t.erroPadrao);
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  const selecionarMidias = async (pedido: PedidoAvulso) => {
+    if (!resultado?.id || !resultado.hash_conteudo) return;
+    const aprovacao = resultado.aprovacoes_roteiro?.[pedido.id];
+    if (!aprovacao) return;
+    const campanhaId = resultado.id;
+    const chave = `${campanhaId}:${pedido.id}`;
+    const ids = midiasEscolhidas[chave] ?? resultado.selecoes_midias?.[pedido.id]?.midias.map((item) => item.id_global) ?? [];
+    setOcupado(true);
+    setErro("");
+    try {
+      const resposta = await fetch(`/api/shorts/avulsos/campanhas/${campanhaId}/pedidos/${pedido.id}/midias/selecionar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids_globais: ids, hash_campanha: resultado.hash_conteudo, revisao_roteiro: aprovacao.revisao }),
+      });
+      const corpo = await resposta.json();
+      if (!resposta.ok) throw new Error(corpo.detail || t.erroPadrao);
+      const selecao = corpo as SelecaoMidias;
+      const atualizado = {
+        ...resultado,
+        selecoes_midias: { ...resultado.selecoes_midias, [pedido.id]: selecao },
+        midias_desatualizadas: resultado.midias_desatualizadas?.filter((id) => id !== pedido.id),
       };
       setResultado(atualizado);
       setCampanhas((anteriores) => anteriores.map((item) => item.id === campanhaId ? atualizado : item));
@@ -161,6 +210,8 @@ export const ShortsAvulsos: React.FC = () => {
               const formula = resultado.formulas[pedido.formula_id];
               const aprovacao = resultado.aprovacoes_roteiro?.[pedido.id];
               const chave = `${resultado.id}:${pedido.id}`;
+              const selecao = resultado.selecoes_midias?.[pedido.id];
+              const escolhidas = midiasEscolhidas[chave] ?? selecao?.midias.map((item) => item.id_global) ?? [];
               return (
                 <article key={pedido.id} className="rounded-card border border-line bg-surf p-5 space-y-3">
                   <div className="flex items-start justify-between gap-3">
@@ -200,10 +251,50 @@ export const ShortsAvulsos: React.FC = () => {
                       {aprovacao && <p className="text-xs text-mut">{t.roteiroAprovado} · {aprovacao.revisao.slice(0, 8)}</p>}
                     </div>
                   )}
+                  {resultado.id && aprovacao && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-tx">{t.selecionarMidias}</p>
+                      {resultado.midias_desatualizadas?.includes(pedido.id) && (
+                        <p className="text-xs text-red-500">{t.midiasDesatualizadas}</p>
+                      )}
+                      {midiasDisponiveis.length === 0 ? (
+                        <p className="text-xs text-mut">{t.semMidiasElegiveis}</p>
+                      ) : (
+                        <div className="max-h-64 space-y-2 overflow-y-auto">
+                          {midiasDisponiveis.map((midia) => {
+                            const [, categoria, itemId] = midia.id_global.split(":");
+                            return (
+                              <label key={midia.id_global} className="flex gap-2 rounded-btn border border-line p-2 text-xs text-tx">
+                                <input type="checkbox" checked={escolhidas.includes(midia.id_global)}
+                                  onChange={(evento) => setMidiasEscolhidas((anteriores) => ({
+                                    ...anteriores,
+                                    [chave]: evento.target.checked
+                                      ? [...escolhidas, midia.id_global]
+                                      : escolhidas.filter((id) => id !== midia.id_global),
+                                  }))} />
+                                <img src={`/api/shorts/avulsos/midias/${categoria}/${itemId}/imagem`}
+                                  alt={midia.descricao || itemId} className="h-14 w-14 rounded object-cover" loading="lazy" />
+                                <span>{midia.descricao || itemId}<br />{midia.licenca} · {midia.credito || t.semCredito}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <button type="button" disabled={ocupado || escolhidas.length === 0 || escolhidas.length > 20}
+                        onClick={() => { void selecionarMidias(pedido); }}
+                        className="rounded-btn border border-brasa px-3 py-2 text-sm font-semibold text-brasa disabled:opacity-50">
+                        {t.confirmarMidias}
+                      </button>
+                      {selecao && <p className="text-xs text-mut">{t.midiasSelecionadas} · {selecao.midias.length} · {selecao.revisao.slice(0, 8)}</p>}
+                    </div>
+                  )}
                   <div>
                     <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-mut">{t.pendencias}</p>
                     <ul className="list-disc pl-5 text-sm text-mut">
-                      {pedido.pendencias.filter((item) => !(aprovacao && item === "aprovar roteiro"))
+                      {pedido.pendencias.filter((item) => !(
+                        (aprovacao && item === "aprovar roteiro")
+                        || (selecao && item === "aprovar mídias e licenças")
+                      ))
                         .map((item) => <li key={item}>{item}</li>)}
                     </ul>
                   </div>
