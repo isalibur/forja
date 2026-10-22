@@ -1,8 +1,0 @@
-{
-  "id": "foto_proibida",
-  "tipo": "imagens",
-  "descricao": "Foto restrita para uso não comercial",
-  "licenca": "CC-BY-NC-4.0",
-  "comercial": false,
-  "arquivo": "foto_proibida.jpg"
-}

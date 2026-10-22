@@ -1,5 +1,0 @@
-regras:
-  D2_movimento_max_estatico:
-    max_segundos: 3.0
-    movimento_correcao: zoom_in
-    amplitude_correcao: 0.07

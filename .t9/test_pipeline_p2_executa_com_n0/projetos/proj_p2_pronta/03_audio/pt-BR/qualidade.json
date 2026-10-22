@@ -1,8 +1,0 @@
-{
-  "wer": 0.8333,
-  "limite_wer": 0.08,
-  "divergencia_detectada": true,
-  "aviso": "Divergência textual de 83.3% entre áudio fornecido e roteiro (tolerância de 8% excedida). Transcrição adotada como verdade temporal e de legendas.",
-  "metodo": "narracao_pronta",
-  "arquivo_origem": "D:\\IA\\forja\\docforja\\.t9\\test_pipeline_p2_executa_com_n0\\projetos\\proj_p2_pronta\\00_entrada\\narracao_pt-BR.wav"
-}

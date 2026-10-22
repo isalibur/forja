@@ -1,9 +1,0 @@
-nome: teste_troca_modelo_asr
-slug: teste_troca_modelo_asr
-tipo: longo
-preset: padrao
-kit: cinza-e-brasa@1.0
-idiomas:
-  principal: pt-BR
-  extras: []
-monetizado: true

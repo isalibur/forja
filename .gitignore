@@ -9,6 +9,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .pytest_tmp/
+.pytest_tmp*/
+.t[0-9]*/
 .ruff_cache/
 .benchmark-gpu.lock
 
