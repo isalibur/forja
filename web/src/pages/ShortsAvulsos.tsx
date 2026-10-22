@@ -32,7 +32,7 @@ type ProdutoAfiliado = {
 };
 type Formula = { nome: string; estrutura: string[]; templates: string[] };
 type AprovacaoRoteiro = { texto: string; revisao: string; status: string };
-type MidiaGlobal = { id_global: string; descricao: string; licenca: string; credito: string; hash_arquivo: string };
+type MidiaGlobal = { id_global: string; descricao: string; licenca: string; credito: string; hash_arquivo: string; tipo?: "imagem" | "clipe" };
 type SelecaoMidias = { revisao: string; midias: MidiaGlobal[]; status: string };
 type FonteAlegacao = { alegacao: string; fonte: string };
 type DadosAlegacoes = {
@@ -80,7 +80,7 @@ type Resultado = {
 const t = textos.shortsAvulsos;
 
 const relacaoPermitida = (pedido: PedidoAvulso, documentacao: Documentacao): boolean => {
-  if (["educativo", "promocao_canal", "anuncio", "engajamento"].includes(pedido.objetivo)) {
+  if (["educativo", "promocao_canal", "anuncio", "engajamento", "bastidores"].includes(pedido.objetivo)) {
     return documentacao.dados.relacao_comercial === "nenhuma";
   }
   return Boolean(pedido.produto) && !pedido.produto?.preco && documentacao.dados.relacao_comercial === "afiliado";
@@ -591,6 +591,7 @@ export const ShortsAvulsos: React.FC = () => {
                   {resultado.id && aprovacao && (
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-tx">{t.selecionarMidias}</p>
+                      {pedido.objetivo === "bastidores" && <p className="text-xs text-mut">{t.ajudaClipesBastidores}</p>}
                       {resultado.midias_desatualizadas?.includes(pedido.id) && (
                         <p className="text-xs text-red-500">{t.midiasDesatualizadas}</p>
                       )}
@@ -609,8 +610,12 @@ export const ShortsAvulsos: React.FC = () => {
                                       ? [...escolhidas, midia.id_global]
                                       : escolhidas.filter((id) => id !== midia.id_global),
                                   }))} />
-                                <img src={`/api/shorts/avulsos/midias/${categoria}/${itemId}/imagem`}
-                                  alt={midia.descricao || itemId} className="h-14 w-14 rounded object-cover" loading="lazy" />
+                                {midia.tipo === "clipe" ? (
+                                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded border border-line text-center">MP4</span>
+                                ) : (
+                                  <img src={`/api/shorts/avulsos/midias/${categoria}/${itemId}/imagem`}
+                                    alt={midia.descricao || itemId} className="h-14 w-14 rounded object-cover" loading="lazy" />
+                                )}
                                 <span>{midia.descricao || itemId}<br />{midia.licenca} · {midia.credito || t.semCredito}</span>
                               </label>
                             );

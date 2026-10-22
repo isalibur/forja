@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from docforja.io import atomic_write_json, atomic_write_text
 from docforja.nucleo.etapas import calcular_hash_dados
@@ -35,6 +35,7 @@ from docforja.shorts.campanhas import obter_aprovacao_roteiro, obter_campanha
 from docforja.shorts.midias_avulsas import (
     obter_selecao_midias,
     resolver_imagem_global,
+    resolver_midia_global,
     selecao_vigente,
 )
 from docforja.shorts.modelos import (
@@ -87,6 +88,7 @@ class PreparacaoAvulsa(BaseModel):
     duracao_alvo_s: int
     ids_imagens: list[str]
     voz: str
+    ids_clipes: list[str] = Field(default_factory=list)
     opcao_a: str = ""
     opcao_b: str = ""
     produto: ProdutoAfiliado | None = None
@@ -135,7 +137,7 @@ def preparar_producao(
         if not (documentacao.dados.marca or "").strip():
             raise ValueError("Short de afiliado exige a marca da loja na ficha.")
     elif (
-        pedido.objetivo in {"educativo", "promocao_canal", "anuncio", "engajamento"}
+        pedido.objetivo in {"educativo", "promocao_canal", "anuncio", "engajamento", "bastidores"}
         and pedido.produto is None
     ):
         if documentacao.dados.relacao_comercial != "nenhuma":
@@ -146,6 +148,7 @@ def preparar_producao(
             "promocao_canal": {"curiosidade_1_fato"},
             "anuncio": {"anuncio"},
             "engajamento": {"pergunta_comentarios"},
+            "bastidores": {"bastidores"},
         }
         permitidas = formulas_permitidas.get(pedido.objetivo)
         if permitidas is not None and pedido.formula_id not in permitidas:
@@ -158,9 +161,15 @@ def preparar_producao(
             primeira = re.split(r"(?<=[.!?…])\s+", aprovacao.texto.strip(), maxsplit=1)[0]
             if not primeira.endswith("?") or len(primeira.split()) > 2:
                 raise ValueError("Engajamento exige pergunta inicial de até duas palavras.")
+        if (
+            pedido.objetivo == "bastidores"
+            and len([item for item in selecao.midias if item.tipo == "clipe"]) != 3
+        ):
+            raise ValueError("Bastidores exige três clipes próprios ou licenciados.")
     else:
         raise ValueError(
-            "Esta produção aceita educativo, promoção do canal, anúncio e engajamento sem relação "
+            "Esta produção aceita educativo, promoção do canal, anúncio, engajamento e "
+            "bastidores sem relação "
             "comercial, ou afiliado com produto, aviso e marca confirmados."
         )
     cta = " ".join((pedido.cta or "").split())
@@ -201,8 +210,9 @@ def preparar_producao(
         formula_id=pedido.formula_id,
         cta=cta,
         duracao_alvo_s=pedido.duracao_s,
-        ids_imagens=[item.id_global for item in selecao.midias],
+        ids_imagens=[item.id_global for item in selecao.midias if item.tipo == "imagem"],
         voz=voz,
+        ids_clipes=[item.id_global for item in selecao.midias if item.tipo == "clipe"],
         opcao_a=pedido.opcao_a or "",
         opcao_b=pedido.opcao_b or "",
         produto=produto,
@@ -250,7 +260,11 @@ def _data_sugerida() -> str:
 
 
 def _criar_cenas(
-    preparacao: PreparacaoAvulsa, palavras: list[dict[str, Any]], imagens: list[str], duracao: float
+    preparacao: PreparacaoAvulsa,
+    palavras: list[dict[str, Any]],
+    imagens: list[str],
+    duracao: float,
+    clipes: list[str] | None = None,
 ) -> list[CenaRenderShort]:
     frames = max(1, round(duracao * FPS))
     hook = _gancho(preparacao.texto)
@@ -258,7 +272,11 @@ def _criar_cenas(
         hook += "?"
     if preparacao.produto is not None:
         return _cenas_afiliado(preparacao, palavras, imagens, duracao, hook)
-    cta_final = preparacao.objetivo in {"promocao_canal", "anuncio", "engajamento"}
+    if preparacao.objetivo == "bastidores" and len(clipes or []) != 3:
+        raise ValueError("Bastidores exige exatamente três clipes na timeline.")
+    if preparacao.objetivo == "bastidores" and frames < 12 * FPS:
+        raise ValueError("A narração de bastidores é curta demais para três cenas V09.")
+    cta_final = preparacao.objetivo in {"promocao_canal", "anuncio", "engajamento", "bastidores"}
     inicio_cta = frames - min(75, frames) if cta_final else frames
     cenas: list[CenaRenderShort] = []
     inicio = 0
@@ -277,6 +295,8 @@ def _criar_cenas(
                         if numero == 0
                         else "V06"
                         if preparacao.objetivo == "engajamento" and numero == 1
+                        else "V09"
+                        if preparacao.objetivo == "bastidores" and 1 <= numero <= 3
                         else "V02"
                     ),
                     titulo=hook
@@ -284,6 +304,9 @@ def _criar_cenas(
                     else "",
                     opcao_a=preparacao.opcao_a if numero == 1 else "",
                     opcao_b=preparacao.opcao_b if numero == 1 else "",
+                    clipe=(clipes or [])[numero - 1]
+                    if preparacao.objetivo == "bastidores" and 1 <= numero <= 3
+                    else "",
                     imagem=imagens[numero % len(imagens)],
                     legendas=_captions_remotion(palavras, a, b),
                 ),
@@ -303,6 +326,7 @@ def _criar_cenas(
                         "promocao_canal": "MAIS NO CANAL",
                         "anuncio": "NOVIDADE",
                         "engajamento": "SUA ESCOLHA",
+                        "bastidores": "BASTIDORES",
                     }[preparacao.objetivo],
                     cta=preparacao.cta,
                     imagem=imagens[numero % len(imagens)],
@@ -423,6 +447,14 @@ def produzir_avulso(
             destino = ativos / f"imagem-{indice:02d}{origem.suffix.lower()}"
             shutil.copy2(origem, destino)
             imagens.append(f"ativos/{destino.name}")
+        clipes = []
+        for indice, id_global in enumerate(preparacao.ids_clipes):
+            origem, midia = resolver_midia_global(raiz_global, id_global)
+            if midia.tipo != "clipe":
+                raise ValueError("A seleção de bastidores deixou de apontar para um clipe.")
+            destino = ativos / f"clipe-{indice:02d}.mp4"
+            shutil.copy2(origem, destino)
+            clipes.append(f"ativos/{destino.name}")
         segmento = SegmentoProcessado(
             id="avulso", texto_original=preparacao.texto, texto_limpo=preparacao.texto
         )
@@ -455,7 +487,7 @@ def produzir_avulso(
             None,
             work / "sem_relatorio_longo.json",
         )
-        cenas = _criar_cenas(preparacao, palavras, imagens, duracao)
+        cenas = _criar_cenas(preparacao, palavras, imagens, duracao, clipes)
         props = PropsRenderShort(
             duracao_frames=max(1, round(duracao * FPS)), audio="audio.wav", cenas=cenas
         )
@@ -481,7 +513,7 @@ def produzir_avulso(
             elementos.append(ElementoTelaShort(id="cta", x=0.08, y=0.18, largura=0.78, altura=0.40))
             textos_tela.extend([produto.nome, *produto.beneficios, produto.condicao or ""])
             textos_tela.extend([produto.marca or "", AVISO_PUBLICIDADE, preparacao.cta])
-        elif preparacao.objetivo in {"promocao_canal", "anuncio", "engajamento"}:
+        elif preparacao.objetivo in {"promocao_canal", "anuncio", "engajamento", "bastidores"}:
             elementos.append(ElementoTelaShort(id="cta", x=0.08, y=0.18, largura=0.78, altura=0.40))
             if preparacao.objetivo == "engajamento":
                 elementos.append(
@@ -494,6 +526,7 @@ def produzir_avulso(
                         "promocao_canal": "MAIS NO CANAL",
                         "anuncio": "NOVIDADE",
                         "engajamento": "SUA ESCOLHA",
+                        "bastidores": "BASTIDORES",
                     }[preparacao.objetivo],
                     preparacao.cta,
                 ]
@@ -539,6 +572,11 @@ def produzir_avulso(
                 if preparacao.objetivo == "engajamento"
                 else None
             ),
+            "creditos_clipes": [
+                {"id": item.id_global, "credito": item.credito, "licenca": item.licenca}
+                for item in selecao.midias
+                if item.tipo == "clipe"
+            ],
             "duracao_s": duracao,
             "wer": narracao.wer_medio,
             "relacao_comercial": preparacao.relacao_comercial,
@@ -546,6 +584,7 @@ def produzir_avulso(
             "creditos_imagens": [
                 {"id": item.id_global, "credito": item.credito, "licenca": item.licenca}
                 for item in selecao.midias
+                if item.tipo == "imagem"
             ],
             "fontes": {
                 "roteiro": preparacao.revisao_roteiro,

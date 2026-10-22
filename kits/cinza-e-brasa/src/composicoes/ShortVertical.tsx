@@ -232,6 +232,8 @@ export const ShortVertical: React.FC<PropsShortVertical> = (props) => {
         <AbsoluteFill style={{ inset: "15% 12% 36% 6%", overflow: "hidden", borderRadius: 20 }}>
           <Video
             src={resolverMidia(props.clipe)}
+            muted
+            loop
             style={{
               width: "100%",
               height: "100%",

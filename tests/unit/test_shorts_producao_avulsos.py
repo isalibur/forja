@@ -51,6 +51,24 @@ def _campanha_pronta(
         ),
         encoding="utf-8",
     )
+    ids_midias = ["global:imagens:cena"]
+    if objetivo == "bastidores":
+        loops = global_ / "loops"
+        loops.mkdir()
+        for indice in range(1, 4):
+            (loops / f"clipe-{indice}.mp4").write_bytes(f"clipe-{indice}".encode())
+            (loops / f"clipe-{indice}.json").write_text(
+                json.dumps(
+                    {
+                        "arquivo": f"clipe-{indice}.mp4",
+                        "descricao": f"Bastidor próprio {indice}",
+                        "licenca": "CC0-1.0",
+                        "comercial": True,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            ids_midias.append(f"global:loops:clipe-{indice}")
 
     def settings() -> object:
         return type("Settings", (), {"paths": type("Paths", (), {"projects": projetos})()})()
@@ -77,7 +95,7 @@ def _campanha_pronta(
     selecao = client.post(
         f"{base}/midias/selecionar",
         json={
-            "ids_globais": ["global:imagens:cena"],
+            "ids_globais": ids_midias,
             "hash_campanha": campanha["hash_conteudo"],
             "revisao_roteiro": aprovacao["revisao"],
         },
@@ -236,6 +254,58 @@ def test_campanha_antiga_sem_opcoes_continua_legivel() -> None:
     assert pedido.opcao_b is None
 
 
+def test_bastidores_exige_tres_clipes_e_silencia_fonte_no_template(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, projetos, global_, campanha_id, _ = _campanha_pronta(
+        tmp_path,
+        monkeypatch,
+        objetivo="bastidores",
+        formula_id="bastidores",
+        roteiro="Como fazemos? Veja a cena.",
+    )
+    preparo = preparar_producao(projetos, global_, campanha_id, "A001")
+    cenas = _criar_cenas(
+        preparo,
+        [],
+        ["ativos/cena.png"],
+        30.0,
+        [f"ativos/clipe-{indice:02d}.mp4" for indice in range(3)],
+    )
+    clipes = [cena.props.clipe for cena in cenas if cena.props.variante == "V09"]
+    assert len(preparo.ids_clipes) == 3
+    assert clipes == [f"ativos/clipe-{indice:02d}.mp4" for indice in range(3)]
+    assert cenas[-1].props.variante == "V07"
+    assert [cena.props.cta for cena in cenas].count("Veja a cena") == 1
+    assert all(cena.duracao_frames <= 75 for cena in cenas[1:])
+    with pytest.raises(ValueError, match="curta demais"):
+        _criar_cenas(preparo, [], ["ativos/cena.png"], 9.0, clipes)
+
+
+def test_bastidores_sem_tres_clipes_e_bloqueado(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, _, _, campanha_id, base = _campanha_pronta(
+        tmp_path,
+        monkeypatch,
+        objetivo="bastidores",
+        formula_id="bastidores",
+        roteiro="Como fazemos? Veja a cena.",
+    )
+    campanha = client.get(f"/api/shorts/avulsos/campanhas/{campanha_id}").json()
+    aprovacao = campanha["aprovacoes_roteiro"]["A001"]
+    resposta = client.post(
+        f"{base}/midias/selecionar",
+        json={
+            "ids_globais": ["global:imagens:cena", "global:loops:clipe-1"],
+            "hash_campanha": campanha["hash_conteudo"],
+            "revisao_roteiro": aprovacao["revisao"],
+        },
+    )
+    assert resposta.status_code == 409
+    assert "três clipes" in resposta.json()["detail"]
+
+
 def test_teaser_sem_video_longo_relacionado_nao_e_liberado(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -300,6 +370,7 @@ def test_cenas_e_ds9_avulso_sem_musica(tmp_path: Path, monkeypatch: pytest.Monke
         ("promocao_canal", "curiosidade_1_fato"),
         ("anuncio", "anuncio"),
         ("engajamento", "pergunta_comentarios"),
+        ("bastidores", "bastidores"),
     ],
 )
 def test_producao_piloto_publica_revisao_ou_usa_cache_sem_rederivar(
@@ -310,9 +381,13 @@ def test_producao_piloto_publica_revisao_ou_usa_cache_sem_rederivar(
         monkeypatch,
         objetivo=objetivo,
         formula_id=formula_id,
-        roteiro="Qual cidade? Veja a cena."
-        if objetivo == "engajamento"
-        else "Uma cena histórica. Veja a cena.",
+        roteiro=(
+            "Qual cidade? Veja a cena."
+            if objetivo == "engajamento"
+            else "Como fazemos? Veja a cena."
+            if objetivo == "bastidores"
+            else "Uma cena histórica. Veja a cena."
+        ),
         opcao_a="Pompeia" if objetivo == "engajamento" else "",
         opcao_b="Herculano" if objetivo == "engajamento" else "",
     )
@@ -381,6 +456,9 @@ def test_producao_piloto_publica_revisao_ou_usa_cache_sem_rederivar(
     assert meta["formula_id"] == preparo.formula_id
     if objetivo == "engajamento":
         assert meta["opcoes_engajamento"] == {"A": "Pompeia", "B": "Herculano"}
+    if objetivo == "bastidores":
+        assert len(meta["creditos_clipes"]) == 3
+        assert len(meta["creditos_imagens"]) == 1
     assert meta["fontes"]["roteiro"] == preparo.revisao_roteiro
     ds9 = next(item for item in meta["qa"]["violacoes"] if item["regra"] == "DS9")
     assert ds9["aprovada"] is True

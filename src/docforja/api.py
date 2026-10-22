@@ -71,7 +71,7 @@ from docforja.shorts.candidatos import (
 )
 from docforja.shorts.formulas import carregar_formulas
 from docforja.shorts.midias_avulsas import (
-    listar_imagens_globais,
+    listar_midias_globais,
     obter_selecao_midias,
     resolver_imagem_global,
     selecao_vigente,
@@ -736,7 +736,7 @@ def consultar_midias_avulsas_disponiveis() -> dict[str, Any]:
     return {
         "midias": [
             midia.model_dump(mode="json")
-            for midia in listar_imagens_globais(obter_pasta_global())
+            for midia in listar_midias_globais(obter_pasta_global())
         ]
     }
 

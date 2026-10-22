@@ -10,7 +10,12 @@ from docforja.api import app
 from docforja.shorts.avulsos import ler_lote_avulsos, ler_lote_avulsos_texto
 from docforja.shorts.campanhas import obter_campanha
 from docforja.shorts.mascaramento import medir_mascaramento
-from docforja.shorts.midias_avulsas import listar_imagens_globais, resolver_imagem_global
+from docforja.shorts.midias_avulsas import (
+    listar_imagens_globais,
+    listar_midias_globais,
+    resolver_imagem_global,
+    resolver_midia_global,
+)
 
 
 def test_csv_cinco_temas_cria_pedidos_revisaveis_sem_inventar_roteiro(tmp_path: Path) -> None:
@@ -35,9 +40,7 @@ def test_csv_cinco_temas_cria_pedidos_revisaveis_sem_inventar_roteiro(tmp_path: 
 
 def test_api_planeja_csv_colado_e_expoe_estrutura_para_revisao() -> None:
     texto = "tema,objetivo,duracao_s\nVesúvio,educativo,30\nPompeia,engajamento,30\n"
-    resposta = TestClient(app).post(
-        "/api/shorts/avulsos/planejar", json={"csv_texto": texto}
-    )
+    resposta = TestClient(app).post("/api/shorts/avulsos/planejar", json={"csv_texto": texto})
 
     assert resposta.status_code == 200
     dados = resposta.json()
@@ -63,6 +66,7 @@ def test_campanha_avulsa_persiste_snapshot_sem_aprovacao_ou_producao(
 ) -> None:
     def mock_settings() -> object:
         return type("Settings", (), {"paths": type("Paths", (), {"projects": tmp_path})()})()
+
     monkeypatch.setattr("docforja.api.load_settings", mock_settings)
     client = TestClient(app)
     payload = {
@@ -93,6 +97,7 @@ def test_campanha_avulsa_invalida_nao_grava_e_id_invalido_falha(
 ) -> None:
     def mock_settings() -> object:
         return type("Settings", (), {"paths": type("Paths", (), {"projects": tmp_path})()})()
+
     monkeypatch.setattr("docforja.api.load_settings", mock_settings)
     client = TestClient(app)
     resposta = client.post(
@@ -158,18 +163,27 @@ def test_aprovacao_avulsa_bloqueia_campanha_obsoleta_e_pedido_estranho(
         json={"nome": "Campanha", "csv_texto": "tema,objetivo,duracao_s\nA,educativo,30\n"},
     ).json()
     base = f"/api/shorts/avulsos/campanhas/{campanha['id']}/pedidos"
-    assert client.post(
-        f"{base}/A001/roteiro/aprovar",
-        json={"texto": "Roteiro", "hash_campanha": "0" * 64},
-    ).status_code == 409
-    assert client.post(
-        f"{base}/A002/roteiro/aprovar",
-        json={"texto": "Roteiro", "hash_campanha": campanha["hash_conteudo"]},
-    ).status_code == 409
-    assert client.post(
-        f"{base}/A001/roteiro/aprovar",
-        json={"texto": "   ", "hash_campanha": campanha["hash_conteudo"]},
-    ).status_code == 409
+    assert (
+        client.post(
+            f"{base}/A001/roteiro/aprovar",
+            json={"texto": "Roteiro", "hash_campanha": "0" * 64},
+        ).status_code
+        == 409
+    )
+    assert (
+        client.post(
+            f"{base}/A002/roteiro/aprovar",
+            json={"texto": "Roteiro", "hash_campanha": campanha["hash_conteudo"]},
+        ).status_code
+        == 409
+    )
+    assert (
+        client.post(
+            f"{base}/A001/roteiro/aprovar",
+            json={"texto": "   ", "hash_campanha": campanha["hash_conteudo"]},
+        ).status_code
+        == 409
+    )
     assert not (tmp_path / "_campanhas_avulsas" / campanha["id"]).exists()
 
 
@@ -206,6 +220,36 @@ def test_catalogo_avulso_bloqueia_fichas_inseguras(tmp_path: Path) -> None:
         resolver_imagem_global(tmp_path, "global:imagens:../segredo")
 
 
+def test_catalogo_clipes_so_expoe_mp4_licenciado(tmp_path: Path) -> None:
+    loops = tmp_path / "loops"
+    loops.mkdir()
+    for item_id, licenca, publicacao in (
+        ("proprio", "CC0-1.0", True),
+        ("nao-comercial", "CC BY-NC", True),
+        ("restrito", "CC0-1.0", False),
+    ):
+        (loops / f"{item_id}.mp4").write_bytes(item_id.encode())
+        (loops / f"{item_id}.json").write_text(
+            json.dumps(
+                {
+                    "arquivo": f"{item_id}.mp4",
+                    "descricao": item_id,
+                    "licenca": licenca,
+                    "comercial": True,
+                    "publicacao_permitida": publicacao,
+                }
+            ),
+            encoding="utf-8",
+        )
+    disponiveis = listar_midias_globais(tmp_path)
+    assert [item.id_global for item in disponiveis] == ["global:loops:proprio"]
+    arquivo, midia = resolver_midia_global(tmp_path, "global:loops:proprio")
+    assert arquivo.suffix == ".mp4"
+    assert midia.tipo == "clipe"
+    with pytest.raises(ValueError, match="não é uma imagem"):
+        resolver_imagem_global(tmp_path, "global:loops:proprio")
+
+
 def test_selecao_de_midia_avulsa_invalida_ao_trocar_roteiro_ou_arquivo(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -239,9 +283,12 @@ def test_selecao_de_midia_avulsa_invalida_ao_trocar_roteiro_ou_arquivo(
     assert resposta.json()["midias"][0]["hash_arquivo"]
     assert client.get("/api/shorts/avulsos/midias-disponiveis").json()["midias"]
     assert client.get("/api/shorts/avulsos/midias/imagens/cena/imagem").status_code == 200
-    assert client.get(f"/api/shorts/avulsos/campanhas/{campanha['id']}").json()[
-        "selecoes_midias"
-    ]["A001"] == resposta.json()
+    assert (
+        client.get(f"/api/shorts/avulsos/campanhas/{campanha['id']}").json()["selecoes_midias"][
+            "A001"
+        ]
+        == resposta.json()
+    )
 
     client.post(
         f"{base}/roteiro/aprovar",
