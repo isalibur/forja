@@ -18,14 +18,28 @@ from docforja.shorts.formulas import carregar_formulas
 from docforja.shorts.modelos import FormulaShort
 
 ObjetivoAvulso = Literal[
-    "vendas", "promocao_canal", "engajamento", "educativo",
-    "anuncio", "bastidores", "autoridade", "outro",
+    "vendas",
+    "promocao_canal",
+    "engajamento",
+    "educativo",
+    "anuncio",
+    "bastidores",
+    "autoridade",
+    "outro",
 ]
 OrigemRoteiro = Literal["proprio", "formula", "gemini_manual"]
 DuracaoAvulso = Literal[15, 30, 45, 60, 90]
 
 COLUNAS = {
-    "tema", "objetivo", "duracao_s", "formula", "origem_roteiro", "roteiro", "cta",
+    "tema",
+    "objetivo",
+    "duracao_s",
+    "formula",
+    "origem_roteiro",
+    "roteiro",
+    "cta",
+    "opcao_a",
+    "opcao_b",
 }
 
 
@@ -42,6 +56,8 @@ class PedidoShortAvulso(BaseModel):
     origem_roteiro: OrigemRoteiro
     roteiro: str | None = None
     cta: str | None = None
+    opcao_a: str | None = None
+    opcao_b: str | None = None
     produto: ProdutoAfiliado | None = None
     roteiro_sugerido: str | None = None
     pendencias: list[str] = Field(default_factory=list)
@@ -52,11 +68,23 @@ class PedidoShortAvulso(BaseModel):
             raise ValueError("Roteiro próprio exige texto fornecido pelo usuário.")
         if self.origem_roteiro != "proprio" and (self.roteiro or "").strip():
             raise ValueError("Texto de roteiro exige origem_roteiro=proprio.")
+        if self.formula_id == "pergunta_comentarios":
+            if self.objetivo != "engajamento":
+                raise ValueError("A fórmula de pergunta exige objetivo engajamento.")
+            opcoes = [self.opcao_a or "", self.opcao_b or ""]
+            if any(opcoes) and any(not opcao or len(opcao.split()) != 1 for opcao in opcoes):
+                raise ValueError("Engajamento exige opções A/B de uma palavra cada no CSV.")
+            if all(opcoes) and opcoes[0].casefold() == opcoes[1].casefold():
+                raise ValueError("As opções A/B devem ser diferentes.")
+        elif self.opcao_a or self.opcao_b:
+            raise ValueError("Opções A/B são aceitas apenas na fórmula pergunta_comentarios.")
         return self
 
 
 def _escolher_formula(
-    formulas: dict[str, FormulaShort], objetivo: ObjetivoAvulso, duracao: DuracaoAvulso,
+    formulas: dict[str, FormulaShort],
+    objetivo: ObjetivoAvulso,
+    duracao: DuracaoAvulso,
     selecionada: str,
 ) -> FormulaShort:
     if selecionada:
@@ -68,13 +96,10 @@ def _escolher_formula(
         candidatas = [formulas[id_] for id_ in sorted(formulas)]
     for formula in candidatas:
         if (
-            (objetivo in formula.objetivos or (objetivo == "outro" and selecionada))
-            and formula.duracao_min_s <= duracao <= formula.duracao_max_s
-        ):
+            objetivo in formula.objetivos or (objetivo == "outro" and selecionada)
+        ) and formula.duracao_min_s <= duracao <= formula.duracao_max_s:
             return formula
-    raise ValueError(
-        f"Nenhuma fórmula compatível com objetivo {objetivo} e duração {duracao} s."
-    )
+    raise ValueError(f"Nenhuma fórmula compatível com objetivo {objetivo} e duração {duracao} s.")
 
 
 PASTA_FORMULAS_PADRAO = Path(__file__).resolve().parents[3] / "global" / "formulas_shorts"
@@ -107,21 +132,29 @@ def _ler_lote(
             formula = _escolher_formula(
                 formulas, objetivo, duracao, (linha.get("formula") or "").strip()
             )
+            if formula.id == "pergunta_comentarios" and not (
+                (linha.get("opcao_a") or "").strip() and (linha.get("opcao_b") or "").strip()
+            ):
+                raise ValueError("Engajamento exige opções A/B de uma palavra cada no CSV.")
             pendencias = ["aprovar roteiro", "aprovar mídias e licenças"]
             if formula.regras or formula.exige_prova_real or formula.exige_fonte_preco:
                 pendencias.append("comprovar alegações exigidas pela fórmula")
             pedidos.append(
-                PedidoShortAvulso.model_validate({
-                    "id": f"A{len(pedidos) + 1:03d}",
-                    "tema": tema,
-                    "objetivo": objetivo,
-                    "duracao_s": duracao,
-                    "formula_id": formula.id,
-                    "origem_roteiro": origem,
-                    "roteiro": linha.get("roteiro") or None,
-                    "cta": (linha.get("cta") or "").strip() or None,
-                    "pendencias": pendencias,
-                })
+                PedidoShortAvulso.model_validate(
+                    {
+                        "id": f"A{len(pedidos) + 1:03d}",
+                        "tema": tema,
+                        "objetivo": objetivo,
+                        "duracao_s": duracao,
+                        "formula_id": formula.id,
+                        "origem_roteiro": origem,
+                        "roteiro": linha.get("roteiro") or None,
+                        "cta": (linha.get("cta") or "").strip() or None,
+                        "opcao_a": (linha.get("opcao_a") or "").strip() or None,
+                        "opcao_b": (linha.get("opcao_b") or "").strip() or None,
+                        "pendencias": pendencias,
+                    }
+                )
             )
         except (TypeError, ValueError) as exc:
             raise ValueError(f"Linha {numero_linha} do CSV: {exc}") from exc

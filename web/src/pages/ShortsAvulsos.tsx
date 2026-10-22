@@ -11,6 +11,8 @@ type PedidoAvulso = {
   roteiro: string | null;
   roteiro_sugerido?: string | null;
   cta: string | null;
+  opcao_a?: string | null;
+  opcao_b?: string | null;
   produto?: ProdutoAfiliado | null;
   pendencias: string[];
 };
@@ -78,7 +80,9 @@ type Resultado = {
 const t = textos.shortsAvulsos;
 
 const relacaoPermitida = (pedido: PedidoAvulso, documentacao: Documentacao): boolean => {
-  if (pedido.objetivo === "educativo") return documentacao.dados.relacao_comercial === "nenhuma";
+  if (["educativo", "promocao_canal", "anuncio", "engajamento"].includes(pedido.objetivo)) {
+    return documentacao.dados.relacao_comercial === "nenhuma";
+  }
   return Boolean(pedido.produto) && !pedido.produto?.preco && documentacao.dados.relacao_comercial === "afiliado";
 };
 
@@ -536,6 +540,9 @@ export const ShortsAvulsos: React.FC = () => {
                     </div>
                   </div>
                   <p className="text-sm text-mut">{t.formula}: {formula?.nome ?? pedido.formula_id}</p>
+                  {pedido.formula_id === "pergunta_comentarios" && pedido.opcao_a && pedido.opcao_b && (
+                    <p className="text-sm text-tx">{t.opcoesEngajamento}: A · {pedido.opcao_a} / B · {pedido.opcao_b}</p>
+                  )}
                   {pedido.produto && (
                     <div className="space-y-1 rounded-btn border border-line p-3 text-xs text-mut">
                       <p className="font-semibold uppercase tracking-wide text-mut">{t.tituloProduto}</p>

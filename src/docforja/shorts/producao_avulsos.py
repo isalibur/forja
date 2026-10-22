@@ -87,6 +87,8 @@ class PreparacaoAvulsa(BaseModel):
     duracao_alvo_s: int
     ids_imagens: list[str]
     voz: str
+    opcao_a: str = ""
+    opcao_b: str = ""
     produto: ProdutoAfiliado | None = None
     relacao_comercial: str = "nenhuma"
 
@@ -132,7 +134,10 @@ def preparar_producao(
             raise ValueError("Short de afiliado exige aviso de publicidade na ficha.")
         if not (documentacao.dados.marca or "").strip():
             raise ValueError("Short de afiliado exige a marca da loja na ficha.")
-    elif pedido.objetivo in {"educativo", "promocao_canal", "anuncio"} and pedido.produto is None:
+    elif (
+        pedido.objetivo in {"educativo", "promocao_canal", "anuncio", "engajamento"}
+        and pedido.produto is None
+    ):
         if documentacao.dados.relacao_comercial != "nenhuma":
             if pedido.objetivo == "educativo":
                 raise ValueError("Avulsos educativos não aceitam relação comercial declarada.")
@@ -140,15 +145,22 @@ def preparar_producao(
         formulas_permitidas = {
             "promocao_canal": {"curiosidade_1_fato"},
             "anuncio": {"anuncio"},
+            "engajamento": {"pergunta_comentarios"},
         }
         permitidas = formulas_permitidas.get(pedido.objetivo)
         if permitidas is not None and pedido.formula_id not in permitidas:
             raise ValueError("Esta fórmula ainda não tem render seguro para o objetivo.")
         if pedido.objetivo in {"promocao_canal", "anuncio"} and not documentacao.dados.fontes:
             raise ValueError("Promoções de canal e anúncios exigem fonte da informação.")
+        if pedido.objetivo == "engajamento":
+            if not pedido.opcao_a or not pedido.opcao_b:
+                raise ValueError("Campanha antiga sem opções A/B; crie novo CSV para produzir.")
+            primeira = re.split(r"(?<=[.!?…])\s+", aprovacao.texto.strip(), maxsplit=1)[0]
+            if not primeira.endswith("?") or len(primeira.split()) > 2:
+                raise ValueError("Engajamento exige pergunta inicial de até duas palavras.")
     else:
         raise ValueError(
-            "Esta produção aceita educativo, promoção do canal e anúncio sem relação "
+            "Esta produção aceita educativo, promoção do canal, anúncio e engajamento sem relação "
             "comercial, ou afiliado com produto, aviso e marca confirmados."
         )
     cta = " ".join((pedido.cta or "").split())
@@ -191,6 +203,8 @@ def preparar_producao(
         duracao_alvo_s=pedido.duracao_s,
         ids_imagens=[item.id_global for item in selecao.midias],
         voz=voz,
+        opcao_a=pedido.opcao_a or "",
+        opcao_b=pedido.opcao_b or "",
         produto=produto,
         relacao_comercial=documentacao.dados.relacao_comercial,
     )
@@ -240,9 +254,11 @@ def _criar_cenas(
 ) -> list[CenaRenderShort]:
     frames = max(1, round(duracao * FPS))
     hook = _gancho(preparacao.texto)
+    if preparacao.objetivo == "engajamento":
+        hook += "?"
     if preparacao.produto is not None:
         return _cenas_afiliado(preparacao, palavras, imagens, duracao, hook)
-    cta_final = preparacao.objetivo in {"promocao_canal", "anuncio"}
+    cta_final = preparacao.objetivo in {"promocao_canal", "anuncio", "engajamento"}
     inicio_cta = frames - min(75, frames) if cta_final else frames
     cenas: list[CenaRenderShort] = []
     inicio = 0
@@ -256,8 +272,18 @@ def _criar_cenas(
                 inicio_frame=inicio,
                 duracao_frames=fim - inicio,
                 props=PropsCenaShort(
-                    variante="V01" if numero == 0 else "V02",
-                    titulo=hook if numero == 0 else "",
+                    variante=(
+                        "V01"
+                        if numero == 0
+                        else "V06"
+                        if preparacao.objetivo == "engajamento" and numero == 1
+                        else "V02"
+                    ),
+                    titulo=hook
+                    if numero == 0 or (preparacao.objetivo == "engajamento" and numero == 1)
+                    else "",
+                    opcao_a=preparacao.opcao_a if numero == 1 else "",
+                    opcao_b=preparacao.opcao_b if numero == 1 else "",
                     imagem=imagens[numero % len(imagens)],
                     legendas=_captions_remotion(palavras, a, b),
                 ),
@@ -273,9 +299,11 @@ def _criar_cenas(
                 duracao_frames=frames - inicio_cta,
                 props=PropsCenaShort(
                     variante="V07",
-                    titulo="MAIS NO CANAL"
-                    if preparacao.objetivo == "promocao_canal"
-                    else "NOVIDADE",
+                    titulo={
+                        "promocao_canal": "MAIS NO CANAL",
+                        "anuncio": "NOVIDADE",
+                        "engajamento": "SUA ESCOLHA",
+                    }[preparacao.objetivo],
                     cta=preparacao.cta,
                     imagem=imagens[numero % len(imagens)],
                     legendas=_captions_remotion(palavras, inicio_cta / FPS, duracao),
@@ -437,6 +465,8 @@ def produzir_avulso(
         _renderizar("Short-Derivado", props_path, public, work / "capa.jpg", still=True)
         atomic_write_text(work / "legendas.srt", _srt(palavras))
         hook = _gancho(preparacao.texto)
+        if preparacao.objetivo == "engajamento":
+            hook += "?"
         loudness_entregue = _medir_lufs(work / "video.mp4")
         elementos = [
             ElementoTelaShort(id="gancho", x=0.08, y=0.18, largura=0.78, altura=0.35),
@@ -451,11 +481,20 @@ def produzir_avulso(
             elementos.append(ElementoTelaShort(id="cta", x=0.08, y=0.18, largura=0.78, altura=0.40))
             textos_tela.extend([produto.nome, *produto.beneficios, produto.condicao or ""])
             textos_tela.extend([produto.marca or "", AVISO_PUBLICIDADE, preparacao.cta])
-        elif preparacao.objetivo in {"promocao_canal", "anuncio"}:
+        elif preparacao.objetivo in {"promocao_canal", "anuncio", "engajamento"}:
             elementos.append(ElementoTelaShort(id="cta", x=0.08, y=0.18, largura=0.78, altura=0.40))
+            if preparacao.objetivo == "engajamento":
+                elementos.append(
+                    ElementoTelaShort(id="opcoes", x=0.08, y=0.18, largura=0.78, altura=0.40)
+                )
+                textos_tela.extend([f"A {preparacao.opcao_a}", f"B {preparacao.opcao_b}"])
             textos_tela.extend(
                 [
-                    "MAIS NO CANAL" if preparacao.objetivo == "promocao_canal" else "NOVIDADE",
+                    {
+                        "promocao_canal": "MAIS NO CANAL",
+                        "anuncio": "NOVIDADE",
+                        "engajamento": "SUA ESCOLHA",
+                    }[preparacao.objetivo],
                     preparacao.cta,
                 ]
             )
@@ -495,6 +534,11 @@ def produzir_avulso(
             "objetivo": preparacao.objetivo,
             "formula_id": preparacao.formula_id,
             "cta": preparacao.cta,
+            "opcoes_engajamento": (
+                {"A": preparacao.opcao_a, "B": preparacao.opcao_b}
+                if preparacao.objetivo == "engajamento"
+                else None
+            ),
             "duracao_s": duracao,
             "wer": narracao.wer_medio,
             "relacao_comercial": preparacao.relacao_comercial,

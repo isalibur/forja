@@ -11,6 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from docforja.api import app
+from docforja.shorts.avulsos import PedidoShortAvulso, ler_lote_avulsos_texto
 from docforja.shorts.modelos import ShortParaVerificar
 from docforja.shorts.producao_avulsos import (
     _criar_cenas,
@@ -31,6 +32,8 @@ def _campanha_pronta(
     objetivo: str = "educativo",
     formula_id: str = "",
     cta: str = "Veja a cena",
+    opcao_a: str = "",
+    opcao_b: str = "",
 ) -> tuple[TestClient, Path, Path, str, str]:
     projetos = tmp_path / "projetos"
     global_ = tmp_path / "global"
@@ -56,7 +59,10 @@ def _campanha_pronta(
     monkeypatch.setattr("docforja.api.obter_pasta_global", lambda: global_)
     monkeypatch.setattr("docforja.shorts.producao_avulsos._voz_ptbr", lambda: "pm_alex")
     client = TestClient(app)
-    csv = f"tema,objetivo,duracao_s,formula,roteiro,cta\nCena,{objetivo},30,{formula_id},,{cta}\n"
+    csv = (
+        "tema,objetivo,duracao_s,formula,roteiro,cta,opcao_a,opcao_b\n"
+        f"Cena,{objetivo},30,{formula_id},,{cta},{opcao_a},{opcao_b}\n"
+    )
     campanha = client.post(
         "/api/shorts/avulsos/campanhas", json={"nome": "Teste", "csv_texto": csv}
     ).json()
@@ -164,15 +170,70 @@ def test_objetivos_nao_comerciais_usam_cartao_final_sem_duplicar_cta(
     assert all(cena.duracao_frames <= 75 for cena in cenas[1:])
 
 
-def test_objetivo_sem_cenas_apropriadas_continua_bloqueado(
+def test_engajamento_exige_pergunta_curta_e_monta_opcoes_aprovadas(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _, projetos, global_, campanha_id, _ = _campanha_pronta(
-        tmp_path, monkeypatch, objetivo="engajamento", formula_id="pergunta_comentarios"
+        tmp_path,
+        monkeypatch,
+        objetivo="engajamento",
+        formula_id="pergunta_comentarios",
+        roteiro="Qual cidade? Veja a cena.",
+        opcao_a="Pompeia",
+        opcao_b="Herculano",
     )
+    preparo = preparar_producao(projetos, global_, campanha_id, "A001")
+    cenas = _criar_cenas(preparo, [], ["ativos/cena.png"], 30.0)
+    assert preparo.opcao_a == "Pompeia"
+    assert preparo.opcao_b == "Herculano"
+    assert cenas[0].props.titulo == "Qual cidade?"
+    assert cenas[1].props.variante == "V06"
+    assert cenas[1].props.opcao_a == "Pompeia"
+    assert cenas[1].props.opcao_b == "Herculano"
+    assert cenas[-1].props.variante == "V07"
+    assert [cena.props.cta for cena in cenas].count("Veja a cena") == 1
 
-    with pytest.raises(ValueError, match="Esta produção aceita"):
+
+def test_engajamento_recusa_pergunta_longa(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _, projetos, global_, campanha_id, _ = _campanha_pronta(
+        tmp_path,
+        monkeypatch,
+        objetivo="engajamento",
+        formula_id="pergunta_comentarios",
+        roteiro="Qual cidade ficou preservada? Veja a cena.",
+        opcao_a="Pompeia",
+        opcao_b="Herculano",
+    )
+    with pytest.raises(ValueError, match="pergunta inicial"):
         preparar_producao(projetos, global_, campanha_id, "A001")
+
+
+@pytest.mark.parametrize(
+    ("opcao_a", "opcao_b"),
+    [("", "Herculano"), ("Pompeia", "Pompeia"), ("Cidade antiga", "Herculano")],
+)
+def test_csv_engajamento_exige_duas_opcoes_distintas_e_curtas(opcao_a: str, opcao_b: str) -> None:
+    csv = (
+        "tema,objetivo,duracao_s,formula,opcao_a,opcao_b\n"
+        f"Cidade,engajamento,30,pergunta_comentarios,{opcao_a},{opcao_b}\n"
+    )
+    with pytest.raises(ValueError, match="Linha 2"):
+        ler_lote_avulsos_texto(csv)
+
+
+def test_campanha_antiga_sem_opcoes_continua_legivel() -> None:
+    pedido = PedidoShortAvulso.model_validate(
+        {
+            "id": "A001",
+            "tema": "Cidade",
+            "objetivo": "engajamento",
+            "duracao_s": 30,
+            "formula_id": "pergunta_comentarios",
+            "origem_roteiro": "formula",
+        }
+    )
+    assert pedido.opcao_a is None
+    assert pedido.opcao_b is None
 
 
 def test_teaser_sem_video_longo_relacionado_nao_e_liberado(
@@ -238,13 +299,22 @@ def test_cenas_e_ds9_avulso_sem_musica(tmp_path: Path, monkeypatch: pytest.Monke
         ("educativo", ""),
         ("promocao_canal", "curiosidade_1_fato"),
         ("anuncio", "anuncio"),
+        ("engajamento", "pergunta_comentarios"),
     ],
 )
 def test_producao_piloto_publica_revisao_ou_usa_cache_sem_rederivar(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, objetivo: str, formula_id: str
 ) -> None:
     _, projetos, global_, campanha_id, _ = _campanha_pronta(
-        tmp_path, monkeypatch, objetivo=objetivo, formula_id=formula_id
+        tmp_path,
+        monkeypatch,
+        objetivo=objetivo,
+        formula_id=formula_id,
+        roteiro="Qual cidade? Veja a cena."
+        if objetivo == "engajamento"
+        else "Uma cena histórica. Veja a cena.",
+        opcao_a="Pompeia" if objetivo == "engajamento" else "",
+        opcao_b="Herculano" if objetivo == "engajamento" else "",
     )
     preparo = preparar_producao(projetos, global_, campanha_id, "A001")
     chamadas = {"render": 0}
@@ -309,6 +379,8 @@ def test_producao_piloto_publica_revisao_ou_usa_cache_sem_rederivar(
     assert meta["publicacao_autorizada"] is False
     assert meta["objetivo"] == objetivo
     assert meta["formula_id"] == preparo.formula_id
+    if objetivo == "engajamento":
+        assert meta["opcoes_engajamento"] == {"A": "Pompeia", "B": "Herculano"}
     assert meta["fontes"]["roteiro"] == preparo.revisao_roteiro
     ds9 = next(item for item in meta["qa"]["violacoes"] if item["regra"] == "DS9")
     assert ds9["aprovada"] is True
