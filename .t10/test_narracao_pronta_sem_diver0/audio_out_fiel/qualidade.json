@@ -1,0 +1,8 @@
+{
+  "wer": 0.0,
+  "limite_wer": 0.08,
+  "divergencia_detectada": false,
+  "aviso": null,
+  "metodo": "narracao_pronta",
+  "arquivo_origem": "D:\\IA\\forja\\docforja\\.t10\\test_narracao_pronta_sem_diver0\\narracao_fiel.wav"
+}

@@ -1,0 +1,100 @@
+{
+  "status": "rascunho",
+  "publicacao_autorizada": false,
+  "motivo_publicacao_bloqueada": "Alegações sem verificação externa e revisão humana final pendente.",
+  "campanha_id": "07ca82f8a89f811644616460",
+  "pedido_id": "A001",
+  "revisao": "4c0051dd76d3b6bc821ab6ffc3f1564b04f3bad666fe33af63637ae2c44d1f2d",
+  "tema": "Furadeira Leve",
+  "objetivo": "vendas",
+  "formula_id": "produto_afiliado",
+  "cta": "link na bio",
+  "duracao_s": 30.0,
+  "wer": 0.0,
+  "relacao_comercial": "afiliado",
+  "qa": {
+    "aprovado": true,
+    "violacoes": [
+      {
+        "regra": "DS1",
+        "aprovada": true,
+        "descricao": "Texto e elementos importantes ficam dentro das zonas seguras.",
+        "detalhes": ""
+      },
+      {
+        "regra": "DS2",
+        "aprovada": true,
+        "descricao": "Gancho visual e textual em até 2 segundos; fala também quando presente.",
+        "detalhes": "Inícios registrados: [0.0, 0.0, 0.0]"
+      },
+      {
+        "regra": "DS3",
+        "aprovada": true,
+        "descricao": "Há uma mudança visual ao menos a cada 3 segundos.",
+        "detalhes": "Maior intervalo sem mudança: 2.70 s"
+      },
+      {
+        "regra": "DS4",
+        "aprovada": true,
+        "descricao": "Legendas cobrem a fala do início ao fim.",
+        "detalhes": ""
+      },
+      {
+        "regra": "DS5",
+        "aprovada": true,
+        "descricao": "Existe exatamente um CTA principal.",
+        "detalhes": "CTAs encontrados: 1"
+      },
+      {
+        "regra": "DS6",
+        "aprovada": true,
+        "descricao": "Cada texto na tela tem no máximo 6 palavras.",
+        "detalhes": ""
+      },
+      {
+        "regra": "DS7",
+        "aprovada": true,
+        "descricao": "A duração fica dentro do alvo com tolerância de 2 segundos.",
+        "detalhes": "30.00 s para alvo de 30.00 s"
+      },
+      {
+        "regra": "DS8",
+        "aprovada": true,
+        "descricao": "Short derivado tem frase-ponte aprovada e aponta para o vídeo longo.",
+        "detalhes": ""
+      },
+      {
+        "regra": "DS9",
+        "aprovada": true,
+        "descricao": "Mix próximo de -14 LUFS, sem mascarar a voz; comparar com o longo se derivado.",
+        "detalhes": "Loudness integrado: -14.0 LUFS; sem trilha na mix, não há música a comparar nem a mascarar"
+      }
+    ]
+  },
+  "creditos_imagens": [
+    {
+      "id": "global:imagens:produto",
+      "credito": "",
+      "licenca": "CC0-1.0"
+    }
+  ],
+  "fontes": {
+    "roteiro": "91f1ee42c32bca18bf2d2466261675d536f6f7b7a18216b0afaa507e775d2e98",
+    "midias": "052293d8bd8222ed04630c908c18f06972f896f72e2c12acc225b926491ac512",
+    "alegacoes": "f556beaf6352fe001587d8fa6e58463cd1deab944904345026ba73f401cbc0ee"
+  },
+  "produto": {
+    "nome": "Furadeira Leve",
+    "beneficios": [
+      "Peso leve",
+      "Motor silencioso"
+    ],
+    "condicao": null,
+    "marca": "Loja Exemplo",
+    "nicho": "ferramentas",
+    "plataforma": "youtube_shorts",
+    "link_afiliado": "https://loja.exemplo.com/a?ref=docforja",
+    "aviso_publicidade": "Publicidade · link de afiliado",
+    "link_queimado_no_video": false
+  }
+}

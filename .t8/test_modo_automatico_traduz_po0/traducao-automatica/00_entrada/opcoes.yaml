@@ -1,0 +1,13 @@
+nome: Traducao automatica
+slug: traducao-automatica
+tipo: longo
+preset: padrao
+kit: cinza-e-brasa@1.0
+idiomas:
+  principal: pt-BR
+  extras:
+  - en
+monetizado: true
+traducao:
+  modos:
+    en: automatico

@@ -1,0 +1,55 @@
+{
+  "id": "67b430d7fa17c2c863e46403",
+  "nome": "Campanha de teste",
+  "status": "aguardando_revisao",
+  "pedidos": [
+    {
+      "id": "A001",
+      "tema": "Produto",
+      "objetivo": "vendas",
+      "duracao_s": 30,
+      "formula_id": "oferta",
+      "origem_roteiro": "formula",
+      "roteiro": null,
+      "cta": null,
+      "produto": null,
+      "roteiro_sugerido": null,
+      "pendencias": [
+        "aprovar roteiro",
+        "aprovar mídias e licenças",
+        "comprovar alegações exigidas pela fórmula"
+      ]
+    }
+  ],
+  "formulas": {
+    "oferta": {
+      "id": "oferta",
+      "nome": "Oferta",
+      "estrutura": [
+        "beneficio",
+        "prova_real",
+        "condicao",
+        "urgencia_verdadeira_opcional",
+        "CTA_compra"
+      ],
+      "objetivos": [
+        "vendas"
+      ],
+      "templates": [
+        "V01",
+        "V04",
+        "V10",
+        "V07"
+      ],
+      "duracao_min_s": 15,
+      "duracao_max_s": 60,
+      "regras": [
+        "sem_preco",
+        "urgencia_com_data_ou_condicao_real"
+      ],
+      "exige_prova_real": true,
+      "exige_fonte_preco": false
+    }
+  },
+  "hash_conteudo": "67b430d7fa17c2c863e46403d3fb8ec743c2c054273faa8391142be4cba42b1f"
+}

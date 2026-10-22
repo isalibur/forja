@@ -1,0 +1,9 @@
+nome: teste_wer_reprovado
+slug: teste_wer_reprovado
+tipo: longo
+preset: padrao
+kit: cinza-e-brasa@1.0
+idiomas:
+  principal: pt-BR
+  extras: []
+monetizado: true

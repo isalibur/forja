@@ -1,0 +1,26 @@
+{
+  "ativos": {
+    "A-01": {
+      "id": "A-01",
+      "descricao": "Inscrição em Pompeia",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": null,
+      "usado_em": [
+        "B0-01"
+      ],
+      "proibicoes": [],
+      "plano_b": null,
+      "caminho": "D:\\IA\\forja\\docforja\\.t10\\test_pacote_saida_completo_e_p0\\projetos\\saida_completa_teste\\02_midias\\pesquisadas\\A-01.jpg",
+      "licenca": {
+        "licenca": "CC-BY-4.0",
+        "comercial": true,
+        "autor": "Museu MANN"
+      },
+      "id_global": null
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "versao": 1,
+  "ativos": {
+    "A-001": {
+      "id": "A-001",
+      "descricao": "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C.",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C."
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-001.jpg",
+      "usado_em": [
+        "B1-01"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-002": {
+      "id": "A-002",
+      "descricao": "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C.",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C."
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-002.jpg",
+      "usado_em": [
+        "B1-02"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    }
+  }
+}

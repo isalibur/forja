@@ -1,0 +1,13 @@
+{
+  "idioma": "en",
+  "hash_roteiro_origem": "25b68cfb7748939ca96fc4786f2713d9d75d33c653cfc25c34eb695f6791b13f",
+  "hash_traducao": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "segmentos": [
+    {
+      "id": "S01",
+      "bloco": "B0",
+      "texto_original": "Uma descoberta histórica aconteceu.",
+      "texto_limpo": "A historic discovery happened."
+    }
+  ]
+}

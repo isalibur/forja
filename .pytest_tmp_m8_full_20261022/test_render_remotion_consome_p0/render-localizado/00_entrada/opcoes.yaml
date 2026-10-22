@@ -1,0 +1,13 @@
+nome: Render Localizado
+slug: render-localizado
+tipo: longo
+preset: padrao
+kit: cinza-e-brasa@1.0
+idiomas:
+  principal: pt-BR
+  extras:
+  - en
+monetizado: true
+traducao:
+  modos:
+    en: arquivo

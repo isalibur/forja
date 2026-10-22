@@ -1,0 +1,11 @@
+{
+  "origem": "whisperx",
+  "modelo_asr": "modelo-a",
+  "status": "aprovado",
+  "wer": 0.0,
+  "wer_bruto_primeira_passagem": 0.0,
+  "wer_segmentos_primeira_passagem": {
+    "B1-S01": 0.0
+  },
+  "limite_wer": 0.02
+}

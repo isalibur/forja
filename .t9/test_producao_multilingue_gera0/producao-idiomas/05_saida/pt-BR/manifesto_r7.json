@@ -1,0 +1,15 @@
+{
+  "etapa": "R7_render",
+  "idioma": "pt-BR",
+  "video_saida": "D:\\IA\\forja\\docforja\\.t9\\test_producao_multilingue_gera0\\producao-idiomas\\05_saida\\pt-BR\\video.mp4",
+  "resolucao": "1920x1080",
+  "fps": 24,
+  "hash_video": "5e7a53785103eb14bc3a3ce06be4757c4b7c5e110e8842d7da1a7f3d826459c6",
+  "duracao_s": 1.0,
+  "duracao_frames": 24,
+  "blocos_total": 1,
+  "blocos_reaproveitados": [
+    "B0"
+  ],
+  "blocos_re_renderizados": []
+}

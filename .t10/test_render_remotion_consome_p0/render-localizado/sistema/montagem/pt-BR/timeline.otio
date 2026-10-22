@@ -1,0 +1,85 @@
+{
+  "OTIO_SCHEMA": "Timeline.1",
+  "name": "render-localizado",
+  "global_start_time": {
+    "OTIO_SCHEMA": "RationalTime.1",
+    "value": 0,
+    "rate": 24
+  },
+  "tracks": {
+    "OTIO_SCHEMA": "Stack.1",
+    "children": [
+      {
+        "OTIO_SCHEMA": "Track.1",
+        "name": "Vídeo (Shots DocForja)",
+        "kind": "Video",
+        "children": [
+          {
+            "OTIO_SCHEMA": "Clip.1",
+            "name": "B0-01 · T06",
+            "source_range": {
+              "OTIO_SCHEMA": "TimeRange.1",
+              "start_time": {
+                "OTIO_SCHEMA": "RationalTime.1",
+                "value": 0,
+                "rate": 24
+              },
+              "duration": {
+                "OTIO_SCHEMA": "RationalTime.1",
+                "value": 48,
+                "rate": 24
+              }
+            },
+            "metadata": {
+              "DocForja": {
+                "shot_id": "B0-01",
+                "template": "T06",
+                "bloco": "Introdução",
+                "ativos": [],
+                "textos": [
+                  "O Vesúvio desperta."
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "OTIO_SCHEMA": "Track.1",
+        "name": "Áudio (Narração)",
+        "kind": "Audio",
+        "children": [
+          {
+            "OTIO_SCHEMA": "Clip.1",
+            "name": "Narração Principal",
+            "media_reference": {
+              "OTIO_SCHEMA": "ExternalReference.1",
+              "target_url": "narracao/narracao.wav"
+            },
+            "source_range": {
+              "OTIO_SCHEMA": "TimeRange.1",
+              "start_time": {
+                "OTIO_SCHEMA": "RationalTime.1",
+                "value": 0,
+                "rate": 24
+              },
+              "duration": {
+                "OTIO_SCHEMA": "RationalTime.1",
+                "value": 48,
+                "rate": 24
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "DocForja": {
+      "kit": "cinza-e-brasa@1.0",
+      "preset": "padrao",
+      "versao": 1,
+      "total_shots": 1
+    }
+  }
+}

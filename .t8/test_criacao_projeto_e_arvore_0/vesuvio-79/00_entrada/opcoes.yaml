@@ -1,0 +1,11 @@
+nome: Vesúvio 79
+slug: vesuvio-79
+tipo: longo
+preset: padrao
+kit: cinza-e-brasa@1.0
+idiomas:
+  principal: pt-BR
+  extras:
+  - en
+  - es
+monetizado: true

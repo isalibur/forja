@@ -1,0 +1,52 @@
+{
+  "id": "f0bc00e16d47469adae12ae5",
+  "nome": "Campanha",
+  "status": "aguardando_revisao",
+  "pedidos": [
+    {
+      "id": "A001",
+      "tema": "Pompeia",
+      "objetivo": "educativo",
+      "duracao_s": 30,
+      "formula_id": "curiosidade_1_fato",
+      "origem_roteiro": "formula",
+      "roteiro": null,
+      "cta": null,
+      "produto": null,
+      "roteiro_sugerido": null,
+      "pendencias": [
+        "aprovar roteiro",
+        "aprovar mídias e licenças",
+        "comprovar alegações exigidas pela fórmula"
+      ]
+    }
+  ],
+  "formulas": {
+    "curiosidade_1_fato": {
+      "id": "curiosidade_1_fato",
+      "nome": "Uma curiosidade, um fato",
+      "estrutura": [
+        "fato_surpreendente",
+        "explicacao",
+        "CTA"
+      ],
+      "objetivos": [
+        "promocao_canal",
+        "educativo"
+      ],
+      "templates": [
+        "V01",
+        "V02",
+        "V07"
+      ],
+      "duracao_min_s": 15,
+      "duracao_max_s": 60,
+      "regras": [
+        "fato_deve_constar_no_roteiro_ou_fonte"
+      ],
+      "exige_prova_real": false,
+      "exige_fonte_preco": false
+    }
+  },
+  "hash_conteudo": "f0bc00e16d47469adae12ae5aeb82c8008611f1e183a0854ce64aa11ceb67cb5"
+}

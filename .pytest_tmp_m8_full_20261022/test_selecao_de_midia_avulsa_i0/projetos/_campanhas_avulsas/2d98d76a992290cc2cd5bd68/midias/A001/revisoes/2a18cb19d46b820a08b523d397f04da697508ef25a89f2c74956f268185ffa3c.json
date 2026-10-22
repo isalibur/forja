@@ -1,0 +1,18 @@
+{
+  "campanha_id": "2d98d76a992290cc2cd5bd68",
+  "pedido_id": "A001",
+  "hash_campanha": "2d98d76a992290cc2cd5bd6877d1d54a1356b0f31fd1285066b19a6a200f1081",
+  "revisao_roteiro": "858f9c58688009a81b48b57f51c41eedf399653bdebf9e7b67f26f1e1a45ba09",
+  "revisao": "2a18cb19d46b820a08b523d397f04da697508ef25a89f2c74956f268185ffa3c",
+  "midias": [
+    {
+      "id_global": "global:imagens:cena",
+      "descricao": "Ilustração de teste",
+      "licenca": "CC0-1.0",
+      "credito": "",
+      "hash_arquivo": "2b55a2ee91f07c1d7f43059c254463e06c0164935ac38e1f1a8a5df01b634a9e",
+      "hash_ficha": "bbebec23b1c266b62c8ca7c347d94f18f35ce708fd3edb2ab91b4e0e069eab72"
+    }
+  ],
+  "status": "midias_selecionadas"
+}

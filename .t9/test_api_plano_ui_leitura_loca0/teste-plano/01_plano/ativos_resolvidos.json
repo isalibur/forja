@@ -1,0 +1,14 @@
+{
+  "ativos": {
+    "A-001": {
+      "id": "A-001",
+      "descricao": "Imagem histórica",
+      "origem": "pedir_ao_usuario",
+      "nome_arquivo": "A-001.jpg",
+      "usado_em": [
+        "B0-01"
+      ],
+      "caminho": "D:\\IA\\forja\\docforja\\.t9\\test_api_plano_ui_leitura_loca0\\fora.jpg"
+    }
+  }
+}

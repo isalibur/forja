@@ -1,6 +1,6 @@
 """Ensaio real controlado de shorts de afiliado do Marco M8 (V11 e agenda.csv).
 
-Executa a API local contra uma raiz isolada, com Kokoro e WhisperX locais,
+Executa a API local contra uma raiz isolada, com TTS configurado e WhisperX locais,
 FFmpeg e Remotion do kit, e verifica vídeo, narração, legendas, capa, áudio,
 as regras DS1-DS9 e a planilha de publicação. Nada é publicado, nenhuma
 aprovação do usuário é concedida e nada fora da raiz do ensaio é escrito.
@@ -8,6 +8,9 @@ aprovação do usuário é concedida e nada fora da raiz do ensaio é escrito.
 
 from __future__ import annotations
 
+import argparse
+import csv
+import io
 import json
 import shutil
 import sys
@@ -34,6 +37,7 @@ from ensaio_avulso_m8 import (
 )
 
 from docforja.nucleo.etapas import calcular_hash_dados
+from docforja.shorts.afiliados import PADRAO_PRECO
 
 PLANILHA = (
     "nome,descricao,beneficios,link_afiliado,imagens,nicho,"
@@ -70,6 +74,42 @@ ROTEIRO_LUMINARIA = (
     "ver o detalhe e a ficha completa."
 )
 
+NOMES_DEZ = ("Um", "Dois", "Tres", "Quatro", "Cinco", "Seis", "Sete", "Oito", "Nove", "Dez")
+ROTEIRO_DEZ = (
+    "Este é um item de demonstração. Não representa um produto à venda. "
+    "A imagem e os benefícios da planilha existem para testar a montagem do cartão vertical. "
+    "Formato e montagem são dados simulados, não promessas sobre produto real. "
+    "A gravação confere se nome, benefícios e aviso de publicidade cabem na tela. "
+    "Uma compra real exigiria fotos autorizadas, dados verificados e um link válido da loja. "
+    "A oferta atual deve ser conferida na página indicada, no link da bio. Link na bio."
+)
+
+
+def _planilha_dez() -> str:
+    saida = io.StringIO()
+    escritor = csv.writer(saida, lineterminator="\n")
+    escritor.writerow(
+        (
+            "nome", "descricao", "beneficios", "link_afiliado", "imagens",
+            "nicho", "plataforma", "marca", "duracao_s",
+        )
+    )
+    for nome in NOMES_DEZ:
+        escritor.writerow(
+            (
+                f"Organizador de Ensaio {nome}",
+                "Objeto fictício para testar a produção de Shorts de afiliado.",
+                "Formato compacto|Montagem simples",
+                f"https://example.invalid/ensaio/{nome.lower()}",
+                "global:imagens:produto-demonstracao",
+                "teste",
+                "ambas",
+                "Marca Fictícia",
+                30,
+            )
+        )
+    return saida.getvalue()
+
 
 def _gerar_imagens_produto(raiz: Path) -> None:
     """Cria as imagens de produto com ficha CC0 na Pasta Global do ensaio."""
@@ -81,6 +121,7 @@ def _gerar_imagens_produto(raiz: Path) -> None:
         [
             ("produto-furadeira", "0x12161d", "0x8a5a2a"),
             ("produto-luminaria", "0x0f1b1f", "0x2f6f6a"),
+            ("produto-demonstracao", "0x1b2028", "0x727982"),
         ]
     ):
         arquivo = pasta / f"{identificador}.png"
@@ -136,23 +177,29 @@ def _ficha_alegacoes(produto: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def executar_fluxo(base: str, raiz_saida: Path) -> dict[str, Any]:
+def executar_fluxo(
+    base: str,
+    raiz_saida: Path,
+    planilha: str = PLANILHA,
+    roteiros: dict[str, str] | None = None,
+    apenas: str | None = None,
+) -> dict[str, Any]:
     """Percorre o portão humano real da API para cada produto da planilha."""
     cliente = httpx.Client(base_url=base, timeout=3600.0)
     registro: dict[str, Any] = {}
-    previa = cliente.post("/api/shorts/afiliados/planilhas/planejar", json={"csv_texto": PLANILHA})
+    previa = cliente.post("/api/shorts/afiliados/planilhas/planejar", json={"csv_texto": planilha})
     if previa.status_code != 200:
         raise SystemExit(f"A prévia da planilha falhou: {previa.text[:400]}")
     registro["previa"] = previa.json()["quantidade"]
     criacao = cliente.post(
         "/api/shorts/afiliados/campanhas",
-        json={"nome": "Ensaio M8 afiliados", "csv_texto": PLANILHA},
+        json={"nome": "Ensaio M8 afiliados", "csv_texto": planilha},
     )
     if criacao.status_code != 201:
         raise SystemExit(f"A criação da campanha falhou: {criacao.text[:400]}")
     campanha = criacao.json()
     registro["campanha"] = campanha["id"]
-    roteiros = {"A001": ROTEIRO_FURADEIRA, "A002": ROTEIRO_LUMINARIA}
+    roteiros = roteiros or {"A001": ROTEIRO_FURADEIRA, "A002": ROTEIRO_LUMINARIA}
     producoes: dict[str, Any] = {}
     for pedido in campanha["pedidos"]:
         base_pedido = f"/api/shorts/avulsos/campanhas/{campanha['id']}/pedidos/{pedido['id']}"
@@ -188,6 +235,9 @@ def executar_fluxo(base: str, raiz_saida: Path) -> dict[str, Any]:
         })
         if ficha.status_code != 200:
             raise SystemExit(f"Registro da ficha falhou: {ficha.text[:400]}")
+        if apenas and pedido["id"] != apenas:
+            continue
+        print(f"[M8] Produzindo afiliado {pedido['id']}...", flush=True)
         sem_codigo = cliente.post(f"{base_pedido}/produzir", json={"codigo": "sim"})
         producao = cliente.post(f"{base_pedido}/produzir", json={"codigo": "PRODUZIR"})
         if producao.status_code != 200:
@@ -204,6 +254,10 @@ def executar_fluxo(base: str, raiz_saida: Path) -> dict[str, Any]:
             "revisao": estado.get("revisao"),
             "base_pedido": base_pedido,
         }
+        print(
+            f"[M8] {pedido['id']}: {estado.get('status')}, erro={estado.get('erro')}",
+            flush=True,
+        )
     registro["producoes"] = producoes
     agenda = _pedir(cliente, "GET", f"/api/shorts/avulsos/campanhas/{campanha['id']}/agenda")
     registro["agenda"] = agenda.json() if agenda.status_code == 200 else {"erro": agenda.text[:300]}
@@ -234,7 +288,21 @@ def executar_fluxo(base: str, raiz_saida: Path) -> dict[str, Any]:
 
 
 def main() -> int:
-    raiz = Path("E:/05_PROJETOS/forja") / f"ensaio-m8-afiliados-{time.strftime('%Y%m%d-%H%M%S')}"
+    analisador = argparse.ArgumentParser(description=__doc__)
+    analisador.add_argument("--dez-sinteticos", action="store_true")
+    analisador.add_argument("--apenas", choices=[f"A{n:03d}" for n in range(1, 11)])
+    analisador.add_argument("--raiz", type=Path)
+    argumentos = analisador.parse_args()
+    if (
+        argumentos.apenas
+        and not argumentos.dez_sinteticos
+        and argumentos.apenas not in {"A001", "A002"}
+    ):
+        analisador.error("A planilha padrão contém apenas A001 e A002.")
+    raiz = argumentos.raiz or Path("E:/05_PROJETOS/forja") / (
+        f"ensaio-m8-afiliados-{'dez-' if argumentos.dez_sinteticos else ''}"
+        f"{time.strftime('%Y%m%d-%H%M%S')}"
+    )
     if raiz.exists() and any(raiz.iterdir()):
         raise SystemExit(f"A raiz do ensaio já contém arquivos: {raiz}")
     raiz.mkdir(parents=True, exist_ok=True)
@@ -247,9 +315,19 @@ def main() -> int:
     base = f"http://127.0.0.1:{porta}"
     processo = iniciar_api(raiz, porta)
     inicio = time.monotonic()
+    planilha = _planilha_dez() if argumentos.dez_sinteticos else PLANILHA
+    roteiros = (
+        {f"A{indice:03d}": ROTEIRO_DEZ for indice in range(1, 11)}
+        if argumentos.dez_sinteticos
+        else {"A001": ROTEIRO_FURADEIRA, "A002": ROTEIRO_LUMINARIA}
+    )
+    registro: dict[str, Any] = {}
+    erro: str | None = None
     try:
         esperar_api(base, processo)
-        registro = executar_fluxo(base, raiz_saida)
+        registro = executar_fluxo(base, raiz_saida, planilha, roteiros, argumentos.apenas)
+    except (RuntimeError, SystemExit, httpx.HTTPError) as exc:
+        erro = str(exc)
     finally:
         processo.terminate()
         try:
@@ -297,34 +375,79 @@ def main() -> int:
                 "link_no_texto_publicacao": produto.get("link_afiliado", "") in youtube,
                 "link_no_instagram": produto.get("link_afiliado", "") in instagram,
                 "link_na_legenda": produto.get("link_afiliado", "") in srt,
-                "preco_ausente": not any(
-                    item in (srt + youtube + instagram + agenda + json.dumps(metadados))
-                    for item in ("149,90", "89,00", "Hoje sai por")
-                ),
+                "aviso_publicidade": "Publicidade" in youtube and "Publicidade" in instagram,
+                "preco_ausente": not PADRAO_PRECO.search(srt + youtube + instagram + agenda),
+                "narracao": metadados.get("narracao"),
             }
 
-    sucesso = set(verificacoes) == {"A001", "A002"} and all(
-        verificacao["metadados"]["qa_aprovado"]
-        and verificacao["metadados"]["preco_ausente"]
-        and verificacao["metadados"]["link_no_texto_publicacao"]
-        and verificacao["metadados"]["link_no_instagram"]
-        and verificacao["metadados"]["link_na_legenda"] is False
-        and verificacao["metadados"]["link_queimado_no_video"] is False
-        for verificacao in verificacoes.values()
+    esperados = (
+        {argumentos.apenas}
+        if argumentos.apenas
+        else {f"A{indice:03d}" for indice in range(1, 11)}
+        if argumentos.dez_sinteticos
+        else {"A001", "A002"}
+    )
+    sucesso = bool(
+        erro is None
+        and set(verificacoes) == esperados
+        and all(
+            verificacao["video"].get("ok")
+            and verificacao["video"].get("largura") == 1080
+            and verificacao["video"].get("altura") == 1920
+            and verificacao["video"].get("fps") == 30
+            and verificacao["video"].get("codec_video") == "h264"
+            and verificacao["video"].get("codec_audio") == "aac"
+            and verificacao["capa"].get("ok")
+            and verificacao["legendas"].get("ok")
+            and verificacao["metadados"]["qa_aprovado"]
+            and verificacao["metadados"]["preco_ausente"]
+            and verificacao["metadados"]["aviso_publicidade"]
+            and verificacao["metadados"]["link_no_texto_publicacao"]
+            and verificacao["metadados"]["link_no_instagram"]
+            and verificacao["metadados"]["link_na_legenda"] is False
+            and verificacao["metadados"]["link_queimado_no_video"] is False
+            for verificacao in verificacoes.values()
+        )
+        and all(
+            item["portao_sem_codigo"] == 403 and item["estado"] == "concluido"
+            for item in registro.get("producoes", {}).values()
+        )
+        and registro.get("agenda", {}).get("quantidade") == len(esperados)
     )
     relatorio = {
         "sucesso": sucesso,
+        "erro": erro,
         "raiz": str(raiz),
         "duracao_total_s": duracao_total,
-        "planilha": PLANILHA,
-        "roteiros": {"A001": ROTEIRO_FURADEIRA, "A002": ROTEIRO_LUMINARIA},
+        "planilha": planilha,
+        "roteiros": roteiros,
+        "apenas": argumentos.apenas,
         "fluxo": registro,
         "verificacoes": verificacoes,
     }
     (raiz / "relatorio-ensaio.json").write_text(
         json.dumps(relatorio, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    print(json.dumps(relatorio, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "raiz": str(raiz),
+                "sucesso": sucesso,
+                "erro": erro,
+                "agenda_quantidade": registro.get("agenda", {}).get("quantidade"),
+                "pacotes": {
+                    chave: {
+                        "duracao_s": valor["video"]["duracao_s"],
+                        "qa_aprovado": valor["metadados"]["qa_aprovado"],
+                        "narracao": valor["metadados"]["narracao"],
+                    }
+                    for chave, valor in verificacoes.items()
+                },
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0 if sucesso else 1
 
 

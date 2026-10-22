@@ -1,0 +1,15 @@
+{
+  "etapa": "R7_render",
+  "idioma": "pt-BR",
+  "video_saida": "D:\\IA\\forja\\docforja\\.pytest_tmp_m8_voice_full_20261022\\test_render_remotion_consome_p0\\render-localizado\\05_saida\\pt-BR\\video.mp4",
+  "resolucao": "1920x1080",
+  "fps": 24,
+  "hash_video": "ad62aa11bd1de1af2d826ea0dfcec0b3be77183c7d9658056ce9038a3a5de86c",
+  "duracao_s": 2.0,
+  "duracao_frames": 48,
+  "blocos_total": 1,
+  "blocos_reaproveitados": [
+    "B0"
+  ],
+  "blocos_re_renderizados": []
+}

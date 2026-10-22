@@ -1,0 +1,44 @@
+{
+  "versao": 1,
+  "blocos": [
+    {
+      "id": "B0",
+      "nome": "Introdução",
+      "intensidade_inicio": 5.0,
+      "intensidade_fim": 5.0,
+      "segmentos": [
+        {
+          "id": "B0-S01",
+          "texto_original": "O Vesúvio desperta.",
+          "texto_limpo": "O Vesúvio desperta.",
+          "direcao_voz": null,
+          "fatos": [],
+          "batida": "contexto",
+          "intensidade": 5.0,
+          "visual_sugerido": null,
+          "silencio_apos_s": 0.0,
+          "pausas": [],
+          "entidades": {
+            "lugares": [
+              "Vesúvio"
+            ]
+          }
+        },
+        {
+          "id": "B0-S02",
+          "texto_original": "A cidade observa.",
+          "texto_limpo": "A cidade observa.",
+          "direcao_voz": null,
+          "fatos": [],
+          "batida": "contexto",
+          "intensidade": 5.0,
+          "visual_sugerido": null,
+          "silencio_apos_s": 0.0,
+          "pausas": [],
+          "entidades": {}
+        }
+      ]
+    }
+  ],
+  "total_segmentos": 2
+}

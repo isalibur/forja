@@ -1,0 +1,14 @@
+[
+  {
+    "id": "S01",
+    "inicio_s": 0,
+    "fim_s": 20,
+    "texto": "Primeira parte."
+  },
+  {
+    "id": "S02",
+    "inicio_s": 20,
+    "fim_s": 40,
+    "texto": "Segunda parte."
+  }
+]

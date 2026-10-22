@@ -1,0 +1,17 @@
+{
+  "etapa": "R7_render",
+  "idioma": "en",
+  "video_saida": "D:\\IA\\forja\\docforja\\.pytest_tmp_m8_full_20261022\\test_invalidacao_seletiva_mult0\\projetos\\proj_invalidacao_seletiva\\05_saida\\en\\video.mp4",
+  "resolucao": "1920x1080",
+  "fps": 24,
+  "hash_video": "f63a2d839e18fa4d5937001dfaa40a39027b972b7565b690b8604c227fe5dc07",
+  "duracao_s": 8.7,
+  "duracao_frames": 209,
+  "blocos_total": 2,
+  "blocos_reaproveitados": [
+    "B1"
+  ],
+  "blocos_re_renderizados": [
+    "B0"
+  ]
+}

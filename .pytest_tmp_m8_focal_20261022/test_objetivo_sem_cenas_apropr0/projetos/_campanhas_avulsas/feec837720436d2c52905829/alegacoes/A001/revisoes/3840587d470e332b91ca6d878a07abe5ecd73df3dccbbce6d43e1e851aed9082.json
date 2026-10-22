@@ -1,0 +1,20 @@
+{
+  "campanha_id": "feec837720436d2c52905829",
+  "pedido_id": "A001",
+  "hash_campanha": "feec837720436d2c52905829f57dd59771fba64c0657f92e9b196ebd8f7ce731",
+  "revisao_roteiro": "645308caec2fe4fd37112ce5d8338866f8e63ed0ef1a06b4550806b198771e2d",
+  "revisao_midias": "cf326d91c5bde54c523fb13035ebf3b58589e08702d2fa33442fa4702f41bc71",
+  "revisao": "3840587d470e332b91ca6d878a07abe5ecd73df3dccbbce6d43e1e851aed9082",
+  "dados": {
+    "fontes": [],
+    "sem_alegacoes_verificaveis": true,
+    "prova_real": null,
+    "fonte_preco": null,
+    "condicao_urgencia": null,
+    "relacao_comercial": "nenhuma",
+    "marca": null,
+    "aviso_publicidade": false,
+    "revisado_pelo_usuario": true
+  },
+  "status": "documentacao_registrada_sem_verificacao_externa"
+}

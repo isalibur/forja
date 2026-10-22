@@ -1,0 +1,18 @@
+{
+  "campanha_id": "feec837720436d2c52905829",
+  "pedido_id": "A001",
+  "hash_campanha": "feec837720436d2c52905829f57dd59771fba64c0657f92e9b196ebd8f7ce731",
+  "revisao_roteiro": "645308caec2fe4fd37112ce5d8338866f8e63ed0ef1a06b4550806b198771e2d",
+  "revisao": "cf326d91c5bde54c523fb13035ebf3b58589e08702d2fa33442fa4702f41bc71",
+  "midias": [
+    {
+      "id_global": "global:imagens:cena",
+      "descricao": "Cena genérica",
+      "licenca": "CC0-1.0",
+      "credito": "",
+      "hash_arquivo": "15c0981f11443f289681f341db6893579ea61c14628ca1c19993100abd0955ac",
+      "hash_ficha": "d72566cb5bf0239717f1a63722350c7da5f0885f28d5fa91a1488396232efa89"
+    }
+  ],
+  "status": "midias_selecionadas"
+}

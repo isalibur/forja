@@ -1,0 +1,12 @@
+{
+  "A-01": {
+    "caminho": "D:\\IA\\forja\\docforja\\.pytest_tmp_m8_voice_full_20261022\\test_invalidacao_seletiva_mult0\\projetos\\proj_invalidacao_seletiva\\02_midias\\pesquisadas\\A-01\\nova_escolhida.jpg",
+    "origem": "pesquisar",
+    "aprovado": true
+  },
+  "A-02": {
+    "caminho": "D:\\IA\\forja\\docforja\\.pytest_tmp_m8_voice_full_20261022\\test_invalidacao_seletiva_mult0\\projetos\\proj_invalidacao_seletiva\\02_midias\\pesquisadas\\A-02\\escolhida.jpg",
+    "origem": "pesquisar",
+    "aprovado": true
+  }
+}

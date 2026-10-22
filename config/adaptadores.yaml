@@ -35,6 +35,7 @@ omnivoice:
   cache: D:/IA/audio_factory/models/voice_clone
   velocidade: 0.92
   passos: 64
+  semente: 42
 shorts_avulsos:
   motor_tts: omnivoice
   voz: nova_ref_7s

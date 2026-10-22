@@ -1,0 +1,52 @@
+{
+  "id": "2d98d76a992290cc2cd5bd68",
+  "nome": "Campanha",
+  "status": "aguardando_revisao",
+  "pedidos": [
+    {
+      "id": "A001",
+      "tema": "A",
+      "objetivo": "educativo",
+      "duracao_s": 30,
+      "formula_id": "curiosidade_1_fato",
+      "origem_roteiro": "formula",
+      "roteiro": null,
+      "cta": null,
+      "produto": null,
+      "roteiro_sugerido": null,
+      "pendencias": [
+        "aprovar roteiro",
+        "aprovar mídias e licenças",
+        "comprovar alegações exigidas pela fórmula"
+      ]
+    }
+  ],
+  "formulas": {
+    "curiosidade_1_fato": {
+      "id": "curiosidade_1_fato",
+      "nome": "Uma curiosidade, um fato",
+      "estrutura": [
+        "fato_surpreendente",
+        "explicacao",
+        "CTA"
+      ],
+      "objetivos": [
+        "promocao_canal",
+        "educativo"
+      ],
+      "templates": [
+        "V01",
+        "V02",
+        "V07"
+      ],
+      "duracao_min_s": 15,
+      "duracao_max_s": 60,
+      "regras": [
+        "fato_deve_constar_no_roteiro_ou_fonte"
+      ],
+      "exige_prova_real": false,
+      "exige_fonte_preco": false
+    }
+  },
+  "hash_conteudo": "2d98d76a992290cc2cd5bd6877d1d54a1356b0f31fd1285066b19a6a200f1081"
+}

@@ -102,6 +102,35 @@ def test_wer_portugues_iguala_apenas_grafias_numericas():
     )
 
 
+def test_wer_ignora_hifenizacao_e_plural_sem_esconder_erro_real():
+    """Hifenização e plural são escolha do ASR, não falha de pronúncia."""
+    assert (
+        calcular_wer(
+            "A gravação confere se nome e benefícios cabem na tela.",
+            "A gravação confere-se nome e benefícios cabem na tela.",
+            idioma="pt-BR",
+        )
+        == 0.0
+    )
+    assert (
+        calcular_wer(
+            "Não são promessas sobre um produto real.",
+            "Não são promessa sobre um produto real.",
+            idioma="pt-BR",
+        )
+        == 0.0
+    )
+    # Palavra trocada continua contando como erro
+    assert (
+        calcular_wer(
+            "O formato compacto e a montagem simples são dados simulados.",
+            "O formato compacto e a montagem rápida são dados simulados.",
+            idioma="pt-BR",
+        )
+        > 0.0
+    )
+
+
 def test_duracoes_pausas_padrao():
     """Valida constantes de tempo das pausas do roteiro."""
     assert DURACOES_PAUSAS_S["PAUSA-C"] == 0.4

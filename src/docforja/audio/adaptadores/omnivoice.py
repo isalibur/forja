@@ -26,6 +26,7 @@ class AdaptadorOmniVoice(AdaptadorTTS):
         cache: Path | None = None,
         velocidade: float = 0.92,
         passos: int = 64,
+        semente: int = 42,
         timeout_s: float = 900.0,
     ) -> None:
         self.python_path = python_path
@@ -34,6 +35,7 @@ class AdaptadorOmniVoice(AdaptadorTTS):
         self.cache = cache
         self.velocidade = velocidade
         self.passos = passos
+        self.semente = semente
         self.timeout_s = timeout_s
 
     def disponivel(self) -> bool:
@@ -84,6 +86,8 @@ class AdaptadorOmniVoice(AdaptadorTTS):
             str(self.velocidade),
             "--passos",
             str(self.passos),
+            "--semente",
+            str(self.semente),
         ]
         if self.cache:
             comando.extend(["--cache", str(self.cache)])

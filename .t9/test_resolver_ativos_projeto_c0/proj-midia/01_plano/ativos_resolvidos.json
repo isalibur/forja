@@ -1,0 +1,46 @@
+{
+  "versao": 1,
+  "total_ativos": 2,
+  "ativos": {
+    "A-001": {
+      "id": "A-001",
+      "descricao": "Inscrição a carvão de 2018 na parede de Pompeia",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": null,
+      "usado_em": [
+        "B0-01"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": "D:\\IA\\forja\\docforja\\.t9\\test_resolver_ativos_projeto_c0\\proj-midia\\02_midias\\pesquisadas\\A-001\\escolhida.jpg",
+      "licenca": {
+        "autor": "Arqueólogo",
+        "licenca": "CC BY 4.0",
+        "comercial": true
+      },
+      "id_global": null
+    },
+    "A-002": {
+      "id": "A-002",
+      "descricao": "Reconstituição da erupção do Vesúvio vista do mar",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Erupção pliniana em 79 d.C.",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": null,
+      "usado_em": [
+        "B0-02"
+      ],
+      "proibicoes": [],
+      "plano_b": null,
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    }
+  }
+}

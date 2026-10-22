@@ -1,0 +1,25 @@
+{
+  "campanha_id": "030a6cd9654696e197ed521b",
+  "pedido_id": "A001",
+  "hash_campanha": "030a6cd9654696e197ed521bd7719878348794fbf190d7b8ac27d93fc27a2649",
+  "revisao_roteiro": "5f8a5bcbc63cb530c4266e7ce3a339a60013c95f30da6b0a8b683a41df133be4",
+  "revisao_midias": "470af918576b7dbd020e0d4756283b39583294359dec56ee6ba12f4e6f422b18",
+  "revisao": "a8c4b80b40f62e5fb7055efa817b07c23650cf906dfdd28bced3be875191eecd",
+  "dados": {
+    "fontes": [
+      {
+        "alegacao": "Informação sintética para ensaio de produção.",
+        "fonte": "Plano fictício do teste unitário."
+      }
+    ],
+    "sem_alegacoes_verificaveis": false,
+    "prova_real": null,
+    "fonte_preco": null,
+    "condicao_urgencia": null,
+    "relacao_comercial": "nenhuma",
+    "marca": null,
+    "aviso_publicidade": false,
+    "revisado_pelo_usuario": true
+  },
+  "status": "documentacao_registrada_sem_verificacao_externa"
+}

@@ -1,0 +1,14 @@
+{
+  "versao": 1,
+  "blocos": [
+    {
+      "bloco_id": "B1",
+      "titulo": "Abertura",
+      "modo_visual": "reconstituição",
+      "lut": "quente",
+      "clima_musical": "Campania Felix, cordas quentes e harpa",
+      "contexto": null,
+      "elementos_recorrentes": []
+    }
+  ]
+}

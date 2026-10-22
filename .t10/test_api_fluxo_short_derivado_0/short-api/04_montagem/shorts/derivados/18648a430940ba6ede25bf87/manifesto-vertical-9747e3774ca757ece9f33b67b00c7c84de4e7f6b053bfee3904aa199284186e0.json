@@ -1,0 +1,14 @@
+{
+  "projeto": "short-api",
+  "proporcao": "9:16",
+  "hash_entrada": "9747e3774ca757ece9f33b67b00c7c84de4e7f6b053bfee3904aa199284186e0",
+  "shots": [
+    {
+      "shot_id": "B0-01",
+      "inicio_s": 0.0,
+      "fim_s": 20.0,
+      "template_origem": "T01",
+      "ativos": []
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "projeto": "short-integrado",
+  "titulo_longo": "Short Integrado",
+  "idioma": "pt-BR",
+  "gancho": "Uma descoberta histórica aconteceu.",
+  "frase_ponte": "Veja o vídeo completo.",
+  "video_relacionado": "short-integrado",
+  "requer_vinculo_manual": true,
+  "arquivos": {
+    "titulos.md": "# Títulos sugeridos (máximo 40 caracteres)\n\n1. Uma descoberta histórica aconteceu\n2. Uma descoberta histórica\n3. descoberta histórica aconteceu\n",
+    "youtube.md": "Título: Uma descoberta histórica aconteceu\n\nDescrição:\nUma descoberta histórica aconteceu.\n\nVídeo completo: Short Integrado. (vincular como vídeo relacionado).\n\nVídeo relacionado: selecione o vídeo longo na plataforma.\n\n#Shorts #Documentario #VideoCurto\n",
+    "instagram.md": "Uma descoberta histórica aconteceu.\n\nVeja o vídeo completo.\n\n#Shorts #Reels #Documentario #VideoCurto #DocForja\n\nTexto alternativo: Vídeo vertical com narração: Uma descoberta histórica aconteceu.. com legendas palavra a palavra.\nCapa sugerida: capa.jpg.\n",
+    "comentario_fixado.md": "Assista ao vídeo completo: [adicionar link: Short Integrado]\n"
+  },
+  "revisao": "bc1dd18620413c7555ca90cf2f1687696d68d2638a4136e8704295fb99f93597",
+  "ativos": {
+    "A-001": {
+      "hash": "0f94817c4fc5e7db7258123d455f98889403ae41b8a1b9ef494639f47bee768a",
+      "descricao": "Ilustração licenciada",
+      "licenca": {
+        "url_origem": "",
+        "autor": "",
+        "licenca": "CC0-1.0",
+        "comercial": true,
+        "patrimonio_restrito": false,
+        "credito_obrigatorio": true,
+        "texto_credito": "",
+        "detalhes": {}
+      }
+    }
+  },
+  "qa_aprovado": true,
+  "falhas_qa": []
+}

@@ -1,0 +1,18 @@
+{
+  "etapa": "R6_mix",
+  "idioma": "pt-BR",
+  "alvo_lufs": -14.0,
+  "medido_lufs": -14.0,
+  "true_peak_dbtp": -1.0,
+  "lra_lu": 7.0,
+  "ganho_trilha_sob_fala": 0.034,
+  "sidechain_ducking": "ativo (ganho inicial 0.034 sob fala; threshold 0.02, ratio 8:1, ataque 50 ms, release 400 ms)",
+  "hash_mix": "e7e0cc93cce8dcc3d51b5a19aa121973149da04693aa914edab7f896ba702c50",
+  "hash_narracao": "7df26813301a5b20e9a9f4f3626262874085ba2d558b832f0b1b0a5770ef103b",
+  "hash_trilha": "50c818215e9a0c46bee708f89de9b5e26501e194c33022d1ed33142229f080c4",
+  "hash_config": "51905c23647c7ed1f5338bae4a2e76e285b1b396d073d3ec26c9dc5e3238a891",
+  "sfx_incluidos": [],
+  "observacoes": [
+    "SFX/ambiências não foram incluídos: não há manifesto temporal configurado."
+  ]
+}

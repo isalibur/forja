@@ -1,0 +1,14 @@
+{
+  "id": "A-01",
+  "tipo": "imagens",
+  "descricao": "Retrato histórico de Pompeia",
+  "licenca": "CC-BY-4.0",
+  "comercial": true,
+  "credito": "Fotógrafo Documental",
+  "arquivo": "A-01.jpg",
+  "sha256": "105280d69d397802b746ab6d064995c39e2a16fbdfe1399ba07708bf236528fa",
+  "projetos_usados": [
+    "projeto_a"
+  ],
+  "id_global": "global:imagens:A-01"
+}

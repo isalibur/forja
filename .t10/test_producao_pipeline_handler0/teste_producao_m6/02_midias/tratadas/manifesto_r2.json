@@ -1,0 +1,13 @@
+{
+  "etapa": "R2_tratamento",
+  "ativos_processados": [
+    "A-01"
+  ],
+  "ativos_reprocessados": [
+    "A-01"
+  ],
+  "hashes_origem": {
+    "A-01": "8c5d213de4c776cb479a669e9f262adb129d260ff3dbdf7ac0c848a36038f4ed"
+  },
+  "status": "concluido"
+}

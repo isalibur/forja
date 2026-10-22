@@ -1,0 +1,25 @@
+{
+  "idioma": "en",
+  "hash_roteiro_origem": "453c640d425de8bce91647e4467e0922bf95268cd73ade71e12118a57692c7e3",
+  "hash_traducao": "d1983fb7b083051542189d69f77c9c284f1be90aa3d8a716f6ce64fe73ddf4b2",
+  "segmentos": [
+    {
+      "id": "B0-S01",
+      "bloco": "B0",
+      "texto_original": "Vesuvius wakes. [PAUSA-C]",
+      "texto_limpo": "Vesuvius wakes. ,"
+    },
+    {
+      "id": "B0-S02",
+      "bloco": "B0",
+      "texto_original": "The city watches.",
+      "texto_limpo": "The city watches."
+    },
+    {
+      "id": "B1-S01",
+      "bloco": "B1",
+      "texto_original": "Ash covers the streets.",
+      "texto_limpo": "Ash covers the streets."
+    }
+  ]
+}

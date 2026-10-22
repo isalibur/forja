@@ -1,0 +1,18 @@
+{
+  "campanha_id": "e12e87f3b980f8521e1d29d7",
+  "pedido_id": "A001",
+  "hash_campanha": "e12e87f3b980f8521e1d29d7ac7138577bc6ed19821d5b91b34a7818df0e0d9b",
+  "revisao_roteiro": "5e66f7c49bd9bcbbececbe149de34bf7c3635377ebfc46ae6465eef42d44c52e",
+  "revisao": "3fee1c38a15cc5be827b196942bc2665451472290b6b6f856d643c73e5a29365",
+  "midias": [
+    {
+      "id_global": "global:imagens:cena",
+      "descricao": "Ilustração genérica",
+      "licenca": "CC0-1.0",
+      "credito": "",
+      "hash_arquivo": "15c0981f11443f289681f341db6893579ea61c14628ca1c19993100abd0955ac",
+      "hash_ficha": "eb81c214f796955027d14f5658f0b360109d04002c9bef4865d31bc3f46a2579"
+    }
+  ],
+  "status": "midias_selecionadas"
+}

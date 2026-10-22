@@ -1,0 +1,14 @@
+{
+  "etapa": "R6_mix",
+  "idioma": "en",
+  "medido_lufs": -14.0,
+  "true_peak_dbtp": -1.0,
+  "lra_lu": 7.0,
+  "ganho_trilha_sob_fala": null,
+  "sidechain_ducking": "teste",
+  "hash_mix": "56d4af65701c26df20bd4021eda95b6e830348ce3a746086079fe89285548dc9",
+  "hash_narracao": "hash-voz",
+  "hash_trilha": null,
+  "modo": "so_legendas",
+  "reutiliza_audio_de": "pt-BR"
+}

@@ -1,0 +1,88 @@
+{
+  "status": "rascunho",
+  "publicacao_autorizada": false,
+  "motivo_publicacao_bloqueada": "Alegações sem verificação externa e revisão humana final pendente.",
+  "campanha_id": "030a6cd9654696e197ed521b",
+  "pedido_id": "A001",
+  "revisao": "307b426712624d0360257ab6c894a58aedb2ce6bb2a4625de64f8f71815c4f78",
+  "tema": "Cena",
+  "objetivo": "promocao_canal",
+  "formula_id": "curiosidade_1_fato",
+  "cta": "Veja a cena",
+  "opcoes_engajamento": null,
+  "creditos_clipes": [],
+  "duracao_s": 30.0,
+  "wer": 0.0,
+  "relacao_comercial": "nenhuma",
+  "qa": {
+    "aprovado": true,
+    "violacoes": [
+      {
+        "regra": "DS1",
+        "aprovada": true,
+        "descricao": "Texto e elementos importantes ficam dentro das zonas seguras.",
+        "detalhes": ""
+      },
+      {
+        "regra": "DS2",
+        "aprovada": true,
+        "descricao": "Gancho visual e textual em até 2 segundos; fala também quando presente.",
+        "detalhes": "Inícios registrados: [0.0, 0.0, 0.0]"
+      },
+      {
+        "regra": "DS3",
+        "aprovada": true,
+        "descricao": "Há uma mudança visual ao menos a cada 3 segundos.",
+        "detalhes": "Maior intervalo sem mudança: 2.50 s"
+      },
+      {
+        "regra": "DS4",
+        "aprovada": true,
+        "descricao": "Legendas cobrem a fala do início ao fim.",
+        "detalhes": ""
+      },
+      {
+        "regra": "DS5",
+        "aprovada": true,
+        "descricao": "Existe exatamente um CTA principal.",
+        "detalhes": "CTAs encontrados: 1"
+      },
+      {
+        "regra": "DS6",
+        "aprovada": true,
+        "descricao": "Cada texto na tela tem no máximo 6 palavras.",
+        "detalhes": ""
+      },
+      {
+        "regra": "DS7",
+        "aprovada": true,
+        "descricao": "A duração fica dentro do alvo com tolerância de 2 segundos.",
+        "detalhes": "30.00 s para alvo de 30.00 s"
+      },
+      {
+        "regra": "DS8",
+        "aprovada": true,
+        "descricao": "Short derivado tem frase-ponte aprovada e aponta para o vídeo longo.",
+        "detalhes": ""
+      },
+      {
+        "regra": "DS9",
+        "aprovada": true,
+        "descricao": "Mix próximo de -14 LUFS, sem mascarar a voz; comparar com o longo se derivado.",
+        "detalhes": "Loudness integrado: -14.0 LUFS; sem trilha na mix, não há música a comparar nem a mascarar"
+      }
+    ]
+  },
+  "creditos_imagens": [
+    {
+      "id": "global:imagens:cena",
+      "credito": "",
+      "licenca": "CC0-1.0"
+    }
+  ],
+  "fontes": {
+    "roteiro": "5f8a5bcbc63cb530c4266e7ce3a339a60013c95f30da6b0a8b683a41df133be4",
+    "midias": "470af918576b7dbd020e0d4756283b39583294359dec56ee6ba12f4e6f422b18",
+    "alegacoes": "a8c4b80b40f62e5fb7055efa817b07c23650cf906dfdd28bced3be875191eecd"
+  }
+}

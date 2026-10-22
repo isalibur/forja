@@ -1,0 +1,14 @@
+{
+  "id": "A-CLI",
+  "tipo": "imagens",
+  "descricao": "Foto de arquivo CLI",
+  "licenca": "CC0",
+  "comercial": true,
+  "credito": "",
+  "arquivo": "A-CLI.jpg",
+  "sha256": "8c5d213de4c776cb479a669e9f262adb129d260ff3dbdf7ac0c848a36038f4ed",
+  "projetos_usados": [
+    "proj_cli_promo"
+  ],
+  "id_global": "global:imagens:A-CLI"
+}

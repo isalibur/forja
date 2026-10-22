@@ -1,0 +1,11 @@
+{
+  "etapa": "R1_imagens",
+  "total_ativos": 1,
+  "imagens_geradas": [
+    {
+      "id": "A-01",
+      "origem": "resolvido",
+      "arquivo": "amostra.jpg"
+    }
+  ]
+}

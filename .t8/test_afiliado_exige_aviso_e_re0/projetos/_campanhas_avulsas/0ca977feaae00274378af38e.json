@@ -1,0 +1,60 @@
+{
+  "id": "0ca977feaae00274378af38e",
+  "nome": "Campanha de teste",
+  "status": "aguardando_revisao",
+  "pedidos": [
+    {
+      "id": "A001",
+      "tema": "Produto",
+      "objetivo": "vendas",
+      "duracao_s": 30,
+      "formula_id": "produto_afiliado",
+      "origem_roteiro": "formula",
+      "roteiro": null,
+      "cta": null,
+      "opcao_a": null,
+      "opcao_b": null,
+      "produto": null,
+      "roteiro_sugerido": null,
+      "pendencias": [
+        "aprovar roteiro",
+        "aprovar mídias e licenças",
+        "comprovar alegações exigidas pela fórmula"
+      ]
+    }
+  ],
+  "formulas": {
+    "produto_afiliado": {
+      "id": "produto_afiliado",
+      "nome": "Produto de afiliado",
+      "estrutura": [
+        "problema",
+        "produto_em_uso",
+        "beneficio_1",
+        "beneficio_2",
+        "beneficio_3",
+        "oferta_sem_preco",
+        "CTA"
+      ],
+      "objetivos": [
+        "vendas"
+      ],
+      "templates": [
+        "V01",
+        "V11",
+        "V07"
+      ],
+      "duracao_min_s": 15,
+      "duracao_max_s": 60,
+      "regras": [
+        "imagem_autorizada",
+        "sem_preco",
+        "aviso_de_afiliado",
+        "link_apenas_metadados"
+      ],
+      "exige_prova_real": false,
+      "exige_fonte_preco": false
+    }
+  },
+  "hash_conteudo": "0ca977feaae00274378af38e44118eee433df4bfc31549974d5277432ac11506"
+}

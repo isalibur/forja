@@ -1,0 +1,11 @@
+CRÉDITOS E FONTES DE MÍDIA — DOCFORJA
+========================================
+
+1. IMAGENS E ARTEFATOS HISTÓRICOS:
+- Ativo [A-01]: Amostra de teste
+  Origem/Autor: Acervo | Licença: CC0
+
+2. ÁUDIO E SOUND DESIGN:
+- Narração e voz sintética: Modelo Kokoro/Chatterbox (licença de uso aprovada)
+- Trilha sonora e cama musical: Kit Cinza e Brasa (licença comercial DocForja)
+- Efeitos sonoros do kit: DocForja SFX Library (licenciados)

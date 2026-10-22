@@ -1,0 +1,52 @@
+{
+  "id": "8dd117a3e22d7d128d3363e7",
+  "nome": "Teste",
+  "status": "aguardando_revisao",
+  "pedidos": [
+    {
+      "id": "A001",
+      "tema": "Cena",
+      "objetivo": "promocao_canal",
+      "duracao_s": 30,
+      "formula_id": "curiosidade_1_fato",
+      "origem_roteiro": "formula",
+      "roteiro": null,
+      "cta": "Veja a cena",
+      "produto": null,
+      "roteiro_sugerido": null,
+      "pendencias": [
+        "aprovar roteiro",
+        "aprovar mídias e licenças",
+        "comprovar alegações exigidas pela fórmula"
+      ]
+    }
+  ],
+  "formulas": {
+    "curiosidade_1_fato": {
+      "id": "curiosidade_1_fato",
+      "nome": "Uma curiosidade, um fato",
+      "estrutura": [
+        "fato_surpreendente",
+        "explicacao",
+        "CTA"
+      ],
+      "objetivos": [
+        "promocao_canal",
+        "educativo"
+      ],
+      "templates": [
+        "V01",
+        "V02",
+        "V07"
+      ],
+      "duracao_min_s": 15,
+      "duracao_max_s": 60,
+      "regras": [
+        "fato_deve_constar_no_roteiro_ou_fonte"
+      ],
+      "exige_prova_real": false,
+      "exige_fonte_preco": false
+    }
+  },
+  "hash_conteudo": "8dd117a3e22d7d128d3363e70e96905ee2744037c8e0172bc1062b3099dee852"
+}

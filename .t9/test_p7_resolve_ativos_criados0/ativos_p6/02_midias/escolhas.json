@@ -1,0 +1,12 @@
+{
+  "A-001": {
+    "origem": "pedir_ao_usuario",
+    "motivo": null,
+    "status": "pendente_usuario"
+  },
+  "A-001_b": {
+    "origem": "pedir_ao_usuario",
+    "motivo": null,
+    "status": "pendente_usuario"
+  }
+}

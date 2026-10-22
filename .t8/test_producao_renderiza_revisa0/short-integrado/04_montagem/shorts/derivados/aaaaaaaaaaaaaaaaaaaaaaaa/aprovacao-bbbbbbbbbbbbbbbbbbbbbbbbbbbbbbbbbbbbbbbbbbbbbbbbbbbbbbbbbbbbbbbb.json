@@ -1,0 +1,23 @@
+{
+  "fonte_hash": "4c6ef4e2da94625128688308a30a1db8d29fe02ea029cba6a890f6a531da70ea",
+  "candidato": {
+    "id": "short-S01-S01",
+    "inicio_s": 0.0,
+    "fim_s": 20.0,
+    "segmento_ids": [
+      "S01"
+    ],
+    "texto": "Uma descoberta histórica aconteceu.",
+    "pontuacao": 80.0,
+    "componentes": {
+      "autonomia": 8.0
+    },
+    "motivos": [],
+    "frases_ponte": [
+      {
+        "texto": "Veja o vídeo completo.",
+        "aprovada": true
+      }
+    ]
+  }
+}

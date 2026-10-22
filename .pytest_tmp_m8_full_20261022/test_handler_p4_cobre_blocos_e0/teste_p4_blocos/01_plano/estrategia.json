@@ -1,0 +1,23 @@
+{
+  "versao": 1,
+  "blocos": [
+    {
+      "bloco_id": "B1",
+      "titulo": "Primeiro",
+      "modo_visual": "reconstituição",
+      "lut": "quente",
+      "clima_musical": "Campania Felix, cordas quentes e harpa",
+      "contexto": null,
+      "elementos_recorrentes": []
+    },
+    {
+      "bloco_id": "B2",
+      "titulo": "Segundo",
+      "modo_visual": "misto",
+      "lut": "tensao",
+      "clima_musical": "inquietação e suspense crescente",
+      "contexto": null,
+      "elementos_recorrentes": []
+    }
+  ]
+}

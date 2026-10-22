@@ -100,6 +100,7 @@ def _adaptador_por_motor(
             cache=Path(cache) if cache else None,
             velocidade=settings.omnivoice.velocidade,
             passos=settings.omnivoice.passos,
+            semente=settings.omnivoice.semente,
         )
     return AdaptadorKokoro(python_path=settings.resolver_ambiente("kokoro"))
 

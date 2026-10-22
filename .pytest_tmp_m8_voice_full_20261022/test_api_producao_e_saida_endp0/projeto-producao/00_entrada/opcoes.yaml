@@ -1,0 +1,9 @@
+nome: Projeto Producao
+slug: projeto-producao
+tipo: longo
+preset: padrao
+kit: cinza-e-brasa@1.0
+idiomas:
+  principal: pt-BR
+  extras: []
+monetizado: true

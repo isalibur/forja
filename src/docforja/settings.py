@@ -52,6 +52,7 @@ class OmniVoiceSettings(BaseModel):
     cache: str = ""
     velocidade: float = 0.92
     passos: int = 64
+    semente: int = 42
 
 
 class ShortsAvulsosSettings(BaseModel):

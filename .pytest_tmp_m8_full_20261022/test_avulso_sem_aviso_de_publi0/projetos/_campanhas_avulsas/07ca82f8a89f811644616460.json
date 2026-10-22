@@ -1,0 +1,77 @@
+{
+  "id": "07ca82f8a89f811644616460",
+  "nome": "Afiliados",
+  "status": "aguardando_revisao",
+  "pedidos": [
+    {
+      "id": "A001",
+      "tema": "Furadeira Leve",
+      "objetivo": "vendas",
+      "duracao_s": 30,
+      "formula_id": "produto_afiliado",
+      "origem_roteiro": "formula",
+      "roteiro": null,
+      "cta": "link na bio",
+      "produto": {
+        "nome": "Furadeira Leve",
+        "descricao": "Furadeira compacta para uso doméstico.",
+        "beneficios": [
+          "Peso leve",
+          "Motor silencioso"
+        ],
+        "preco": null,
+        "fonte_preco": null,
+        "condicao": null,
+        "link_afiliado": "https://loja.exemplo.com/a?ref=docforja",
+        "imagens": [
+          "global:imagens:produto"
+        ],
+        "nicho": "ferramentas",
+        "plataforma": "youtube_shorts",
+        "marca": "Loja Exemplo",
+        "cta": "link na bio",
+        "duracao_s": 30
+      },
+      "roteiro_sugerido": "Furadeira compacta para uso doméstico. Em resumo, Peso leve. Em resumo, Motor silencioso. Confira a oferta e as condições atuais: link na bio.",
+      "pendencias": [
+        "aprovar roteiro",
+        "aprovar mídias e licenças",
+        "comprovar alegações exigidas pela fórmula"
+      ]
+    }
+  ],
+  "formulas": {
+    "produto_afiliado": {
+      "id": "produto_afiliado",
+      "nome": "Produto de afiliado",
+      "estrutura": [
+        "problema",
+        "produto_em_uso",
+        "beneficio_1",
+        "beneficio_2",
+        "beneficio_3",
+        "oferta_sem_preco",
+        "CTA"
+      ],
+      "objetivos": [
+        "vendas"
+      ],
+      "templates": [
+        "V01",
+        "V11",
+        "V07"
+      ],
+      "duracao_min_s": 15,
+      "duracao_max_s": 60,
+      "regras": [
+        "imagem_autorizada",
+        "sem_preco",
+        "aviso_de_afiliado",
+        "link_apenas_metadados"
+      ],
+      "exige_prova_real": false,
+      "exige_fonte_preco": false
+    }
+  },
+  "hash_conteudo": "07ca82f8a89f8116446164608b7c7818c77df31932c20ea257a0b45413b9c5de"
+}

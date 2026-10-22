@@ -1,0 +1,18 @@
+{
+  "etapa": "R6_mix",
+  "idioma": "pt-BR",
+  "alvo_lufs": -14.0,
+  "medido_lufs": -14.0,
+  "true_peak_dbtp": -1.0,
+  "lra_lu": 7.0,
+  "ganho_trilha_sob_fala": null,
+  "sidechain_ducking": "inativo (sem trilha)",
+  "hash_mix": "93d3646fbe3f61978254e9fdd8a6cabf22956fd90aa19714f8ef330078efee49",
+  "hash_narracao": "7df26813301a5b20e9a9f4f3626262874085ba2d558b832f0b1b0a5770ef103b",
+  "hash_trilha": null,
+  "hash_config": "048692e08080604a1cd017b7b6993e50973db4ea48e8f1b290ef60e521afd653",
+  "sfx_incluidos": [],
+  "observacoes": [
+    "SFX/ambiências não foram incluídos: não há manifesto temporal configurado."
+  ]
+}

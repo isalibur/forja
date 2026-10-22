@@ -1,0 +1,78 @@
+{
+  "versao": 1,
+  "tempos": "estimados",
+  "blocos": [
+    {
+      "bloco_id": "B1",
+      "shots": [
+        {
+          "id": "B1-01",
+          "segmentos": [
+            "B1-S01"
+          ],
+          "ancora": null,
+          "duracao_s": 1.5,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-001"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "fade_preto",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B1-S01 (contexto)"
+        }
+      ]
+    },
+    {
+      "bloco_id": "B2",
+      "shots": [
+        {
+          "id": "B2-01",
+          "segmentos": [
+            "B2-S01"
+          ],
+          "ancora": null,
+          "duracao_s": 1.5,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-002"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "fade_preto",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B2-S01 (contexto)"
+        }
+      ]
+    }
+  ]
+}

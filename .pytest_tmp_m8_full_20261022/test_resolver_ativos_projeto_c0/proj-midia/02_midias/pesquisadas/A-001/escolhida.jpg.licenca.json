@@ -1,0 +1,13 @@
+{
+  "url_origem": "https://mock.local/foto.jpg",
+  "autor": "Arqueólogo",
+  "licenca": "CC BY 4.0",
+  "comercial": true,
+  "patrimonio_restrito": false,
+  "credito_obrigatorio": true,
+  "texto_credito": "Arqueólogo / CC BY 4.0",
+  "detalhes": {
+    "nota_curador": 8.5,
+    "motivo_curador": "Nota mock para testes unitários."
+  }
+}

@@ -1,0 +1,6450 @@
+{
+  "versao": 3,
+  "projeto": "vesuvio",
+  "kit": "cinza-e-brasa@1.0",
+  "preset": "padrao",
+  "tipo": "longo",
+  "idiomas": {
+    "principal": "pt-BR",
+    "extras": [
+      "en",
+      "es"
+    ]
+  },
+  "orcamento_producao_min": 120,
+  "estimativa_producao_min": 80,
+  "blocos": [
+    {
+      "id": "B0",
+      "titulo": "COLD OPEN",
+      "modo_visual": "misto",
+      "clima_musical": "drone escuro e pulso que cresce",
+      "contexto": null,
+      "shots": [
+        {
+          "id": "B0-01",
+          "segmentos": [],
+          "ancora": null,
+          "duracao_s": 1.5,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T00",
+          "params": {
+            "cor": "#0a0a0a",
+            "particulas": true
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [],
+          "sfx": [
+            "room_tone"
+          ],
+          "transicao": "fade_preto",
+          "plano_b": null,
+          "motivo": "Respiro inicial antes da narração"
+        },
+        {
+          "id": "B0-02",
+          "segmentos": [
+            "B0-S01"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-001"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B0-S01 (contexto)"
+        },
+        {
+          "id": "B0-03",
+          "segmentos": [
+            "B0-S02"
+          ],
+          "ancora": null,
+          "duracao_s": 5.4,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T08",
+          "params": {
+            "valor": "Dezesseis dias",
+            "legenda": "habitantes"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "Dezesseis dias"
+          ],
+          "sfx": [
+            "tick_ui"
+          ],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B0-S02 (dado)"
+        },
+        {
+          "id": "B0-04",
+          "segmentos": [
+            "B0-S03"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-002"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B0-S03 (gancho)"
+        },
+        {
+          "id": "B0-05",
+          "segmentos": [
+            "B0-S04"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-003"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B0-S04 (contexto)"
+        },
+        {
+          "id": "B0-06",
+          "segmentos": [
+            "B0-S05"
+          ],
+          "ancora": null,
+          "duracao_s": 3.7,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-004"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B0-S05 (contexto)"
+        },
+        {
+          "id": "B0-07",
+          "segmentos": [
+            "B0-S06"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T06",
+          "params": {
+            "estilo": "carvão"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "AS FAMOSAS FIGURAS DE"
+          ],
+          "sfx": [
+            "impacto_sub_grave"
+          ],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B0-S06 (revelação)"
+        },
+        {
+          "id": "B0-08",
+          "segmentos": [
+            "B0-S07"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-005"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B0-S07 (contexto)"
+        },
+        {
+          "id": "B0-09",
+          "segmentos": [
+            "B0-S08"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-006"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B0-S08 (contexto)"
+        },
+        {
+          "id": "B0-10",
+          "segmentos": [
+            "B0-S09"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-007"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B0-S09 (gancho)"
+        }
+      ]
+    },
+    {
+      "id": "B1",
+      "titulo": "A MONTANHA VERDE",
+      "modo_visual": "reconstituição",
+      "clima_musical": "Campania Felix, cordas quentes e harpa",
+      "contexto": null,
+      "shots": [
+        {
+          "id": "B1-01",
+          "segmentos": [],
+          "ancora": null,
+          "duracao_s": 2.5,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T12",
+          "params": {
+            "numero": "1",
+            "titulo": "A MONTANHA VERDE"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "A MONTANHA VERDE"
+          ],
+          "sfx": [
+            "whoosh_grave"
+          ],
+          "transicao": "fade_preto",
+          "plano_b": {
+            "template": "T00",
+            "params": {}
+          },
+          "motivo": "Abertura de capítulo B1: A MONTANHA VERDE"
+        },
+        {
+          "id": "B1-02",
+          "segmentos": [
+            "B1-S01"
+          ],
+          "ancora": null,
+          "duracao_s": 6.2,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T00",
+          "params": {
+            "particulas": true
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B1-S01 (respiro)"
+        },
+        {
+          "id": "B1-03",
+          "segmentos": [
+            "B1-S02"
+          ],
+          "ancora": null,
+          "duracao_s": 4.6,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-008"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B1-S02 (contexto)"
+        },
+        {
+          "id": "B1-04",
+          "segmentos": [
+            "B1-S03"
+          ],
+          "ancora": null,
+          "duracao_s": 8.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O1",
+              "texto": "BACO"
+            }
+          ],
+          "ativos": [
+            "A-009"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B1-S03 (contexto)"
+        },
+        {
+          "id": "B1-05",
+          "segmentos": [
+            "B1-S04"
+          ],
+          "ancora": null,
+          "duracao_s": 5.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-010"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B1-S04 (contexto)"
+        },
+        {
+          "id": "B1-06",
+          "segmentos": [
+            "B1-S05"
+          ],
+          "ancora": null,
+          "duracao_s": 8.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O1",
+              "texto": "ESTRABÃO"
+            }
+          ],
+          "ativos": [
+            "A-011"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B1-S05 (contexto)"
+        },
+        {
+          "id": "B1-07",
+          "segmentos": [
+            "B1-S06"
+          ],
+          "ancora": null,
+          "duracao_s": 8.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O1",
+              "texto": "ESPÁRTACO"
+            }
+          ],
+          "ativos": [
+            "A-012"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B1-S06 (contexto)"
+        },
+        {
+          "id": "B1-08",
+          "segmentos": [
+            "B1-S07"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-013"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B1-S07 (fechamento)"
+        },
+        {
+          "id": "B1-09",
+          "segmentos": [
+            "B1-S08"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-014"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B1-S08 (contexto)"
+        },
+        {
+          "id": "B1-10",
+          "segmentos": [
+            "B1-S09"
+          ],
+          "ancora": null,
+          "duracao_s": 8.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-015"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B1-S09 (contexto)"
+        },
+        {
+          "id": "B1-11",
+          "segmentos": [
+            "B1-S10"
+          ],
+          "ancora": null,
+          "duracao_s": 8.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-016"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B1-S10 (contexto)"
+        },
+        {
+          "id": "B1-12",
+          "segmentos": [
+            "B1-S11"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-017"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B1-S11 (contexto)"
+        },
+        {
+          "id": "B1-13",
+          "segmentos": [
+            "B1-S12"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-018"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B1-S12 (contexto)"
+        }
+      ]
+    },
+    {
+      "id": "B2",
+      "titulo": "O AVISO",
+      "modo_visual": "misto",
+      "clima_musical": "inquietação e suspense crescente",
+      "contexto": null,
+      "shots": [
+        {
+          "id": "B2-01",
+          "segmentos": [],
+          "ancora": null,
+          "duracao_s": 2.5,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T12",
+          "params": {
+            "numero": "2",
+            "titulo": "O AVISO"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "O AVISO"
+          ],
+          "sfx": [
+            "whoosh_grave"
+          ],
+          "transicao": "fade_preto",
+          "plano_b": {
+            "template": "T00",
+            "params": {}
+          },
+          "motivo": "Abertura de capítulo B2: O AVISO"
+        },
+        {
+          "id": "B2-02",
+          "segmentos": [
+            "B2-S01"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-019"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B2-S01 (contexto)"
+        },
+        {
+          "id": "B2-03",
+          "segmentos": [
+            "B2-S02"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-020"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B2-S02 (contexto)"
+        },
+        {
+          "id": "B2-04",
+          "segmentos": [
+            "B2-S03"
+          ],
+          "ancora": null,
+          "duracao_s": 4.6,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-021"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B2-S03 (contexto)"
+        },
+        {
+          "id": "B2-05",
+          "segmentos": [
+            "B2-S04"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-022"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B2-S04 (contexto)"
+        },
+        {
+          "id": "B2-06",
+          "segmentos": [
+            "B2-S05"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-023"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B2-S05 (contexto)"
+        },
+        {
+          "id": "B2-07",
+          "segmentos": [
+            "B2-S06"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T08",
+          "params": {
+            "valor": "700.000",
+            "legenda": "habitantes"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [],
+          "sfx": [
+            "tick_ui"
+          ],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B2-S06 (dado)"
+        },
+        {
+          "id": "B2-08",
+          "segmentos": [
+            "B2-S07"
+          ],
+          "ancora": null,
+          "duracao_s": 4.7,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-024"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B2-S07 (contexto)"
+        }
+      ]
+    },
+    {
+      "id": "B3",
+      "titulo": "DIA 1",
+      "modo_visual": "misto",
+      "clima_musical": "construção épica controlada",
+      "contexto": {
+        "usar": true,
+        "itens": [
+          {
+            "apos_segmento": "B3-S01",
+            "texto": "DIA 1 · ≈ 13:00 · POMPEIA"
+          }
+        ]
+      },
+      "shots": [
+        {
+          "id": "B3-01",
+          "segmentos": [],
+          "ancora": null,
+          "duracao_s": 2.5,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T12",
+          "params": {
+            "numero": "3",
+            "titulo": "DIA 1"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "DIA 1"
+          ],
+          "sfx": [
+            "whoosh_grave"
+          ],
+          "transicao": "fade_preto",
+          "plano_b": {
+            "template": "T00",
+            "params": {}
+          },
+          "motivo": "Abertura de capítulo B3: DIA 1"
+        },
+        {
+          "id": "B3-02",
+          "segmentos": [
+            "B3-S01"
+          ],
+          "ancora": null,
+          "duracao_s": 3.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-025"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S01 (contexto)"
+        },
+        {
+          "id": "B3-03",
+          "segmentos": [
+            "B3-S02"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-026"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S02 (contexto)"
+        },
+        {
+          "id": "B3-04",
+          "segmentos": [
+            "B3-S03"
+          ],
+          "ancora": null,
+          "duracao_s": 3.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-027"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S03 (contexto)"
+        },
+        {
+          "id": "B3-05",
+          "segmentos": [
+            "B3-S04"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-028"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S04 (contexto)"
+        },
+        {
+          "id": "B3-06",
+          "segmentos": [
+            "B3-S05"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T00",
+          "params": {
+            "particulas": true
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S05 (respiro)"
+        },
+        {
+          "id": "B3-07",
+          "segmentos": [
+            "B3-S06"
+          ],
+          "ancora": null,
+          "duracao_s": 3.7,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O1",
+              "texto": "PLÍNIO, O JOVEM"
+            }
+          ],
+          "ativos": [
+            "A-029"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S06 (contexto)"
+        },
+        {
+          "id": "B3-08",
+          "segmentos": [
+            "B3-S07"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-030"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S07 (contexto)"
+        },
+        {
+          "id": "B3-09",
+          "segmentos": [
+            "B3-S08"
+          ],
+          "ancora": null,
+          "duracao_s": 4.1,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T07",
+          "params": {
+            "fonte": "Plínio, o Jovem",
+            "estilo": "papel"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "Citação histórica"
+          ],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S08 (citação)"
+        },
+        {
+          "id": "B3-10",
+          "segmentos": [
+            "B3-S09"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O1",
+              "texto": "PLÍNIO, O VELHO"
+            }
+          ],
+          "ativos": [
+            "A-031"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S09 (contexto)"
+        },
+        {
+          "id": "B3-11",
+          "segmentos": [
+            "B3-S10"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-032"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S10 (contexto)"
+        },
+        {
+          "id": "B3-12",
+          "segmentos": [
+            "B3-S11"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O1",
+              "texto": "RECTINA"
+            }
+          ],
+          "ativos": [
+            "A-033"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S11 (contexto)"
+        },
+        {
+          "id": "B3-13",
+          "segmentos": [
+            "B3-S12"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O1",
+              "texto": "PLÍNIO"
+            }
+          ],
+          "ativos": [
+            "A-034"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S12 (contexto)"
+        },
+        {
+          "id": "B3-14",
+          "segmentos": [
+            "B3-S13"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T07",
+          "params": {
+            "fonte": "Plínio, o Jovem",
+            "estilo": "papel"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "Citação histórica"
+          ],
+          "sfx": [],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S13 (citação)"
+        },
+        {
+          "id": "B3-15",
+          "segmentos": [
+            "B3-S14"
+          ],
+          "ancora": null,
+          "duracao_s": 3.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-035"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S14 (tensão)"
+        },
+        {
+          "id": "B3-16",
+          "segmentos": [
+            "B3-S15"
+          ],
+          "ancora": null,
+          "duracao_s": 5.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-036"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S15 (contexto)"
+        },
+        {
+          "id": "B3-17",
+          "segmentos": [
+            "B3-S16"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-037"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S16 (contexto)"
+        },
+        {
+          "id": "B3-18",
+          "segmentos": [
+            "B3-S17"
+          ],
+          "ancora": null,
+          "duracao_s": 5.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-038"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S17 (contexto)"
+        },
+        {
+          "id": "B3-19",
+          "segmentos": [
+            "B3-S18"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-039"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S18 (contexto)"
+        },
+        {
+          "id": "B3-20",
+          "segmentos": [
+            "B3-S19"
+          ],
+          "ancora": null,
+          "duracao_s": 5.4,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-040"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S19 (contexto)"
+        },
+        {
+          "id": "B3-21",
+          "segmentos": [
+            "B3-S20"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-041"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S20 (contexto)"
+        },
+        {
+          "id": "B3-22",
+          "segmentos": [
+            "B3-S21"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T00",
+          "params": {
+            "particulas": true
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S21 (respiro)"
+        },
+        {
+          "id": "B3-23",
+          "segmentos": [
+            "B3-S22"
+          ],
+          "ancora": null,
+          "duracao_s": 4.6,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-042"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B3-S22 (contexto)"
+        }
+      ]
+    },
+    {
+      "id": "B4",
+      "titulo": "A NOITE",
+      "modo_visual": "reconstituição",
+      "clima_musical": "horror contido e grave",
+      "contexto": {
+        "usar": true,
+        "itens": [
+          {
+            "apos_segmento": "B4-S01",
+            "texto": "NOITE · ≈ 01:00 · HERCULANO"
+          }
+        ]
+      },
+      "shots": [
+        {
+          "id": "B4-01",
+          "segmentos": [],
+          "ancora": null,
+          "duracao_s": 2.5,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T12",
+          "params": {
+            "numero": "4",
+            "titulo": "A NOITE"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "A NOITE"
+          ],
+          "sfx": [
+            "whoosh_grave"
+          ],
+          "transicao": "fade_preto",
+          "plano_b": {
+            "template": "T00",
+            "params": {}
+          },
+          "motivo": "Abertura de capítulo B4: A NOITE"
+        },
+        {
+          "id": "B4-02",
+          "segmentos": [
+            "B4-S01"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-043"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S01 (contexto)"
+        },
+        {
+          "id": "B4-03",
+          "segmentos": [
+            "B4-S02"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-044"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S02 (contexto)"
+        },
+        {
+          "id": "B4-04",
+          "segmentos": [
+            "B4-S03"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T06",
+          "params": {
+            "estilo": "carvão"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "ATÉ QUE, NOS ANOS"
+          ],
+          "sfx": [
+            "impacto_sub_grave"
+          ],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S03 (revelação)"
+        },
+        {
+          "id": "B4-05",
+          "segmentos": [
+            "B4-S04"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-045"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S04 (contexto)"
+        },
+        {
+          "id": "B4-06",
+          "segmentos": [
+            "B4-S05"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-046"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S05 (contexto)"
+        },
+        {
+          "id": "B4-07",
+          "segmentos": [
+            "B4-S06"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-047"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S06 (contexto)"
+        },
+        {
+          "id": "B4-08",
+          "segmentos": [
+            "B4-S07"
+          ],
+          "ancora": null,
+          "duracao_s": 2.5,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-048"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S07 (contexto)"
+        },
+        {
+          "id": "B4-09",
+          "segmentos": [
+            "B4-S08"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-049"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S08 (contexto)"
+        },
+        {
+          "id": "B4-10",
+          "segmentos": [
+            "B4-S09"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-050"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S09 (contexto)"
+        },
+        {
+          "id": "B4-11",
+          "segmentos": [
+            "B4-S10"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-051"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S10 (contexto)"
+        },
+        {
+          "id": "B4-12",
+          "segmentos": [
+            "B4-S11"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T00",
+          "params": {
+            "particulas": true
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S11 (respiro)"
+        },
+        {
+          "id": "B4-13",
+          "segmentos": [
+            "B4-S12"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T08",
+          "params": {
+            "valor": "quinhentos graus",
+            "legenda": "habitantes"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "quinhentos graus"
+          ],
+          "sfx": [
+            "tick_ui"
+          ],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S12 (dado)"
+        },
+        {
+          "id": "B4-14",
+          "segmentos": [
+            "B4-S13"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-052"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S13 (contexto)"
+        },
+        {
+          "id": "B4-15",
+          "segmentos": [
+            "B4-S14"
+          ],
+          "ancora": null,
+          "duracao_s": 3.7,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-053"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B4-S14 (contexto)"
+        }
+      ]
+    },
+    {
+      "id": "B5",
+      "titulo": "DIA 2",
+      "modo_visual": "reconstituição",
+      "clima_musical": "clímax dramático e silêncio no ápice",
+      "contexto": {
+        "usar": true,
+        "itens": [
+          {
+            "apos_segmento": "B5-S01",
+            "texto": "DIA 2 · ≈ 07:30 · POMPEIA"
+          }
+        ]
+      },
+      "shots": [
+        {
+          "id": "B5-01",
+          "segmentos": [],
+          "ancora": null,
+          "duracao_s": 2.5,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T12",
+          "params": {
+            "numero": "5",
+            "titulo": "DIA 2"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "DIA 2"
+          ],
+          "sfx": [
+            "whoosh_grave"
+          ],
+          "transicao": "fade_preto",
+          "plano_b": {
+            "template": "T00",
+            "params": {}
+          },
+          "motivo": "Abertura de capítulo B5: DIA 2"
+        },
+        {
+          "id": "B5-02",
+          "segmentos": [
+            "B5-S01"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-054"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S01 (contexto)"
+        },
+        {
+          "id": "B5-03",
+          "segmentos": [
+            "B5-S02"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-055"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S02 (contexto)"
+        },
+        {
+          "id": "B5-04",
+          "segmentos": [
+            "B5-S03"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-056"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S03 (tensão)"
+        },
+        {
+          "id": "B5-05",
+          "segmentos": [
+            "B5-S04"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-057"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S04 (contexto)"
+        },
+        {
+          "id": "B5-06",
+          "segmentos": [
+            "B5-S05"
+          ],
+          "ancora": null,
+          "duracao_s": 2.5,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-058"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S05 (contexto)"
+        },
+        {
+          "id": "B5-07",
+          "segmentos": [
+            "B5-S06"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-059"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S06 (contexto)"
+        },
+        {
+          "id": "B5-08",
+          "segmentos": [
+            "B5-S07"
+          ],
+          "ancora": null,
+          "duracao_s": 2.1,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-060"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S07 (contexto)"
+        },
+        {
+          "id": "B5-09",
+          "segmentos": [
+            "B5-S08"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-061"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S08 (contexto)"
+        },
+        {
+          "id": "B5-10",
+          "segmentos": [
+            "B5-S09"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-062"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S09 (contexto)"
+        },
+        {
+          "id": "B5-11",
+          "segmentos": [
+            "B5-S10"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-063"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S10 (contexto)"
+        },
+        {
+          "id": "B5-12",
+          "segmentos": [
+            "B5-S11"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-064"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S11 (contexto)"
+        },
+        {
+          "id": "B5-13",
+          "segmentos": [
+            "B5-S12"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T08",
+          "params": {
+            "valor": "de mil",
+            "legenda": "habitantes"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "de mil"
+          ],
+          "sfx": [
+            "tick_ui"
+          ],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S12 (dado)"
+        },
+        {
+          "id": "B5-14",
+          "segmentos": [
+            "B5-S13"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-065"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S13 (contexto)"
+        },
+        {
+          "id": "B5-15",
+          "segmentos": [
+            "B5-S14"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-066"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S14 (contexto)"
+        },
+        {
+          "id": "B5-16",
+          "segmentos": [
+            "B5-S15"
+          ],
+          "ancora": null,
+          "duracao_s": 3.7,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-067"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B5-S15 (contexto)"
+        }
+      ]
+    },
+    {
+      "id": "B6",
+      "titulo": "O ESQUECIMENTO",
+      "modo_visual": "arquivo",
+      "clima_musical": "respiro melancólico",
+      "contexto": null,
+      "shots": [
+        {
+          "id": "B6-01",
+          "segmentos": [],
+          "ancora": null,
+          "duracao_s": 2.5,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T12",
+          "params": {
+            "numero": "6",
+            "titulo": "O ESQUECIMENTO"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "O ESQUECIMENTO"
+          ],
+          "sfx": [
+            "whoosh_grave"
+          ],
+          "transicao": "fade_preto",
+          "plano_b": {
+            "template": "T00",
+            "params": {}
+          },
+          "motivo": "Abertura de capítulo B6: O ESQUECIMENTO"
+        },
+        {
+          "id": "B6-02",
+          "segmentos": [
+            "B6-S01"
+          ],
+          "ancora": null,
+          "duracao_s": 8.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T00",
+          "params": {
+            "particulas": true
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B6-S01 (respiro)"
+        },
+        {
+          "id": "B6-03",
+          "segmentos": [
+            "B6-S02"
+          ],
+          "ancora": null,
+          "duracao_s": 8.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.02
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-068"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B6-S02 (contexto)"
+        },
+        {
+          "id": "B6-04",
+          "segmentos": [
+            "B6-S03"
+          ],
+          "ancora": null,
+          "duracao_s": 8.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.02
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-069"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B6-S03 (contexto)"
+        },
+        {
+          "id": "B6-05",
+          "segmentos": [
+            "B6-S04"
+          ],
+          "ancora": null,
+          "duracao_s": 8.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.02
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O1",
+              "texto": "FIORELLI"
+            }
+          ],
+          "ativos": [
+            "A-070"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B6-S04 (contexto)"
+        },
+        {
+          "id": "B6-06",
+          "segmentos": [
+            "B6-S05"
+          ],
+          "ancora": null,
+          "duracao_s": 4.1,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.02
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-071"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B6-S05 (contexto)"
+        },
+        {
+          "id": "B6-07",
+          "segmentos": [
+            "B6-S06"
+          ],
+          "ancora": null,
+          "duracao_s": 8.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T06",
+          "params": {
+            "estilo": "carvão"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "ELE DERRAMOU GESSO NESSES"
+          ],
+          "sfx": [
+            "impacto_sub_grave"
+          ],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B6-S06 (revelação)"
+        },
+        {
+          "id": "B6-08",
+          "segmentos": [
+            "B6-S07"
+          ],
+          "ancora": null,
+          "duracao_s": 4.6,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.02
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-072"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B6-S07 (contexto)"
+        },
+        {
+          "id": "B6-09",
+          "segmentos": [
+            "B6-S08"
+          ],
+          "ancora": null,
+          "duracao_s": 8.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.02
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-073"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B6-S08 (contexto)"
+        },
+        {
+          "id": "B6-10",
+          "segmentos": [
+            "B6-S09"
+          ],
+          "ancora": null,
+          "duracao_s": 4.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T00",
+          "params": {
+            "particulas": true
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B6-S09 (respiro)"
+        },
+        {
+          "id": "B6-11",
+          "segmentos": [
+            "B6-S10"
+          ],
+          "ancora": null,
+          "duracao_s": 5.4,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.02
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-074"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B6-S10 (contexto)"
+        }
+      ]
+    },
+    {
+      "id": "B7",
+      "titulo": "O QUE VOCÊ NUNCA VIU",
+      "modo_visual": "dados",
+      "clima_musical": "descoberta científica e revelação",
+      "contexto": null,
+      "shots": [
+        {
+          "id": "B7-01",
+          "segmentos": [],
+          "ancora": null,
+          "duracao_s": 2.5,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T12",
+          "params": {
+            "numero": "7",
+            "titulo": "O QUE VOCÊ NUNCA VIU"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "O QUE VOCÊ NUNCA VIU"
+          ],
+          "sfx": [
+            "whoosh_grave"
+          ],
+          "transicao": "fade_preto",
+          "plano_b": {
+            "template": "T00",
+            "params": {}
+          },
+          "motivo": "Abertura de capítulo B7: O QUE VOCÊ NUNCA VIU"
+        },
+        {
+          "id": "B7-02",
+          "segmentos": [
+            "B7-S01"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T08",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.04
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S01 (contexto)"
+        },
+        {
+          "id": "B7-03",
+          "segmentos": [
+            "B7-S02"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O4",
+              "texto": "Destaque"
+            }
+          ],
+          "ativos": [],
+          "textos": [
+            "O ADULTO COM UM"
+          ],
+          "sfx": [
+            "impacto_sub_grave"
+          ],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S02 (revelação)"
+        },
+        {
+          "id": "B7-04",
+          "segmentos": [
+            "B7-S03"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O4",
+              "texto": "Destaque"
+            }
+          ],
+          "ativos": [],
+          "textos": [],
+          "sfx": [
+            "impacto_sub_grave"
+          ],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S03 (revelação)"
+        },
+        {
+          "id": "B7-05",
+          "segmentos": [
+            "B7-S04"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O4",
+              "texto": "Destaque"
+            }
+          ],
+          "ativos": [],
+          "textos": [],
+          "sfx": [
+            "impacto_sub_grave"
+          ],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S04 (revelação)"
+        },
+        {
+          "id": "B7-06",
+          "segmentos": [
+            "B7-S05"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O4",
+              "texto": "Destaque"
+            }
+          ],
+          "ativos": [],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S05 (contexto)"
+        },
+        {
+          "id": "B7-07",
+          "segmentos": [
+            "B7-S06"
+          ],
+          "ancora": null,
+          "duracao_s": 3.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.04
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-075"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S06 (contexto)"
+        },
+        {
+          "id": "B7-08",
+          "segmentos": [
+            "B7-S07"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O4",
+              "texto": "Destaque"
+            }
+          ],
+          "ativos": [],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S07 (contexto)"
+        },
+        {
+          "id": "B7-09",
+          "segmentos": [
+            "B7-S08"
+          ],
+          "ancora": null,
+          "duracao_s": 3.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.04
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-076"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S08 (contexto)"
+        },
+        {
+          "id": "B7-10",
+          "segmentos": [
+            "B7-S09"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O4",
+              "texto": "Destaque"
+            }
+          ],
+          "ativos": [],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S09 (contexto)"
+        },
+        {
+          "id": "B7-11",
+          "segmentos": [
+            "B7-S10"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.04
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-077"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S10 (contexto)"
+        },
+        {
+          "id": "B7-12",
+          "segmentos": [
+            "B7-S11"
+          ],
+          "ancora": null,
+          "duracao_s": 3.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T00",
+          "params": {
+            "particulas": true
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S11 (respiro)"
+        },
+        {
+          "id": "B7-13",
+          "segmentos": [
+            "B7-S12"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.04
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-078"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S12 (contexto)"
+        },
+        {
+          "id": "B7-14",
+          "segmentos": [
+            "B7-S13"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T08",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.04
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [],
+          "sfx": [],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S13 (contexto)"
+        },
+        {
+          "id": "B7-15",
+          "segmentos": [
+            "B7-S14"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O4",
+              "texto": "Destaque"
+            }
+          ],
+          "ativos": [],
+          "textos": [
+            "em"
+          ],
+          "sfx": [
+            "tick_ui"
+          ],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B7-S14 (dado)"
+        }
+      ]
+    },
+    {
+      "id": "B8",
+      "titulo": "O VULCÃO HOJE",
+      "modo_visual": "geografia",
+      "clima_musical": "tensão contemporânea e reflexão",
+      "contexto": null,
+      "shots": [
+        {
+          "id": "B8-01",
+          "segmentos": [],
+          "ancora": null,
+          "duracao_s": 2.5,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T12",
+          "params": {
+            "numero": "8",
+            "titulo": "O VULCÃO HOJE"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "O VULCÃO HOJE"
+          ],
+          "sfx": [
+            "whoosh_grave"
+          ],
+          "transicao": "fade_preto",
+          "plano_b": {
+            "template": "T00",
+            "params": {}
+          },
+          "motivo": "Abertura de capítulo B8: O VULCÃO HOJE"
+        },
+        {
+          "id": "B8-02",
+          "segmentos": [
+            "B8-S01"
+          ],
+          "ancora": null,
+          "duracao_s": 4.6,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-079"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B8-S01 (contexto)"
+        },
+        {
+          "id": "B8-03",
+          "segmentos": [
+            "B8-S02"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-080"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B8-S02 (contexto)"
+        },
+        {
+          "id": "B8-04",
+          "segmentos": [
+            "B8-S03"
+          ],
+          "ancora": null,
+          "duracao_s": 3.3,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-081"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B8-S03 (tensão)"
+        },
+        {
+          "id": "B8-05",
+          "segmentos": [
+            "B8-S04"
+          ],
+          "ancora": null,
+          "duracao_s": 5.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-082"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B8-S04 (contexto)"
+        },
+        {
+          "id": "B8-06",
+          "segmentos": [
+            "B8-S05"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T08",
+          "params": {
+            "valor": "setecentas mil",
+            "legenda": "habitantes"
+          },
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "setecentas mil"
+          ],
+          "sfx": [
+            "tick_ui"
+          ],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B8-S05 (dado)"
+        },
+        {
+          "id": "B8-07",
+          "segmentos": [
+            "B8-S06"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-083"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B8-S06 (contexto)"
+        },
+        {
+          "id": "B8-08",
+          "segmentos": [
+            "B8-S07"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [
+            {
+              "tipo": "O4",
+              "texto": "Destaque"
+            }
+          ],
+          "ativos": [],
+          "textos": [
+            "em mil"
+          ],
+          "sfx": [
+            "tick_ui"
+          ],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B8-S07 (dado)"
+        },
+        {
+          "id": "B8-09",
+          "segmentos": [
+            "B8-S08"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-084"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B8-S08 (contexto)"
+        },
+        {
+          "id": "B8-10",
+          "segmentos": [
+            "B8-S09"
+          ],
+          "ancora": null,
+          "duracao_s": 4.1,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-085"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B8-S09 (contexto)"
+        },
+        {
+          "id": "B8-11",
+          "segmentos": [
+            "B8-S10"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-086"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B8-S10 (contexto)"
+        },
+        {
+          "id": "B8-12",
+          "segmentos": [
+            "B8-S11"
+          ],
+          "ancora": null,
+          "duracao_s": 4.1,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T02",
+          "params": {
+            "movimento": "dolly",
+            "intensidade": 0.3
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-087"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B8-S11 (contexto)"
+        },
+        {
+          "id": "B8-13",
+          "segmentos": [
+            "B8-S12"
+          ],
+          "ancora": null,
+          "duracao_s": 4.7,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-088"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "corte",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B8-S12 (contexto)"
+        },
+        {
+          "id": "B8-14",
+          "segmentos": [
+            "B8-S13"
+          ],
+          "ancora": null,
+          "duracao_s": 6.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T01",
+          "params": {
+            "movimento": "push_in",
+            "amplitude": 0.03
+          },
+          "sobreposicoes": [],
+          "ativos": [
+            "A-089"
+          ],
+          "textos": [],
+          "sfx": [],
+          "transicao": "dissolve",
+          "plano_b": {
+            "template": "T01",
+            "params": {
+              "movimento": "push_in"
+            }
+          },
+          "motivo": "Segmento B8-S13 (contexto)"
+        },
+        {
+          "id": "B8-15",
+          "segmentos": [],
+          "ancora": null,
+          "duracao_s": 15.0,
+          "inicio_s": null,
+          "fim_s": null,
+          "inicio_segmento_s": null,
+          "fim_segmento_s": null,
+          "template": "T14",
+          "params": {},
+          "sobreposicoes": [],
+          "ativos": [],
+          "textos": [
+            "Inscreva-se",
+            "Próximo vídeo"
+          ],
+          "sfx": [
+            "whoosh_grave"
+          ],
+          "transicao": "corte",
+          "plano_b": null,
+          "motivo": "Tela final e encerramento com espaço para elementos YouTube"
+        }
+      ]
+    }
+  ],
+  "ativos": {
+    "A-001": {
+      "id": "A-001",
+      "descricao": "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+          "Pompeii A-001"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-001.jpg",
+      "usado_em": [
+        "B0-02"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-002": {
+      "id": "A-002",
+      "descricao": "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+          "Pompeii A-002"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-002.jpg",
+      "usado_em": [
+        "B0-04"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-003": {
+      "id": "A-003",
+      "descricao": "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+          "Pompeii A-003"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-003.jpg",
+      "usado_em": [
+        "B0-05"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-004": {
+      "id": "A-004",
+      "descricao": "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+          "Pompeii A-004"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-004.jpg",
+      "usado_em": [
+        "B0-06"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-005": {
+      "id": "A-005",
+      "descricao": "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+          "Pompeii A-005"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-005.jpg",
+      "usado_em": [
+        "B0-08"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-006": {
+      "id": "A-006",
+      "descricao": "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+          "Pompeii A-006"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-006.jpg",
+      "usado_em": [
+        "B0-09"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-007": {
+      "id": "A-007",
+      "descricao": "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Inscrição antiga a carvão em parede de reboco de Pompeia descoberta em 2018",
+          "Pompeii A-007"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-007.jpg",
+      "usado_em": [
+        "B0-10"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-008": {
+      "id": "A-008",
+      "descricao": "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C.",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C."
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-008.jpg",
+      "usado_em": [
+        "B1-03"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-009": {
+      "id": "A-009",
+      "descricao": "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C.",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C."
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-009.jpg",
+      "usado_em": [
+        "B1-04"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-010": {
+      "id": "A-010",
+      "descricao": "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C.",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C."
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-010.jpg",
+      "usado_em": [
+        "B1-05"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-011": {
+      "id": "A-011",
+      "descricao": "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C.",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C."
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-011.jpg",
+      "usado_em": [
+        "B1-06"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-012": {
+      "id": "A-012",
+      "descricao": "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C.",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C."
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-012.jpg",
+      "usado_em": [
+        "B1-07"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-013": {
+      "id": "A-013",
+      "descricao": "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C.",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C."
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-013.jpg",
+      "usado_em": [
+        "B1-08"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-014": {
+      "id": "A-014",
+      "descricao": "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C.",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C."
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-014.jpg",
+      "usado_em": [
+        "B1-09"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-015": {
+      "id": "A-015",
+      "descricao": "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C.",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C."
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-015.jpg",
+      "usado_em": [
+        "B1-10"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-016": {
+      "id": "A-016",
+      "descricao": "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C.",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C."
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-016.jpg",
+      "usado_em": [
+        "B1-11"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-017": {
+      "id": "A-017",
+      "descricao": "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C.",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C."
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-017.jpg",
+      "usado_em": [
+        "B1-12"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-018": {
+      "id": "A-018",
+      "descricao": "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C.",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Baía de Nápoles com o Monte Somma verde coberto de vinhedos no ano 79 d.C."
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-018.jpg",
+      "usado_em": [
+        "B1-13"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-019": {
+      "id": "A-019",
+      "descricao": "Rua movimentada de Pompeia com cidadãos e animais assustados por tremores",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Rua movimentada de Pompeia com cidadãos e animais assustados por tremores"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-019.jpg",
+      "usado_em": [
+        "B2-02"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-020": {
+      "id": "A-020",
+      "descricao": "Rua movimentada de Pompeia com cidadãos e animais assustados por tremores",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Rua movimentada de Pompeia com cidadãos e animais assustados por tremores"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-020.jpg",
+      "usado_em": [
+        "B2-03"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-021": {
+      "id": "A-021",
+      "descricao": "Rua movimentada de Pompeia com cidadãos e animais assustados por tremores",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Rua movimentada de Pompeia com cidadãos e animais assustados por tremores"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-021.jpg",
+      "usado_em": [
+        "B2-04"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-022": {
+      "id": "A-022",
+      "descricao": "Rua movimentada de Pompeia com cidadãos e animais assustados por tremores",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Rua movimentada de Pompeia com cidadãos e animais assustados por tremores"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-022.jpg",
+      "usado_em": [
+        "B2-05"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-023": {
+      "id": "A-023",
+      "descricao": "Rua movimentada de Pompeia com cidadãos e animais assustados por tremores",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Rua movimentada de Pompeia com cidadãos e animais assustados por tremores"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-023.jpg",
+      "usado_em": [
+        "B2-06"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-024": {
+      "id": "A-024",
+      "descricao": "Rua movimentada de Pompeia com cidadãos e animais assustados por tremores",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Rua movimentada de Pompeia com cidadãos e animais assustados por tremores"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-024.jpg",
+      "usado_em": [
+        "B2-08"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-025": {
+      "id": "A-025",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-025.jpg",
+      "usado_em": [
+        "B3-02"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-026": {
+      "id": "A-026",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-026.jpg",
+      "usado_em": [
+        "B3-03"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-027": {
+      "id": "A-027",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-027.jpg",
+      "usado_em": [
+        "B3-04"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-028": {
+      "id": "A-028",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-028.jpg",
+      "usado_em": [
+        "B3-05"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-029": {
+      "id": "A-029",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-029.jpg",
+      "usado_em": [
+        "B3-07"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-030": {
+      "id": "A-030",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-030.jpg",
+      "usado_em": [
+        "B3-08"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-031": {
+      "id": "A-031",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-031.jpg",
+      "usado_em": [
+        "B3-10"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-032": {
+      "id": "A-032",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-032.jpg",
+      "usado_em": [
+        "B3-11"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-033": {
+      "id": "A-033",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-033.jpg",
+      "usado_em": [
+        "B3-12"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-034": {
+      "id": "A-034",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-034.jpg",
+      "usado_em": [
+        "B3-13"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-035": {
+      "id": "A-035",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-035.jpg",
+      "usado_em": [
+        "B3-15"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-036": {
+      "id": "A-036",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-036.jpg",
+      "usado_em": [
+        "B3-16"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-037": {
+      "id": "A-037",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-037.jpg",
+      "usado_em": [
+        "B3-17"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-038": {
+      "id": "A-038",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-038.jpg",
+      "usado_em": [
+        "B3-18"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-039": {
+      "id": "A-039",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-039.jpg",
+      "usado_em": [
+        "B3-19"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-040": {
+      "id": "A-040",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-040.jpg",
+      "usado_em": [
+        "B3-20"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-041": {
+      "id": "A-041",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-041.jpg",
+      "usado_em": [
+        "B3-21"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-042": {
+      "id": "A-042",
+      "descricao": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Coluna eruptiva pliniana de cinzas e pomes subindo a 30 km sobre o vulcão, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-042.jpg",
+      "usado_em": [
+        "B3-23"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-043": {
+      "id": "A-043",
+      "descricao": "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+          "Pompeii A-043"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-043.jpg",
+      "usado_em": [
+        "B4-02"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-044": {
+      "id": "A-044",
+      "descricao": "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+          "Pompeii A-044"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-044.jpg",
+      "usado_em": [
+        "B4-03"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-045": {
+      "id": "A-045",
+      "descricao": "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+          "Pompeii A-045"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-045.jpg",
+      "usado_em": [
+        "B4-05"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-046": {
+      "id": "A-046",
+      "descricao": "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+          "Pompeii A-046"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-046.jpg",
+      "usado_em": [
+        "B4-06"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-047": {
+      "id": "A-047",
+      "descricao": "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+          "Pompeii A-047"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-047.jpg",
+      "usado_em": [
+        "B4-07"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-048": {
+      "id": "A-048",
+      "descricao": "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+          "Pompeii A-048"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-048.jpg",
+      "usado_em": [
+        "B4-08"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-049": {
+      "id": "A-049",
+      "descricao": "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+          "Pompeii A-049"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-049.jpg",
+      "usado_em": [
+        "B4-09"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-050": {
+      "id": "A-050",
+      "descricao": "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+          "Pompeii A-050"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-050.jpg",
+      "usado_em": [
+        "B4-10"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-051": {
+      "id": "A-051",
+      "descricao": "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+          "Pompeii A-051"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-051.jpg",
+      "usado_em": [
+        "B4-11"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-052": {
+      "id": "A-052",
+      "descricao": "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+          "Pompeii A-052"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-052.jpg",
+      "usado_em": [
+        "B4-14"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-053": {
+      "id": "A-053",
+      "descricao": "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Arcadas dos fornici de Herculano iluminadas pelo brilho da nuvem piroclástica",
+          "Pompeii A-053"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-053.jpg",
+      "usado_em": [
+        "B4-15"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-054": {
+      "id": "A-054",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-054.jpg",
+      "usado_em": [
+        "B5-02"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-055": {
+      "id": "A-055",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-055.jpg",
+      "usado_em": [
+        "B5-03"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-056": {
+      "id": "A-056",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-056.jpg",
+      "usado_em": [
+        "B5-04"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-057": {
+      "id": "A-057",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-057.jpg",
+      "usado_em": [
+        "B5-05"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-058": {
+      "id": "A-058",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-058.jpg",
+      "usado_em": [
+        "B5-06"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-059": {
+      "id": "A-059",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-059.jpg",
+      "usado_em": [
+        "B5-07"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-060": {
+      "id": "A-060",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-060.jpg",
+      "usado_em": [
+        "B5-08"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-061": {
+      "id": "A-061",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-061.jpg",
+      "usado_em": [
+        "B5-09"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-062": {
+      "id": "A-062",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "gerar",
+      "personagem": null,
+      "prompt": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã, historical documentary cinematography, natural lighting, warm embers, atmospheric ash particles, 35mm film grain, 8k resolution, shot on Arri Alexa, masterwork",
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": "A-062.jpg",
+      "usado_em": [
+        "B5-10"
+      ],
+      "proibicoes": [
+        "lava líquida vermelha escorrendo pela cidade (erupção pliniana de 79 não teve lava nas ruas)",
+        "vulcão com cume duplo moderno (em 79 d.C. o cone era único, Monte Somma antes do colapso)",
+        "roupas anacrônicas medievais ou renascentistas",
+        "qualquer texto, marca d'água ou legenda embutida na imagem gerada"
+      ],
+      "plano_b": "pesquisar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-063": {
+      "id": "A-063",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-063.jpg",
+      "usado_em": [
+        "B5-11"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-064": {
+      "id": "A-064",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-064.jpg",
+      "usado_em": [
+        "B5-12"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-065": {
+      "id": "A-065",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-065.jpg",
+      "usado_em": [
+        "B5-14"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-066": {
+      "id": "A-066",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-066.jpg",
+      "usado_em": [
+        "B5-15"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-067": {
+      "id": "A-067",
+      "descricao": "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Cinzas vulcânicas cobrindo os telhados e o porto de Pompeia na escuridão da manhã"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-067.jpg",
+      "usado_em": [
+        "B5-16"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-068": {
+      "id": "A-068",
+      "descricao": "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-068.jpg",
+      "usado_em": [
+        "B6-03"
+      ],
+      "proibicoes": [
+        "proibido_gerar_vitimas_reais"
+      ],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-069": {
+      "id": "A-069",
+      "descricao": "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-069.jpg",
+      "usado_em": [
+        "B6-04"
+      ],
+      "proibicoes": [
+        "proibido_gerar_vitimas_reais"
+      ],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-070": {
+      "id": "A-070",
+      "descricao": "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-070.jpg",
+      "usado_em": [
+        "B6-05"
+      ],
+      "proibicoes": [
+        "proibido_gerar_vitimas_reais"
+      ],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-071": {
+      "id": "A-071",
+      "descricao": "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-071.jpg",
+      "usado_em": [
+        "B6-06"
+      ],
+      "proibicoes": [
+        "proibido_gerar_vitimas_reais"
+      ],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-072": {
+      "id": "A-072",
+      "descricao": "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-072.jpg",
+      "usado_em": [
+        "B6-08"
+      ],
+      "proibicoes": [
+        "proibido_gerar_vitimas_reais"
+      ],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-073": {
+      "id": "A-073",
+      "descricao": "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-073.jpg",
+      "usado_em": [
+        "B6-09"
+      ],
+      "proibicoes": [
+        "proibido_gerar_vitimas_reais"
+      ],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-074": {
+      "id": "A-074",
+      "descricao": "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Molde de gesso histórico de Fiorelli revelando a silhueta de uma vítima"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-074.jpg",
+      "usado_em": [
+        "B6-11"
+      ],
+      "proibicoes": [
+        "proibido_gerar_vitimas_reais"
+      ],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-075": {
+      "id": "A-075",
+      "descricao": "Papiro carbonizado de Herculano revelando texto sob escaneamento por IA",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Papiro carbonizado de Herculano revelando texto sob escaneamento por IA",
+          "Pompeii A-075"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-075.jpg",
+      "usado_em": [
+        "B7-07"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-076": {
+      "id": "A-076",
+      "descricao": "Papiro carbonizado de Herculano revelando texto sob escaneamento por IA",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Papiro carbonizado de Herculano revelando texto sob escaneamento por IA",
+          "Pompeii A-076"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-076.jpg",
+      "usado_em": [
+        "B7-09"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-077": {
+      "id": "A-077",
+      "descricao": "Papiro carbonizado de Herculano revelando texto sob escaneamento por IA",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Papiro carbonizado de Herculano revelando texto sob escaneamento por IA",
+          "Pompeii A-077"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-077.jpg",
+      "usado_em": [
+        "B7-11"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-078": {
+      "id": "A-078",
+      "descricao": "Papiro carbonizado de Herculano revelando texto sob escaneamento por IA",
+      "origem": "pedir_ao_usuario",
+      "personagem": null,
+      "prompt": null,
+      "motivo": "Bem cultural ou artefato histórico com possíveis restrições de direitos",
+      "busca": {
+        "termos": [
+          "Papiro carbonizado de Herculano revelando texto sob escaneamento por IA",
+          "Pompeii A-078"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Parco Archeologico di Pompei",
+          "Museo Archeologico Nazionale di Napoli"
+        ]
+      },
+      "nome_arquivo": "A-078.jpg",
+      "usado_em": [
+        "B7-13"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-079": {
+      "id": "A-079",
+      "descricao": "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-079.jpg",
+      "usado_em": [
+        "B8-02"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-080": {
+      "id": "A-080",
+      "descricao": "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-080.jpg",
+      "usado_em": [
+        "B8-03"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-081": {
+      "id": "A-081",
+      "descricao": "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-081.jpg",
+      "usado_em": [
+        "B8-04"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-082": {
+      "id": "A-082",
+      "descricao": "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-082.jpg",
+      "usado_em": [
+        "B8-05"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-083": {
+      "id": "A-083",
+      "descricao": "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-083.jpg",
+      "usado_em": [
+        "B8-07"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-084": {
+      "id": "A-084",
+      "descricao": "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-084.jpg",
+      "usado_em": [
+        "B8-09"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-085": {
+      "id": "A-085",
+      "descricao": "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-085.jpg",
+      "usado_em": [
+        "B8-10"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-086": {
+      "id": "A-086",
+      "descricao": "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-086.jpg",
+      "usado_em": [
+        "B8-11"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-087": {
+      "id": "A-087",
+      "descricao": "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-087.jpg",
+      "usado_em": [
+        "B8-12"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-088": {
+      "id": "A-088",
+      "descricao": "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-088.jpg",
+      "usado_em": [
+        "B8-13"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    },
+    "A-089": {
+      "id": "A-089",
+      "descricao": "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": {
+        "termos": [
+          "Vista aérea contemporânea da zona vermelha ao redor do cone moderno do Vesúvio"
+        ],
+        "sites": [
+          "Wikimedia Commons",
+          "Openverse",
+          "Library of Congress"
+        ]
+      },
+      "nome_arquivo": "A-089.jpg",
+      "usado_em": [
+        "B8-14"
+      ],
+      "proibicoes": [],
+      "plano_b": "gerar",
+      "caminho": null,
+      "licenca": null,
+      "id_global": null
+    }
+  },
+  "musica": [
+    {
+      "bloco": "B0",
+      "clima": "drone escuro e pulso que cresce",
+      "faixa": null
+    },
+    {
+      "bloco": "B1",
+      "clima": "Campania Felix, cordas quentes e harpa",
+      "faixa": null
+    },
+    {
+      "bloco": "B2",
+      "clima": "inquietação e suspense crescente",
+      "faixa": null
+    },
+    {
+      "bloco": "B3",
+      "clima": "construção épica controlada",
+      "faixa": null
+    },
+    {
+      "bloco": "B4",
+      "clima": "horror contido e grave",
+      "faixa": null
+    },
+    {
+      "bloco": "B5",
+      "clima": "clímax dramático e silêncio no ápice",
+      "faixa": null
+    },
+    {
+      "bloco": "B6",
+      "clima": "respiro melancólico",
+      "faixa": null
+    },
+    {
+      "bloco": "B7",
+      "clima": "descoberta científica e revelação",
+      "faixa": null
+    },
+    {
+      "bloco": "B8",
+      "clima": "tensão contemporânea e reflexão",
+      "faixa": null
+    }
+  ],
+  "verificacao": {
+    "aprovado": true,
+    "ajustes": 104,
+    "total_violacoes": 104
+  }
+}

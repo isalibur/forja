@@ -171,12 +171,17 @@ def _normalizar_numeros_pt(tokens: list[str]) -> list[str]:
 
 
 def _tokenizar(texto: str) -> list[str]:
-    """Tokeniza texto em palavras minusculas sem pontuacao nem acento."""
-    tokens = []
-    for t in re.findall(r"\b[\w\-']+\b", SIMBOLOS_MOEDA.sub(" ", texto.lower())):
-        limpo = t.strip("-'")
-        if limpo:
-            tokens.append(_sem_acento(limpo))
+    """Tokeniza texto em palavras minusculas sem pontuacao nem acento.
+
+    Palavras hifenadas viram tokens separados ("confere-se" -> "confere", "se"),
+    porque a hifenizacao e pontuacao, nao pronunciacao.
+    """
+    tokens: list[str] = []
+    for bruto in re.findall(r"\b[\w\-']+\b", SIMBOLOS_MOEDA.sub(" ", texto.lower())):
+        for parte in bruto.split("-"):
+            limpo = parte.strip("-'")
+            if limpo:
+                tokens.append(_sem_acento(limpo))
     return tokens
 
 
@@ -186,12 +191,29 @@ def _sem_acento(texto: str) -> str:
     return "".join(caractere for caractere in decomposto if not unicodedata.combining(caractere))
 
 
+def _sem_s_final(palavra: str) -> str:
+    """Remove o "s" de plural; o ASR alterna entre singular e plural sem mudar o áudio."""
+    if len(palavra) > 4 and palavra.endswith("s"):
+        return palavra[:-1]
+    return palavra
+
+
+def _equivalentes(primeiro: str, segundo: str) -> bool:
+    """Dois tokens contam como iguais quando só muda o "s" de plural."""
+    if primeiro == segundo:
+        return True
+    return _sem_s_final(primeiro) == _sem_s_final(segundo)
+
+
 def calcular_wer(referencia: str, hipotese: str, idioma: str | None = None) -> float:
     """Calcula a Taxa de Erro de Palavras (Word Error Rate - WER).
 
     WER = (Substituicoes + Delecoes + Insercoes) / Total de palavras de referencia.
     Retorna 0.0 para correspondencia exata. Para português, a opção ``idioma``
-    iguala números por extenso e em algarismos antes da comparação.
+    iguala números por extenso e em algarismos antes da comparação. A diferença
+    de plural ("aviso" e "avisos") é tratada como igualdade: o ASR alterna entre
+    as formas sem que o áudio mude, e a medição serve para detectar narração
+    quebrada, não para contestar flexão gramatical.
     """
     ref = _tokenizar(referencia)
     hyp = _tokenizar(hipotese)
@@ -215,7 +237,7 @@ def calcular_wer(referencia: str, hipotese: str, idioma: str | None = None) -> f
 
     for i in range(1, n + 1):
         for j in range(1, m + 1):
-            if ref[i - 1] == hyp[j - 1]:
+            if _equivalentes(ref[i - 1], hyp[j - 1]):
                 dp[i][j] = dp[i - 1][j - 1]
             else:
                 substituicao = dp[i - 1][j - 1] + 1

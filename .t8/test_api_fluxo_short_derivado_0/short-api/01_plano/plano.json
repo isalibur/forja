@@ -1,0 +1,24 @@
+{
+  "projeto": "short-api",
+  "tipo": "longo",
+  "blocos": [
+    {
+      "id": "B0",
+      "titulo": "Bloco",
+      "shots": [
+        {
+          "id": "B0-01",
+          "segmentos": [
+            "S01",
+            "S02"
+          ],
+          "duracao_s": 40,
+          "inicio_s": 0,
+          "fim_s": 40,
+          "template": "T01"
+        }
+      ]
+    }
+  ],
+  "ativos": {}
+}

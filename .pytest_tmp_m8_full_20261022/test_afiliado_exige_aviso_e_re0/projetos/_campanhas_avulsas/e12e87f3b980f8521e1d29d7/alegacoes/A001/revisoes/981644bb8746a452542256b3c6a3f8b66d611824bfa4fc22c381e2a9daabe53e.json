@@ -1,0 +1,25 @@
+{
+  "campanha_id": "e12e87f3b980f8521e1d29d7",
+  "pedido_id": "A001",
+  "hash_campanha": "e12e87f3b980f8521e1d29d7ac7138577bc6ed19821d5b91b34a7818df0e0d9b",
+  "revisao_roteiro": "5e66f7c49bd9bcbbececbe149de34bf7c3635377ebfc46ae6465eef42d44c52e",
+  "revisao_midias": "3fee1c38a15cc5be827b196942bc2665451472290b6b6f856d643c73e5a29365",
+  "revisao": "981644bb8746a452542256b3c6a3f8b66d611824bfa4fc22c381e2a9daabe53e",
+  "dados": {
+    "fontes": [
+      {
+        "alegacao": "Benefício descrito",
+        "fonte": "Ficha do fabricante"
+      }
+    ],
+    "sem_alegacoes_verificaveis": false,
+    "prova_real": null,
+    "fonte_preco": null,
+    "condicao_urgencia": null,
+    "relacao_comercial": "afiliado",
+    "marca": null,
+    "aviso_publicidade": true,
+    "revisado_pelo_usuario": true
+  },
+  "status": "documentacao_registrada_sem_verificacao_externa"
+}

@@ -1,0 +1,36 @@
+{
+  "projeto": "short-integrado",
+  "tipo": "longo",
+  "blocos": [
+    {
+      "id": "B0",
+      "titulo": "Descoberta",
+      "shots": [
+        {
+          "id": "B0-01",
+          "segmentos": [
+            "S01"
+          ],
+          "duracao_s": 20,
+          "inicio_s": 0,
+          "fim_s": 20,
+          "template": "T01",
+          "ativos": [
+            "A-001"
+          ]
+        }
+      ]
+    }
+  ],
+  "ativos": {
+    "A-001": {
+      "id": "A-001",
+      "descricao": "Ilustração licenciada",
+      "caminho": "D:\\IA\\forja\\docforja\\.pytest_tmp_m8_full_20261022\\test_producao_renderiza_revisa0\\short-integrado\\02_midias\\manual\\A-001.png",
+      "licenca": {
+        "licenca": "CC0-1.0",
+        "comercial": true
+      }
+    }
+  }
+}

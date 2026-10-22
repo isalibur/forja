@@ -1,0 +1,6 @@
+tts:
+  candidatos:
+  - adaptador: voicestudio
+    benchmark:
+      base_url: http://127.0.0.1:3900
+    id: voicestudio-omnivoice

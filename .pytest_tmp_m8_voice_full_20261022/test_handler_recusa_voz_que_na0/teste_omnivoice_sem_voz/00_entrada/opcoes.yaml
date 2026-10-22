@@ -1,0 +1,11 @@
+nome: teste_omnivoice_sem_voz
+slug: teste_omnivoice_sem_voz
+tipo: longo
+preset: padrao
+kit: cinza-e-brasa@1.0
+idiomas:
+  principal: pt-BR
+  extras: []
+monetizado: true
+motor_tts: omnivoice
+voz: perfil-inexistente

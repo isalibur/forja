@@ -1,0 +1,15 @@
+{
+  "etapa": "R7_render",
+  "idioma": "en",
+  "video_saida": "D:\\IA\\forja\\docforja\\.t9\\test_render_remotion_consome_p0\\render-localizado\\05_saida\\en\\video.mp4",
+  "resolucao": "1920x1080",
+  "fps": 24,
+  "hash_video": "5a5099e07335e972a67137f3e5dc04b459432dbc04a28d73f0fce7961f28b0af",
+  "duracao_s": 3.5,
+  "duracao_frames": 84,
+  "blocos_total": 1,
+  "blocos_reaproveitados": [],
+  "blocos_re_renderizados": [
+    "B0"
+  ]
+}

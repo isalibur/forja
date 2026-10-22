@@ -1,0 +1,47 @@
+{
+  "total_ativos": 2,
+  "ativos": {
+    "A-01": {
+      "id": "A-01",
+      "descricao": "Cena do Vesúvio",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": null,
+      "usado_em": [
+        "B0-01"
+      ],
+      "proibicoes": [],
+      "plano_b": null,
+      "caminho": "D:\\IA\\forja\\docforja\\.t8\\test_invalidacao_seletiva_mult0\\projetos\\proj_invalidacao_seletiva\\02_midias\\pesquisadas\\A-01\\escolhida.jpg",
+      "licenca": {
+        "licenca": "CC0",
+        "comercial": true
+      },
+      "id_global": null
+    },
+    "A-02": {
+      "id": "A-02",
+      "descricao": "Rua de Pompeia",
+      "origem": "pesquisar",
+      "personagem": null,
+      "prompt": null,
+      "motivo": null,
+      "busca": null,
+      "nome_arquivo": null,
+      "usado_em": [
+        "B1-01"
+      ],
+      "proibicoes": [],
+      "plano_b": null,
+      "caminho": "D:\\IA\\forja\\docforja\\.t8\\test_invalidacao_seletiva_mult0\\projetos\\proj_invalidacao_seletiva\\02_midias\\pesquisadas\\A-02\\escolhida.jpg",
+      "licenca": {
+        "licenca": "CC0",
+        "comercial": true
+      },
+      "id_global": null
+    }
+  }
+}

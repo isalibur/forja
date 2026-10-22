@@ -1,0 +1,19 @@
+{
+  "etapa": "R10_biblioteca",
+  "total_sugeridos": 1,
+  "itens": [
+    {
+      "id": "A-01",
+      "tipo": "imagens",
+      "origem_caminho": "D:\\IA\\forja\\docforja\\.pytest_tmp_m8_full_20261022\\test_producao_pipeline_handler0\\amostra.jpg",
+      "descricao": "Amostra de teste",
+      "licenca": "CC0",
+      "comercial": true,
+      "credito": "Acervo",
+      "motivo_sugestao": "Ativo com licença comercial confirmada e resolução de produção",
+      "projetos_usados": [
+        "teste_producao_m6"
+      ]
+    }
+  ]
+}

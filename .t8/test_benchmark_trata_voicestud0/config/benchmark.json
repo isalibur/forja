@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-22T12:08:18.040935Z",
+  "results": [
+    {
+      "id": "tts_voicestudio-omnivoice",
+      "category": "tts",
+      "candidate": "voicestudio-omnivoice",
+      "status": "warning",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "online | HTTP 200",
+      "metrics": {}
+    },
+    {
+      "id": "alinhamento_whisperx",
+      "category": "alinhamento",
+      "candidate": "whisperx",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência ausente",
+      "metrics": {}
+    },
+    {
+      "id": "parallax_depthflow",
+      "category": "parallax",
+      "candidate": "depthflow",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência ausente",
+      "metrics": {}
+    },
+    {
+      "id": "recorte_birefnet",
+      "category": "recorte",
+      "candidate": "birefnet",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência ausente",
+      "metrics": {}
+    },
+    {
+      "id": "upscale_real-esrgan",
+      "category": "upscale",
+      "candidate": "real-esrgan",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência ausente",
+      "metrics": {}
+    },
+    {
+      "id": "render_ffmpeg",
+      "category": "render",
+      "candidate": "ffmpeg-nvenc",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "FFmpeg ausente",
+      "metrics": {}
+    }
+  ]
+}

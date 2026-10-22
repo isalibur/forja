@@ -1,0 +1,17 @@
+{
+  "etapa": "R5_montagem",
+  "idiomas": {
+    "pt-BR": {
+      "plano": "D:\\IA\\forja\\docforja\\.t8\\test_render_remotion_consome_p0\\render-localizado\\01_plano\\plano.json",
+      "total_blocos": 1,
+      "total_shots": 1,
+      "otio": "D:\\IA\\forja\\docforja\\.t8\\test_render_remotion_consome_p0\\render-localizado\\sistema\\montagem\\pt-BR\\timeline.otio"
+    },
+    "en": {
+      "plano": "D:\\IA\\forja\\docforja\\.t8\\test_render_remotion_consome_p0\\render-localizado\\01_plano\\idiomas\\en\\plano_retimado.json",
+      "total_blocos": 1,
+      "total_shots": 1,
+      "otio": "D:\\IA\\forja\\docforja\\.t8\\test_render_remotion_consome_p0\\render-localizado\\sistema\\montagem\\en\\timeline.otio"
+    }
+  }
+}

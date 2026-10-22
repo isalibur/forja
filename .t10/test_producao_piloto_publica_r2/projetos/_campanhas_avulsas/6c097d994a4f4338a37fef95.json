@@ -1,0 +1,54 @@
+{
+  "id": "6c097d994a4f4338a37fef95",
+  "nome": "Teste",
+  "status": "aguardando_revisao",
+  "pedidos": [
+    {
+      "id": "A001",
+      "tema": "Cena",
+      "objetivo": "anuncio",
+      "duracao_s": 30,
+      "formula_id": "anuncio",
+      "origem_roteiro": "formula",
+      "roteiro": null,
+      "cta": "Veja a cena",
+      "opcao_a": null,
+      "opcao_b": null,
+      "produto": null,
+      "roteiro_sugerido": null,
+      "pendencias": [
+        "aprovar roteiro",
+        "aprovar mídias e licenças",
+        "comprovar alegações exigidas pela fórmula"
+      ]
+    }
+  ],
+  "formulas": {
+    "anuncio": {
+      "id": "anuncio",
+      "nome": "Anúncio",
+      "estrutura": [
+        "novidade",
+        "o_que_muda",
+        "quando",
+        "CTA"
+      ],
+      "objetivos": [
+        "anuncio"
+      ],
+      "templates": [
+        "V01",
+        "V02",
+        "V07"
+      ],
+      "duracao_min_s": 15,
+      "duracao_max_s": 45,
+      "regras": [
+        "data_e_informacao_confirmadas"
+      ],
+      "exige_prova_real": false,
+      "exige_fonte_preco": false
+    }
+  },
+  "hash_conteudo": "6c097d994a4f4338a37fef95e6e12e5490c604a3b3d57b344ba73b89b1ddc4b2"
+}

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-22T12:09:15.195099Z",
+  "results": [
+    {
+      "id": "voice",
+      "category": "tts",
+      "candidate": "voice",
+      "status": "ok",
+      "duration_seconds": 2.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "",
+      "metrics": {}
+    },
+    {
+      "id": "imagem_pending",
+      "category": "imagem",
+      "candidate": "pending",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "ensaio real ainda não configurado",
+      "metrics": {
+        "run_id": "20261022T120915Z-b28df4",
+        "measured_at": "2026-10-22T12:09:15.192097+00:00"
+      }
+    }
+  ]
+}

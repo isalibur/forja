@@ -1,0 +1,31 @@
+[
+  {
+    "id": "B0-S01",
+    "texto": "O Vesúvio permaneceu adormecido.",
+    "inicio_s": 0.0,
+    "fim_s": 4.0,
+    "duracao_s": 4.0,
+    "palavras": [
+      {
+        "palavra": "O",
+        "inicio": 0.0,
+        "fim": 4.0
+      },
+      {
+        "palavra": "Vesúvio",
+        "inicio": 0.0,
+        "fim": 4.0
+      },
+      {
+        "palavra": "permaneceu",
+        "inicio": 0.0,
+        "fim": 4.0
+      },
+      {
+        "palavra": "adormecido.",
+        "inicio": 0.0,
+        "fim": 4.0
+      }
+    ]
+  }
+]

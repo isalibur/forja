@@ -1,0 +1,44 @@
+{
+  "versao": 1,
+  "blocos": [
+    {
+      "id": "B1",
+      "nome": "Primeiro",
+      "intensidade_inicio": 5.0,
+      "intensidade_fim": 5.0,
+      "segmentos": [
+        {
+          "id": "B1-S01",
+          "texto_original": "Uma abertura.",
+          "texto_limpo": "Uma abertura.",
+          "direcao_voz": null,
+          "fatos": [],
+          "batida": "contexto",
+          "intensidade": 5.0,
+          "visual_sugerido": null,
+          "silencio_apos_s": 0.0,
+          "pausas": [],
+          "entidades": {}
+        },
+        {
+          "id": "B1-S02",
+          "texto_original": "Mais um detalhe.",
+          "texto_limpo": "Mais um detalhe.",
+          "direcao_voz": null,
+          "fatos": [],
+          "batida": "contexto",
+          "intensidade": 5.0,
+          "visual_sugerido": null,
+          "silencio_apos_s": 0.0,
+          "pausas": [],
+          "entidades": {
+            "numeros": [
+              "um"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "total_segmentos": 2
+}

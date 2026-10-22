@@ -1,0 +1,46 @@
+{
+  "campanha_id": "fedeecf5025a2ebd178d054b",
+  "pedido_id": "A001",
+  "hash_campanha": "fedeecf5025a2ebd178d054bceb1bfbd49af39f9bccc340b2161d5d29e9d9308",
+  "revisao_roteiro": "540e8fb3443b3bdbba825a45c30f40d7cbb901657d95e799225cc943fa1daadc",
+  "revisao": "a09b8993a8d631e047f2d2a332bcfd6886ea88be9b52681a985c326da2a4c659",
+  "midias": [
+    {
+      "id_global": "global:imagens:cena",
+      "descricao": "Cena genérica",
+      "licenca": "CC0-1.0",
+      "credito": "",
+      "hash_arquivo": "15c0981f11443f289681f341db6893579ea61c14628ca1c19993100abd0955ac",
+      "hash_ficha": "d72566cb5bf0239717f1a63722350c7da5f0885f28d5fa91a1488396232efa89",
+      "tipo": "imagem"
+    },
+    {
+      "id_global": "global:loops:clipe-1",
+      "descricao": "Bastidor próprio 1",
+      "licenca": "CC0-1.0",
+      "credito": "",
+      "hash_arquivo": "a1ff8354c3aa0eb157ef562d723ce2c83588681c2bcb591120e9db4ee33ef8f9",
+      "hash_ficha": "cd8e32ccf2b917fac5b0f5aa2cff47f02cbfbf0ce500b0302e9117335a7ff750",
+      "tipo": "clipe"
+    },
+    {
+      "id_global": "global:loops:clipe-2",
+      "descricao": "Bastidor próprio 2",
+      "licenca": "CC0-1.0",
+      "credito": "",
+      "hash_arquivo": "e4150ec7ccf67ed7d33cbe1357cd1c7b4dcdd10271fcacb25e719d7e23942e9f",
+      "hash_ficha": "8894829ec75e026eab12f47cfc99ebfa67ce0dcb3795e75559f7f05c835e9954",
+      "tipo": "clipe"
+    },
+    {
+      "id_global": "global:loops:clipe-3",
+      "descricao": "Bastidor próprio 3",
+      "licenca": "CC0-1.0",
+      "credito": "",
+      "hash_arquivo": "6db6bd48a01f3e88e332fb0fb3e96d6614d75c990c319a2f45da6a3c477cf2f2",
+      "hash_ficha": "61b3200128270f83b49cece3b9953bb126671b17439aa84dc0f946ccd8c6e7dd",
+      "tipo": "clipe"
+    }
+  ],
+  "status": "midias_selecionadas"
+}

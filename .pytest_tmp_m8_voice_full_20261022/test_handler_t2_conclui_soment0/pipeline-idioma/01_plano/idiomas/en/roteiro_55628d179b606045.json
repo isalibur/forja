@@ -1,0 +1,19 @@
+{
+  "idioma": "en",
+  "hash_roteiro_origem": "06e08e4b1de9f34edd0ff16936fb624ba965cf3305c70dec99ae2260d1788a2b",
+  "hash_traducao": "55628d179b6060456d1c96737f39b9a95921e1657b153a6a414c1aca1715cfe0",
+  "segmentos": [
+    {
+      "id": "B0-S01",
+      "bloco": "B0",
+      "texto_original": "Vesuvius wakes.",
+      "texto_limpo": "Vesuvius wakes."
+    },
+    {
+      "id": "B0-S02",
+      "bloco": "B0",
+      "texto_original": "The city watches.",
+      "texto_limpo": "The city watches."
+    }
+  ]
+}

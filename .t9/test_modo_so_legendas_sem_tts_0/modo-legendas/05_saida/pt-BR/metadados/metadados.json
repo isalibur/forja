@@ -1,0 +1,267 @@
+{
+  "projeto": "modo-legendas",
+  "idioma": "pt-BR",
+  "duracao_s": 9.0,
+  "titulos": [
+    {
+      "titulo": "Modo Legendas: O que você aprendeu está errado",
+      "angulo": "Quebra de crença",
+      "gatilho": "Surpresa / Desafio ao senso comum",
+      "palavra_chave": "Modo",
+      "nota": 9.5,
+      "criterios": {
+        "tamanho": 10.0,
+        "palavra_chave_inicio": 10.0,
+        "clareza": 9.0,
+        "curiosidade": 9.5,
+        "especificidade": 9.5,
+        "coerencia_gancho": 9.0
+      },
+      "recomendado_ab": true
+    },
+    {
+      "titulo": "O detalhe esquecido que selou o destino de Modo Legendas",
+      "angulo": "Curiosidade específica",
+      "gatilho": "Curiosidade extrema / Detalhe bizarro",
+      "palavra_chave": "Modo",
+      "nota": 7.8,
+      "criterios": {
+        "tamanho": 8.5,
+        "palavra_chave_inicio": 6.5,
+        "clareza": 8.0,
+        "curiosidade": 7.0,
+        "especificidade": 8.0,
+        "coerencia_gancho": 9.0
+      },
+      "recomendado_ab": false
+    },
+    {
+      "titulo": "24 horas que definiram a história de Modo Legendas",
+      "angulo": "Número",
+      "gatilho": "Especificidade e proporção tangível",
+      "palavra_chave": "Modo",
+      "nota": 8.8,
+      "criterios": {
+        "tamanho": 10.0,
+        "palavra_chave_inicio": 6.5,
+        "clareza": 8.0,
+        "curiosidade": 9.5,
+        "especificidade": 9.5,
+        "coerencia_gancho": 9.0
+      },
+      "recomendado_ab": false
+    },
+    {
+      "titulo": "Modo Legendas: O lugar onde o passado continua vivo",
+      "angulo": "Contraste passado vs presente",
+      "gatilho": "Ironia temporal e identificação",
+      "palavra_chave": "Modo",
+      "nota": 9.1,
+      "criterios": {
+        "tamanho": 10.0,
+        "palavra_chave_inicio": 10.0,
+        "clareza": 9.0,
+        "curiosidade": 7.0,
+        "especificidade": 9.5,
+        "coerencia_gancho": 9.0
+      },
+      "recomendado_ab": true
+    },
+    {
+      "titulo": "O que realmente aconteceu durante Modo Legendas?",
+      "angulo": "Pergunta",
+      "gatilho": "Necessidade de fechamento cognitivo",
+      "palavra_chave": "Modo",
+      "nota": 8.7,
+      "criterios": {
+        "tamanho": 10.0,
+        "palavra_chave_inicio": 6.5,
+        "clareza": 9.0,
+        "curiosidade": 9.5,
+        "especificidade": 8.0,
+        "coerencia_gancho": 9.0
+      },
+      "recomendado_ab": false
+    },
+    {
+      "titulo": "A ciência moderna finalmente desvendou Modo Legendas",
+      "angulo": "Descoberta recente",
+      "gatilho": "Novidade científica / Revelação moderna",
+      "palavra_chave": "Modo",
+      "nota": 8.1,
+      "criterios": {
+        "tamanho": 10.0,
+        "palavra_chave_inicio": 6.5,
+        "clareza": 8.0,
+        "curiosidade": 7.0,
+        "especificidade": 8.0,
+        "coerencia_gancho": 9.0
+      },
+      "recomendado_ab": false
+    },
+    {
+      "titulo": "O relato da testemunha que viu o fim de Modo Legendas",
+      "angulo": "Testemunha ocular",
+      "gatilho": "Empatia pessoal / Relato íntimo",
+      "palavra_chave": "Modo",
+      "nota": 8.5,
+      "criterios": {
+        "tamanho": 10.0,
+        "palavra_chave_inicio": 6.5,
+        "clareza": 8.0,
+        "curiosidade": 9.5,
+        "especificidade": 8.0,
+        "coerencia_gancho": 9.0
+      },
+      "recomendado_ab": false
+    },
+    {
+      "titulo": "A verdade que ficou soterrada sob Modo Legendas",
+      "angulo": "Consequência oculta",
+      "gatilho": "Fascínio pelo invisível / Efeito colateral",
+      "palavra_chave": "Modo",
+      "nota": 8.5,
+      "criterios": {
+        "tamanho": 10.0,
+        "palavra_chave_inicio": 6.5,
+        "clareza": 8.0,
+        "curiosidade": 9.5,
+        "especificidade": 8.0,
+        "coerencia_gancho": 9.0
+      },
+      "recomendado_ab": false
+    },
+    {
+      "titulo": "Modo Legendas: O passo a passo das últimas horas",
+      "angulo": "Cronologia dramática",
+      "gatilho": "Ritmo de contagem regressiva",
+      "palavra_chave": "Modo",
+      "nota": 9.5,
+      "criterios": {
+        "tamanho": 10.0,
+        "palavra_chave_inicio": 10.0,
+        "clareza": 9.0,
+        "curiosidade": 9.5,
+        "especificidade": 9.5,
+        "coerencia_gancho": 9.0
+      },
+      "recomendado_ab": true
+    },
+    {
+      "titulo": "O dia em que a terra engoliu Modo Legendas",
+      "angulo": "Tensão e catástrofe",
+      "gatilho": "Urgência e gravidade existencial",
+      "palavra_chave": "Modo",
+      "nota": 8.5,
+      "criterios": {
+        "tamanho": 10.0,
+        "palavra_chave_inicio": 6.5,
+        "clareza": 8.0,
+        "curiosidade": 9.5,
+        "especificidade": 8.0,
+        "coerencia_gancho": 9.0
+      },
+      "recomendado_ab": false
+    }
+  ],
+  "top_titulos_ab": [
+    "Modo Legendas: O que você aprendeu está errado",
+    "Modo Legendas: O lugar onde o passado continua vivo",
+    "Modo Legendas: O passo a passo das últimas horas"
+  ],
+  "descricao": "Modo Legendas: A história completa e as revelações que os séculos tentaram apagar.\nDescubra neste documentário detalhado os fatos reais, minuto a minuto.\n\nNeste documentário exclusivo do DocForja, investigamos a fundo os acontecimentos de Modo Legendas. Apoiados em documentos de época, dados arqueológicos e análises científicas recentes, reconstruímos a linha temporal exata dos acontecimentos. Entenda o impacto humano, os erros cruciais e o legado histórico deixado para o presente.\n\n## Capítulos\n\n00:00 Introdução\n\n## Fontes e Documentação\n\n- Relatos históricos e registros documentais do período\n- Artigos e relatórios de escavações e pesquisas arqueológicas recentes\n\n## Créditos de Mídia e Trilha\n\nCRÉDITOS E FONTES DE MÍDIA — DOCFORJA\n========================================\n\n1. IMAGENS E ARTEFATOS HISTÓRICOS:\n\n2. ÁUDIO E SOUND DESIGN:\n- Narração e voz sintética: Modelo Kokoro/Chatterbox (licença de uso aprovada)\n- Trilha sonora e cama musical: Kit Cinza e Brasa (licença comercial DocForja)\n- Efeitos sonoros do kit: DocForja SFX Library (licenciados)\n\n## Sobre as Reconstituições\n\n> [!NOTE]\n> **Aviso de Transparência:** Este documentário utiliza **RECONSTITUIÇÃO ARTÍSTICA** e recursos visuais computacionais para ilustrar passagens históricas e conceitos científicos. Todas as reconstituições são baseadas estritamente em fontes arqueológicas e relatos da época.\n\nInscreva-se no canal para acompanhar novos documentários e investigações históricas.\n\n#ModoLegendas #Documentario #DocForja\n",
+  "capitulos": [
+    {
+      "tempo_s": 0.0,
+      "timestamp": "00:00",
+      "titulo": "Introdução"
+    }
+  ],
+  "tags": [
+    "Modo Legendas",
+    "Modo Legendas documentario",
+    "Modo Legendas historia",
+    "Modo Legendas explicacao",
+    "arqueologia",
+    "historia antiga",
+    "reconstituicao historica",
+    "ciencia e historia",
+    "fatos historicos",
+    "documentario completo",
+    "introdução"
+  ],
+  "hashtags": [
+    "#ModoLegendas",
+    "#Documentario",
+    "#DocForja"
+  ],
+  "palavras_chave": [
+    "Modo Legendas",
+    "Modo Legendas documentario",
+    "Modo Legendas historia",
+    "Modo Legendas explicacao",
+    "arqueologia",
+    "historia antiga",
+    "reconstituicao historica",
+    "ciencia e historia",
+    "fatos historicos",
+    "documentario completo",
+    "introdução"
+  ],
+  "comentario_fixado": "Qual fato revelado sobre Modo Legendas mais surpreendeu você neste documentário?\n\nDeixe sua reflexão nos comentários! Apoiamos nossas pesquisas em fontes documentais e novas escavações arqueológicas.\n\n📌 Fontes e leituras complementares listadas na descrição do vídeo.\n",
+  "post_comunidade": "🚨 DOCUMENTÁRIO NO AR: Modo Legendas: O que você aprendeu está errado\n\nDepois de semanas de pesquisa em fontes históricas e reconstituição visual minuciosa, o documentário completo sobre Modo Legendas já está disponível no canal!\n\n👉 Assista agora e descubra os fatos reais que os séculos tentaram ocultar.\nO link está logo acima no canal. Comente o que achou!\n",
+  "checklist_publicacao": [
+    "Verificação de Loudness (-14 LUFS)",
+    "Capítulos em 00:00",
+    "Teste A/B de Títulos",
+    "Legibilidade de Thumbnail",
+    "Aviso Ético de IA"
+  ],
+  "thumbnails": [
+    {
+      "id": "A",
+      "nome": "Contraste e Choque Visual",
+      "ideia": "A dualidade dramática entre o auge vivo e a destruição repentina de Modo Legendas.",
+      "elemento_central": "Divisão diagonal ou foco dramático entre figura humana e cenário ameaçador.",
+      "texto_tela": "O DIA FATAL",
+      "contraste": "Alto contraste: sombras densas (#0E0E10) contra luzes quentes e brasa (#FF6A2B).",
+      "cores": [
+        "#0E0E10",
+        "#FF6A2B",
+        "#F4F0E8"
+      ],
+      "legibilidade_120px": true,
+      "arquivo_rascunho": "thumb_A.jpg"
+    },
+    {
+      "id": "B",
+      "nome": "A Testemunha Ocular",
+      "ideia": "Foco humano cerrado em primeiro plano, transmitindo tensão contida e gravidade.",
+      "elemento_central": "Rosto em perfil ou três quartos olhando em direção ao horizonte iluminado.",
+      "texto_tela": "ELES VIRAM TUDO",
+      "contraste": "Médio-alto: iluminação lateral cinematográfica com fundo escuro e poeira suspensa.",
+      "cores": [
+        "#1C1C21",
+        "#C08A3E",
+        "#E9DFC9"
+      ],
+      "legibilidade_120px": true,
+      "arquivo_rascunho": "thumb_B.jpg"
+    },
+    {
+      "id": "C",
+      "nome": "O Dado / Objeto Revelado",
+      "ideia": "Um artefato ou número de escala que quebra o senso comum e desperta curiosidade imediata.",
+      "elemento_central": "Objeto histórico em close-up extremo com carimbo de dado ou relógio de contagem.",
+      "texto_tela": "19 HORAS",
+      "contraste": "Máximo: elemento iluminado no centro com moldura escura e vinheta de 35mm.",
+      "cores": [
+        "#0E0E10",
+        "#5CC8D6",
+        "#F4F0E8"
+      ],
+      "legibilidade_120px": true,
+      "arquivo_rascunho": "thumb_C.jpg"
+    }
+  ]
+}

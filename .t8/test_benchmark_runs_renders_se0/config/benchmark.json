@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-22T12:08:18.022228Z",
+  "results": [
+    {
+      "id": "imagem_image-a",
+      "category": "imagem",
+      "candidate": "image-a",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "ComfyUI: adicione o workflow API e o arquivo .bindings.yaml em workflows/ para habilitar esta medição",
+      "metrics": {}
+    },
+    {
+      "id": "tts_kokoro-82m",
+      "category": "tts",
+      "candidate": "kokoro-82m",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência ausente",
+      "metrics": {}
+    },
+    {
+      "id": "alinhamento_whisperx",
+      "category": "alinhamento",
+      "candidate": "whisperx",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência ausente",
+      "metrics": {}
+    },
+    {
+      "id": "parallax_depthflow",
+      "category": "parallax",
+      "candidate": "depthflow",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência ausente",
+      "metrics": {}
+    },
+    {
+      "id": "recorte_birefnet",
+      "category": "recorte",
+      "candidate": "birefnet",
+      "status": "warning",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência disponível; adaptador de medição requer os modelos locais",
+      "metrics": {}
+    },
+    {
+      "id": "upscale_real-esrgan",
+      "category": "upscale",
+      "candidate": "real-esrgan",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "peak_vram_mb": null,
+      "outputs": [],
+      "message": "dependência ausente",
+      "metrics": {}
+    },
+    {
+      "id": "render_1080p",
+      "category": "render",
+      "candidate": "nvenc-1080p",
+      "status": "ok",
+      "duration_seconds": 1.0,
+      "peak_vram_mb": null,
+      "outputs": [
+        "D:\\IA\\forja\\docforja\\.t8\\test_benchmark_runs_renders_se0\\out\\render-1080p.mp4"
+      ],
+      "message": "render de referência concluído",
+      "metrics": {}
+    },
+    {
+      "id": "render_1440p",
+      "category": "render",
+      "candidate": "nvenc-1440p",
+      "status": "ok",
+      "duration_seconds": 2.5,
+      "peak_vram_mb": null,
+      "outputs": [
+        "D:\\IA\\forja\\docforja\\.t8\\test_benchmark_runs_renders_se0\\out\\render-1440p.mp4"
+      ],
+      "message": "render de referência concluído",
+      "metrics": {}
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "B0": {
+    "hash": "3bbd60c296416beed9dfbe953cca0900733447b9629db5879a4d9c691024e616",
+    "arquivo": "B0.mp4",
+    "hash_chunk": "97113738a9ebb5cdd25c73dd598e3acec05c46c39ac79cc8a002f1f037165b4d",
+    "shots": 1
+  },
+  "B1": {
+    "hash": "5eb5ee41261c8e03a7f07368b0595d568a7a47fe4d40e6fff40140ac2c0ab910",
+    "arquivo": "B1.mp4",
+    "hash_chunk": "9174b3803c383aacb040ac5c718c511968490be825a2de78f633d8b76fe04bf7",
+    "shots": 1
+  }
+}

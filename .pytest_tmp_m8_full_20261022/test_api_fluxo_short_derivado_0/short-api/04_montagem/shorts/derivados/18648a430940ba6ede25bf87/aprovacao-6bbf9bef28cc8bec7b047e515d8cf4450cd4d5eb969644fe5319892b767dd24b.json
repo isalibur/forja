@@ -1,0 +1,43 @@
+{
+  "referencia": "18648a430940ba6ede25bf87",
+  "fonte_hash": "f99c0996f4e66103487bc0c94e6680e909409c9c4af546b2035c5da39571fd6e",
+  "candidato": {
+    "id": "short-S01-S01",
+    "inicio_s": 0.0,
+    "fim_s": 20.0,
+    "segmento_ids": [
+      "S01"
+    ],
+    "texto": "Primeira parte.",
+    "pontuacao": 40.0,
+    "componentes": {
+      "batida_forte": 0.0,
+      "autonomia": 5.0,
+      "curiosidade": 5.0,
+      "forca_visual": 5.0,
+      "duracao_ritmo": 10.0
+    },
+    "motivos": [
+      "batida_forte: 0.0/10 (peso 30%)",
+      "autonomia: 5.0/10 (peso 25%)",
+      "curiosidade: 5.0/10 (peso 25%)",
+      "forca_visual: 5.0/10 (peso 10%)",
+      "duracao_ritmo: 10.0/10 (peso 10%)"
+    ],
+    "frases_ponte": [
+      {
+        "texto": "O restante dessa história está no vídeo completo.",
+        "aprovada": false
+      },
+      {
+        "texto": "Descubra como essa história termina em: Short API.",
+        "aprovada": true
+      },
+      {
+        "texto": "Assista ao documentário completo para conhecer o contexto.",
+        "aprovada": false
+      }
+    ]
+  },
+  "aprovado_em": "2026-10-22T11:09:51.357212+00:00"
+}
