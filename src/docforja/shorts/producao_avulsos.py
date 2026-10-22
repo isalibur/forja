@@ -30,6 +30,7 @@ from docforja.shorts.afiliados import (
     validar_sem_preco,
 )
 from docforja.shorts.alegacoes_avulsas import documentacao_vigente, obter_documentacao
+from docforja.shorts.avulsos import ObjetivoAvulso
 from docforja.shorts.campanhas import obter_aprovacao_roteiro, obter_campanha
 from docforja.shorts.midias_avulsas import (
     obter_selecao_midias,
@@ -57,8 +58,13 @@ from docforja.shorts.verificador import verificar_short
 
 MODELOS_CONFIG = Path(__file__).resolve().parents[3] / "config" / "modelos.yaml"
 ARTEFATOS = {
-    "video.mp4", "capa.jpg", "legendas.srt", "metadados.json",
-    "youtube.md", "instagram.md", "agenda.csv",
+    "video.mp4",
+    "capa.jpg",
+    "legendas.srt",
+    "metadados.json",
+    "youtube.md",
+    "instagram.md",
+    "agenda.csv",
 }
 AVISO_PUBLICIDADE = AVISO_AFILIADO
 
@@ -75,6 +81,8 @@ class PreparacaoAvulsa(BaseModel):
     revisao: str
     texto: str
     tema: str
+    objetivo: ObjetivoAvulso
+    formula_id: str
     cta: str
     duracao_alvo_s: int
     ids_imagens: list[str]
@@ -95,9 +103,7 @@ def _voz_ptbr() -> str:
 
 
 def _pasta_saida(raiz_projetos: Path, campanha_id: str, pedido_id: str) -> Path:
-    if not re.fullmatch(r"[a-f0-9]{24}", campanha_id) or not re.fullmatch(
-        r"A[0-9]{3,}", pedido_id
-    ):
+    if not re.fullmatch(r"[a-f0-9]{24}", campanha_id) or not re.fullmatch(r"A[0-9]{3,}", pedido_id):
         raise ValueError("Identificador de short avulso inválido.")
     return raiz_projetos / "_campanhas_avulsas" / campanha_id / "saidas" / pedido_id
 
@@ -121,18 +127,29 @@ def preparar_producao(
         documentacao, aprovacao.revisao, selecao.revisao
     ):
         raise ValueError("Registre a ficha de alegações para as revisões atuais.")
-    if pedido.objetivo == "educativo":
-        if documentacao.dados.relacao_comercial != "nenhuma":
-            raise ValueError("Avulsos educativos não aceitam relação comercial declarada.")
-    elif pedido.produto is not None and documentacao.dados.relacao_comercial == "afiliado":
+    if pedido.produto is not None and documentacao.dados.relacao_comercial == "afiliado":
         if not documentacao.dados.aviso_publicidade:
             raise ValueError("Short de afiliado exige aviso de publicidade na ficha.")
         if not (documentacao.dados.marca or "").strip():
             raise ValueError("Short de afiliado exige a marca da loja na ficha.")
+    elif pedido.objetivo in {"educativo", "promocao_canal", "anuncio"} and pedido.produto is None:
+        if documentacao.dados.relacao_comercial != "nenhuma":
+            if pedido.objetivo == "educativo":
+                raise ValueError("Avulsos educativos não aceitam relação comercial declarada.")
+            raise ValueError("Este objetivo ainda não aceita relação comercial declarada.")
+        formulas_permitidas = {
+            "promocao_canal": {"curiosidade_1_fato"},
+            "anuncio": {"anuncio"},
+        }
+        permitidas = formulas_permitidas.get(pedido.objetivo)
+        if permitidas is not None and pedido.formula_id not in permitidas:
+            raise ValueError("Esta fórmula ainda não tem render seguro para o objetivo.")
+        if pedido.objetivo in {"promocao_canal", "anuncio"} and not documentacao.dados.fontes:
+            raise ValueError("Promoções de canal e anúncios exigem fonte da informação.")
     else:
         raise ValueError(
-            "Esta produção aceita avulsos educativos sem relação comercial "
-            "e shorts de afiliado com produto, aviso e marca confirmados."
+            "Esta produção aceita educativo, promoção do canal e anúncio sem relação "
+            "comercial, ou afiliado com produto, aviso e marca confirmados."
         )
     cta = " ".join((pedido.cta or "").split())
     texto = " ".join(aprovacao.texto.split())
@@ -156,9 +173,7 @@ def preparar_producao(
         "templates": calcular_hash_dados(
             KIT_REMOTION / "src" / "composicoes" / "ShortVertical.tsx"
         ),
-        "timeline": calcular_hash_dados(
-            KIT_REMOTION / "src" / "composicoes" / "ShortTimeline.tsx"
-        ),
+        "timeline": calcular_hash_dados(KIT_REMOTION / "src" / "composicoes" / "ShortTimeline.tsx"),
     }
     return PreparacaoAvulsa(
         campanha_id=campanha_id,
@@ -170,6 +185,8 @@ def preparar_producao(
         revisao=calcular_hash_dados(fontes),
         texto=texto,
         tema=pedido.tema,
+        objetivo=pedido.objetivo,
+        formula_id=pedido.formula_id,
         cta=cta,
         duracao_alvo_s=pedido.duracao_s,
         ids_imagens=[item.id_global for item in selecao.midias],
@@ -225,25 +242,46 @@ def _criar_cenas(
     hook = _gancho(preparacao.texto)
     if preparacao.produto is not None:
         return _cenas_afiliado(preparacao, palavras, imagens, duracao, hook)
+    cta_final = preparacao.objetivo in {"promocao_canal", "anuncio"}
+    inicio_cta = frames - min(75, frames) if cta_final else frames
     cenas: list[CenaRenderShort] = []
     inicio = 0
     numero = 0
-    while inicio < frames:
-        fim = min(frames, inicio + (2 * FPS if inicio == 0 else 75))
+    while inicio < inicio_cta:
+        fim = min(inicio_cta, inicio + (2 * FPS if inicio == 0 else 75))
         a, b = inicio / FPS, fim / FPS
-        cenas.append(CenaRenderShort(
-            id=f"cena-{numero:03d}",
-            inicio_frame=inicio,
-            duracao_frames=fim - inicio,
-            props=PropsCenaShort(
-                variante="V01" if numero == 0 else "V02",
-                titulo=hook if numero == 0 else "",
-                imagem=imagens[numero % len(imagens)],
-                legendas=_captions_remotion(palavras, a, b),
-            ),
-        ))
+        cenas.append(
+            CenaRenderShort(
+                id=f"cena-{numero:03d}",
+                inicio_frame=inicio,
+                duracao_frames=fim - inicio,
+                props=PropsCenaShort(
+                    variante="V01" if numero == 0 else "V02",
+                    titulo=hook if numero == 0 else "",
+                    imagem=imagens[numero % len(imagens)],
+                    legendas=_captions_remotion(palavras, a, b),
+                ),
+            )
+        )
         inicio = fim
         numero += 1
+    if cta_final:
+        cenas.append(
+            CenaRenderShort(
+                id=f"cena-{numero:03d}",
+                inicio_frame=inicio_cta,
+                duracao_frames=frames - inicio_cta,
+                props=PropsCenaShort(
+                    variante="V07",
+                    titulo="MAIS NO CANAL"
+                    if preparacao.objetivo == "promocao_canal"
+                    else "NOVIDADE",
+                    cta=preparacao.cta,
+                    imagem=imagens[numero % len(imagens)],
+                    legendas=_captions_remotion(palavras, inicio_cta / FPS, duracao),
+                ),
+            )
+        )
     return cenas
 
 
@@ -274,26 +312,30 @@ def _cenas_afiliado(
         cursor = fim
         indice += 1
     if fim_cartao > inicio_cartao:
-        blocos.append((
-            "V11",
-            inicio_cartao,
-            inicio_cartao + metade_cartao,
-            indice,
-            {"titulo": produto.nome, "itens": list(produto.beneficios[:2])},
-        ))
+        blocos.append(
+            (
+                "V11",
+                inicio_cartao,
+                inicio_cartao + metade_cartao,
+                indice,
+                {"titulo": produto.nome, "itens": list(produto.beneficios[:2])},
+            )
+        )
         indice += 1
-        blocos.append((
-            "V11",
-            inicio_cartao + metade_cartao,
-            fim_cartao,
-            indice,
-            {
-                "itens": list(produto.beneficios[2:]),
-                "condicao": produto.condicao or "",
-                "marca": produto.marca or "",
-                "aviso_publicidade": AVISO_PUBLICIDADE,
-            },
-        ))
+        blocos.append(
+            (
+                "V11",
+                inicio_cartao + metade_cartao,
+                fim_cartao,
+                indice,
+                {
+                    "itens": list(produto.beneficios[2:]),
+                    "condicao": produto.condicao or "",
+                    "marca": produto.marca or "",
+                    "aviso_publicidade": AVISO_PUBLICIDADE,
+                },
+            )
+        )
         indice += 1
         cursor = fim_cartao
     while cursor < inicio_cta - 0.01:
@@ -318,12 +360,14 @@ def _cenas_afiliado(
             imagem=imagens[indice_imagem % len(imagens)],
             legendas=_captions_remotion(palavras, inicio, fim),
         )
-        cenas.append(CenaRenderShort(
-            id=f"cena-{numero:03d}",
-            inicio_frame=frame_inicio,
-            duracao_frames=frame_fim - frame_inicio,
-            props=props,
-        ))
+        cenas.append(
+            CenaRenderShort(
+                id=f"cena-{numero:03d}",
+                inicio_frame=frame_inicio,
+                duracao_frames=frame_fim - frame_inicio,
+                props=props,
+            )
+        )
     return cenas
 
 
@@ -355,11 +399,15 @@ def produzir_avulso(
             id="avulso", texto_original=preparacao.texto, texto_limpo=preparacao.texto
         )
         with semaforo_gpu.adquirir_sync(
-            modelo="kokoro", tarefa=f"M8 avulso {preparacao.pedido_id}",
+            modelo="kokoro",
+            tarefa=f"M8 avulso {preparacao.pedido_id}",
             projeto=preparacao.campanha_id,
         ):
             narracao = orquestrador.processar_projeto_completo(
-                [segmento], work / "audio", idioma="pt-BR", voz=preparacao.voz,
+                [segmento],
+                work / "audio",
+                idioma="pt-BR",
+                voz=preparacao.voz,
                 gerar_timestamps_estimados=False,
             )
         if narracao.wer_medio is None or narracao.wer_medio > 0.02:
@@ -374,7 +422,9 @@ def produzir_avulso(
         duracao = narracao.duracao_total_s
         palavras = _palavras(narracao.arquivo_palavras_json, {"avulso"}, 0, duracao)
         loudness, _ = _mixar_audio(
-            narracao.arquivo_completo_wav, public / "audio.wav", None,
+            narracao.arquivo_completo_wav,
+            public / "audio.wav",
+            None,
             work / "sem_relatorio_longo.json",
         )
         cenas = _criar_cenas(preparacao, palavras, imagens, duracao)
@@ -398,36 +448,43 @@ def produzir_avulso(
             elementos.append(
                 ElementoTelaShort(id="cartao-produto", x=0.08, y=0.18, largura=0.78, altura=0.40)
             )
-            elementos.append(
-                ElementoTelaShort(id="cta", x=0.08, y=0.18, largura=0.78, altura=0.40)
-            )
-            textos_tela.extend(
-                [produto.nome, *produto.beneficios, produto.condicao or ""]
-            )
+            elementos.append(ElementoTelaShort(id="cta", x=0.08, y=0.18, largura=0.78, altura=0.40))
+            textos_tela.extend([produto.nome, *produto.beneficios, produto.condicao or ""])
             textos_tela.extend([produto.marca or "", AVISO_PUBLICIDADE, preparacao.cta])
-        qa = verificar_short(ShortParaVerificar(
-            duracao_s=duracao,
-            duracao_alvo_s=float(preparacao.duracao_alvo_s),
-            inicio_gancho_visual_s=0,
-            inicio_gancho_textual_s=0,
-            inicio_gancho_falado_s=float(palavras[0]["start"]),
-            mudancas_visuais_s=[c.inicio_frame / FPS for c in cenas[1:]],
-            elementos=elementos,
-            legendas=_intervalos_legenda(palavras),
-            textos_tela=[texto for texto in textos_tela if texto],
-            quantidade_ctas_principais=len(
-                re.findall(re.escape(preparacao.cta), preparacao.texto, re.I)
-            ),
-            audio_lufs_integrado=loudness_entregue if loudness_entregue is not None else loudness,
-            musica_cobre_voz=False,
-            musica_ausente=True,
-        ))
-        selecao = obter_selecao_midias(
-            raiz_projetos, preparacao.campanha_id, preparacao.pedido_id
+        elif preparacao.objetivo in {"promocao_canal", "anuncio"}:
+            elementos.append(ElementoTelaShort(id="cta", x=0.08, y=0.18, largura=0.78, altura=0.40))
+            textos_tela.extend(
+                [
+                    "MAIS NO CANAL" if preparacao.objetivo == "promocao_canal" else "NOVIDADE",
+                    preparacao.cta,
+                ]
+            )
+        qa = verificar_short(
+            ShortParaVerificar(
+                duracao_s=duracao,
+                duracao_alvo_s=float(preparacao.duracao_alvo_s),
+                inicio_gancho_visual_s=0,
+                inicio_gancho_textual_s=0,
+                inicio_gancho_falado_s=float(palavras[0]["start"]),
+                mudancas_visuais_s=[c.inicio_frame / FPS for c in cenas[1:]],
+                elementos=elementos,
+                legendas=_intervalos_legenda(palavras),
+                textos_tela=[texto for texto in textos_tela if texto],
+                quantidade_ctas_principais=len(
+                    re.findall(re.escape(preparacao.cta), preparacao.texto, re.I)
+                ),
+                audio_lufs_integrado=loudness_entregue
+                if loudness_entregue is not None
+                else loudness,
+                musica_cobre_voz=False,
+                musica_ausente=True,
+            )
         )
+        selecao = obter_selecao_midias(raiz_projetos, preparacao.campanha_id, preparacao.pedido_id)
         assert selecao is not None
         metadados = {
-            "status": "rascunho", "publicacao_autorizada": False,
+            "status": "rascunho",
+            "publicacao_autorizada": False,
             "motivo_publicacao_bloqueada": (
                 "Alegações sem verificação externa e revisão humana final pendente."
             ),
@@ -435,6 +492,8 @@ def produzir_avulso(
             "pedido_id": preparacao.pedido_id,
             "revisao": preparacao.revisao,
             "tema": preparacao.tema,
+            "objetivo": preparacao.objetivo,
+            "formula_id": preparacao.formula_id,
             "cta": preparacao.cta,
             "duracao_s": duracao,
             "wer": narracao.wer_medio,
@@ -524,18 +583,22 @@ def produzir_avulso(
 def executar_producao_background(
     raiz_projetos: Path, raiz_global: Path, preparacao: PreparacaoAvulsa
 ) -> None:
-    estado = _pasta_saida(
-        raiz_projetos, preparacao.campanha_id, preparacao.pedido_id
-    ) / "producao_atual.json"
+    estado = (
+        _pasta_saida(raiz_projetos, preparacao.campanha_id, preparacao.pedido_id)
+        / "producao_atual.json"
+    )
     try:
-        if preparar_producao(
-            raiz_projetos, raiz_global, preparacao.campanha_id, preparacao.pedido_id
-        ) != preparacao:
+        if (
+            preparar_producao(
+                raiz_projetos, raiz_global, preparacao.campanha_id, preparacao.pedido_id
+            )
+            != preparacao
+        ):
             raise ValueError("As aprovações mudaram antes de iniciar; recarregue a campanha.")
         atomic_write_json(estado, {"status": "executando", "revisao": preparacao.revisao})
         resultado = produzir_avulso(raiz_projetos, raiz_global, preparacao)
         atomic_write_json(estado, resultado)
     except Exception as exc:
-        atomic_write_json(estado, {
-            "status": "falhou", "revisao": preparacao.revisao, "erro": str(exc)
-        })
+        atomic_write_json(
+            estado, {"status": "falhou", "revisao": preparacao.revisao, "erro": str(exc)}
+        )

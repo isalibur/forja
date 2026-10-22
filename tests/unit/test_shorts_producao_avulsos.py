@@ -23,18 +23,31 @@ from docforja.shorts.verificador import verificar_short
 
 
 def _campanha_pronta(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, comercial: bool = False,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    comercial: bool = False,
     roteiro: str = "Uma cena histórica. Veja a cena.",
+    objetivo: str = "educativo",
+    formula_id: str = "",
+    cta: str = "Veja a cena",
 ) -> tuple[TestClient, Path, Path, str, str]:
     projetos = tmp_path / "projetos"
     global_ = tmp_path / "global"
     imagens = global_ / "imagens"
     imagens.mkdir(parents=True)
     (imagens / "cena.png").write_bytes(b"imagem-de-teste")
-    (imagens / "cena.json").write_text(json.dumps({
-        "arquivo": "cena.png", "descricao": "Cena genérica", "licenca": "CC0-1.0",
-        "comercial": True,
-    }), encoding="utf-8")
+    (imagens / "cena.json").write_text(
+        json.dumps(
+            {
+                "arquivo": "cena.png",
+                "descricao": "Cena genérica",
+                "licenca": "CC0-1.0",
+                "comercial": True,
+            }
+        ),
+        encoding="utf-8",
+    )
 
     def settings() -> object:
         return type("Settings", (), {"paths": type("Paths", (), {"projects": projetos})()})()
@@ -43,33 +56,48 @@ def _campanha_pronta(
     monkeypatch.setattr("docforja.api.obter_pasta_global", lambda: global_)
     monkeypatch.setattr("docforja.shorts.producao_avulsos._voz_ptbr", lambda: "pm_alex")
     client = TestClient(app)
-    csv = (
-        "tema,objetivo,duracao_s,roteiro,cta\n"
-        "Cena,educativo,30,,Veja a cena\n"
-    )
+    csv = f"tema,objetivo,duracao_s,formula,roteiro,cta\nCena,{objetivo},30,{formula_id},,{cta}\n"
     campanha = client.post(
         "/api/shorts/avulsos/campanhas", json={"nome": "Teste", "csv_texto": csv}
     ).json()
     base = f"/api/shorts/avulsos/campanhas/{campanha['id']}/pedidos/A001"
-    aprovacao = client.post(f"{base}/roteiro/aprovar", json={
-        "texto": roteiro,
-        "hash_campanha": campanha["hash_conteudo"],
-    }).json()
-    selecao = client.post(f"{base}/midias/selecionar", json={
-        "ids_globais": ["global:imagens:cena"],
-        "hash_campanha": campanha["hash_conteudo"],
-        "revisao_roteiro": aprovacao["revisao"],
-    }).json()
-    ficha = client.post(f"{base}/alegacoes/registrar", json={
-        "hash_campanha": campanha["hash_conteudo"],
-        "revisao_roteiro": aprovacao["revisao"],
-        "revisao_midias": selecao["revisao"],
-        "dados": {
-            "sem_alegacoes_verificaveis": True,
-            "revisado_pelo_usuario": True,
-            "relacao_comercial": "produto_proprio" if comercial else "nenhuma",
+    aprovacao = client.post(
+        f"{base}/roteiro/aprovar",
+        json={
+            "texto": roteiro,
+            "hash_campanha": campanha["hash_conteudo"],
         },
-    })
+    ).json()
+    selecao = client.post(
+        f"{base}/midias/selecionar",
+        json={
+            "ids_globais": ["global:imagens:cena"],
+            "hash_campanha": campanha["hash_conteudo"],
+            "revisao_roteiro": aprovacao["revisao"],
+        },
+    ).json()
+    dados_alegacoes: dict[str, object] = {
+        "revisado_pelo_usuario": True,
+        "relacao_comercial": "produto_proprio" if comercial else "nenhuma",
+    }
+    if objetivo in {"promocao_canal", "anuncio"}:
+        dados_alegacoes["fontes"] = [
+            {
+                "alegacao": "Informação sintética para ensaio de produção.",
+                "fonte": "Plano fictício do teste unitário.",
+            }
+        ]
+    else:
+        dados_alegacoes["sem_alegacoes_verificaveis"] = True
+    ficha = client.post(
+        f"{base}/alegacoes/registrar",
+        json={
+            "hash_campanha": campanha["hash_conteudo"],
+            "revisao_roteiro": aprovacao["revisao"],
+            "revisao_midias": selecao["revisao"],
+            "dados": dados_alegacoes,
+        },
+    )
     assert ficha.status_code == 200
     return client, projetos, global_, campanha["id"], base
 
@@ -96,13 +124,65 @@ def test_producao_exige_codigo_e_revisoes_vigentes(
     assert client.post(f"{base}/produzir", json={"codigo": "PRODUZIR"}).status_code == 409
 
 
-def test_avulso_comercial_e_bloqueado(
+def test_avulso_comercial_e_bloqueado(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _, projetos, global_, campanha_id, _ = _campanha_pronta(tmp_path, monkeypatch, comercial=True)
+    with pytest.raises(ValueError, match="educativos"):
+        preparar_producao(projetos, global_, campanha_id, "A001")
+
+
+@pytest.mark.parametrize(
+    ("objetivo", "formula_id", "titulo_cta"),
+    [
+        ("promocao_canal", "curiosidade_1_fato", "MAIS NO CANAL"),
+        ("anuncio", "anuncio", "NOVIDADE"),
+    ],
+)
+def test_objetivos_nao_comerciais_usam_cartao_final_sem_duplicar_cta(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    objetivo: str,
+    formula_id: str,
+    titulo_cta: str,
+) -> None:
+    _, projetos, global_, campanha_id, _ = _campanha_pronta(
+        tmp_path,
+        monkeypatch,
+        roteiro="Uma informação de teste. Veja a cena.",
+        objetivo=objetivo,
+        formula_id=formula_id,
+    )
+
+    preparo = preparar_producao(projetos, global_, campanha_id, "A001")
+    cenas = _criar_cenas(preparo, [], ["ativos/cena.png"], 30.0)
+
+    assert preparo.objetivo == objetivo
+    assert preparo.formula_id == formula_id
+    assert cenas[0].props.variante == "V01"
+    assert cenas[-1].props.variante == "V07"
+    assert cenas[-1].props.titulo == titulo_cta
+    assert [cena.props.cta for cena in cenas].count("Veja a cena") == 1
+    assert all(cena.duracao_frames <= 75 for cena in cenas[1:])
+
+
+def test_objetivo_sem_cenas_apropriadas_continua_bloqueado(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _, projetos, global_, campanha_id, _ = _campanha_pronta(
-        tmp_path, monkeypatch, comercial=True
+        tmp_path, monkeypatch, objetivo="engajamento", formula_id="pergunta_comentarios"
     )
-    with pytest.raises(ValueError, match="educativos"):
+
+    with pytest.raises(ValueError, match="Esta produção aceita"):
+        preparar_producao(projetos, global_, campanha_id, "A001")
+
+
+def test_teaser_sem_video_longo_relacionado_nao_e_liberado(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, projetos, global_, campanha_id, _ = _campanha_pronta(
+        tmp_path, monkeypatch, objetivo="promocao_canal", formula_id="teaser_video"
+    )
+
+    with pytest.raises(ValueError, match="render seguro"):
         preparar_producao(projetos, global_, campanha_id, "A001")
 
 
@@ -125,9 +205,7 @@ def test_gancho_usa_primeira_frase_completa_quando_cabe_em_seis_palavras() -> No
     )
 
 
-def test_cenas_e_ds9_avulso_sem_musica(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_cenas_e_ds9_avulso_sem_musica(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _, projetos, global_, campanha_id, _ = _campanha_pronta(tmp_path, monkeypatch)
     preparo = preparar_producao(projetos, global_, campanha_id, "A001")
     palavras = [{"text": "Veja", "start": 0.0, "end": 0.5}]
@@ -135,22 +213,39 @@ def test_cenas_e_ds9_avulso_sem_musica(
     assert cenas[0].props.variante == "V01"
     assert all(cena.duracao_frames <= 75 for cena in cenas[1:])
     assert len(cenas) == 3
-    qa = verificar_short(ShortParaVerificar(
-        duracao_s=30, duracao_alvo_s=30,
-        inicio_gancho_visual_s=0, inicio_gancho_textual_s=0, inicio_gancho_falado_s=0,
-        mudancas_visuais_s=[2.5 * n for n in range(1, 12)],
-        possui_fala=False, quantidade_ctas_principais=1,
-        audio_lufs_integrado=-14.0, musica_cobre_voz=False,
-    ))
+    qa = verificar_short(
+        ShortParaVerificar(
+            duracao_s=30,
+            duracao_alvo_s=30,
+            inicio_gancho_visual_s=0,
+            inicio_gancho_textual_s=0,
+            inicio_gancho_falado_s=0,
+            mudancas_visuais_s=[2.5 * n for n in range(1, 12)],
+            possui_fala=False,
+            quantidade_ctas_principais=1,
+            audio_lufs_integrado=-14.0,
+            musica_cobre_voz=False,
+        )
+    )
     assert next(item for item in qa.violacoes if item.regra == "DS9").aprovada
     with pytest.raises(ValueError, match="Artefato"):
         obter_artefato(projetos, global_, campanha_id, "A001", "../segredo")
 
 
+@pytest.mark.parametrize(
+    ("objetivo", "formula_id"),
+    [
+        ("educativo", ""),
+        ("promocao_canal", "curiosidade_1_fato"),
+        ("anuncio", "anuncio"),
+    ],
+)
 def test_producao_piloto_publica_revisao_ou_usa_cache_sem_rederivar(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, objetivo: str, formula_id: str
 ) -> None:
-    _, projetos, global_, campanha_id, _ = _campanha_pronta(tmp_path, monkeypatch)
+    _, projetos, global_, campanha_id, _ = _campanha_pronta(
+        tmp_path, monkeypatch, objetivo=objetivo, formula_id=formula_id
+    )
     preparo = preparar_producao(projetos, global_, campanha_id, "A001")
     chamadas = {"render": 0}
 
@@ -165,22 +260,29 @@ def test_producao_piloto_publica_revisao_ou_usa_cache_sem_rederivar(
             audio = pasta / "voz.wav"
             audio.write_bytes(b"wav-simulado")
             palavras = pasta / "palavras.json"
-            palavras.write_text(json.dumps([
-                {"segmento_id": "avulso", "palavra": "Veja", "inicio_s": 0, "fim_s": 15},
-                {"segmento_id": "avulso", "palavra": "a cena", "inicio_s": 15,
-                 "fim_s": 30},
-            ]), encoding="utf-8")
+            palavras.write_text(
+                json.dumps(
+                    [
+                        {"segmento_id": "avulso", "palavra": "Veja", "inicio_s": 0, "fim_s": 15},
+                        {"segmento_id": "avulso", "palavra": "a cena", "inicio_s": 15, "fim_s": 30},
+                    ]
+                ),
+                encoding="utf-8",
+            )
             return SimpleNamespace(
-                wer_medio=0.0, duracao_total_s=30.0,
-                arquivo_completo_wav=audio, arquivo_palavras_json=palavras,
+                wer_medio=0.0,
+                duracao_total_s=30.0,
+                arquivo_completo_wav=audio,
+                arquivo_palavras_json=palavras,
             )
 
     def mixar(_voz: Path, destino: Path, _trilha: object, _relatorio: Path) -> tuple[float, None]:
         destino.write_bytes(b"mix-simulado")
         return -14.0, None
 
-    def renderizar(_composicao: str, _props: Path, _public: Path, destino: Path,
-                   *, still: bool = False) -> None:
+    def renderizar(
+        _composicao: str, _props: Path, _public: Path, destino: Path, *, still: bool = False
+    ) -> None:
         chamadas["render"] += 1
         destino.write_bytes(b"capa" if still else b"video")
 
@@ -205,6 +307,8 @@ def test_producao_piloto_publica_revisao_ou_usa_cache_sem_rederivar(
     saida = projetos / "_campanhas_avulsas" / campanha_id / "saidas" / "A001"
     meta = json.loads((saida / "revisoes" / preparo.revisao / "metadados.json").read_text())
     assert meta["publicacao_autorizada"] is False
+    assert meta["objetivo"] == objetivo
+    assert meta["formula_id"] == preparo.formula_id
     assert meta["fontes"]["roteiro"] == preparo.revisao_roteiro
     ds9 = next(item for item in meta["qa"]["violacoes"] if item["regra"] == "DS9")
     assert ds9["aprovada"] is True
