@@ -33,6 +33,7 @@ benchmark_out/
 *.gguf
 *.ckpt
 *.pth
+*.pt
 *.onnx
 
 # sistema
