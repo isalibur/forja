@@ -4,6 +4,7 @@ import { PropsT05Comparacao } from "../schemas/templates";
 import { tokens } from "../tokens";
 import { easingMovimento } from "../utilitarios/animacoes";
 import { TexturaFilme } from "../utilitarios/TexturaFilme";
+import { MARGEM_DIREITA_VERTICAL, useFormatoVertical, useSafeArea } from "../utilitarios/SafeArea";
 
 export const T05_Comparacao: React.FC<PropsT05Comparacao> = ({
   src_a,
@@ -12,6 +13,8 @@ export const T05_Comparacao: React.FC<PropsT05Comparacao> = ({
   rotulo_b = "DEPOIS",
   modo = "divisor",
 }) => {
+  const area = useSafeArea();
+  const vertical = useFormatoVertical();
   const frame = useCurrentFrame();
   const { durationInFrames, width } = useVideoConfig();
 
@@ -83,8 +86,8 @@ export const T05_Comparacao: React.FC<PropsT05Comparacao> = ({
       <div
         style={{
           position: "absolute",
-          top: `${tokens.safeArea.y * 100}%`,
-          left: `${tokens.safeArea.x * 100}%`,
+          top: `${area.y * 100}%`,
+          left: `${area.x * 100}%`,
           fontFamily: tokens.font.data.family,
           fontSize: `${14 * escala}px`,
           fontWeight: 700,
@@ -102,8 +105,8 @@ export const T05_Comparacao: React.FC<PropsT05Comparacao> = ({
       <div
         style={{
           position: "absolute",
-          top: `${tokens.safeArea.y * 100}%`,
-          right: `${tokens.safeArea.x * 100}%`,
+          top: `${area.y * 100}%`,
+          right: `${(vertical ? MARGEM_DIREITA_VERTICAL : area.x) * 100}%`,
           fontFamily: tokens.font.data.family,
           fontSize: `${14 * escala}px`,
           fontWeight: 700,

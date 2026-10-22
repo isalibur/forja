@@ -3,6 +3,7 @@ import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { PropsO3Contexto } from "../schemas/sobreposicoes";
 import { tokens } from "../tokens";
 import { animarEntrada, animarSaida } from "../utilitarios/animacoes";
+import { useSafeArea } from "../utilitarios/SafeArea";
 
 export const O3_Contexto: React.FC<PropsO3Contexto> = ({
   dia = 1,
@@ -11,6 +12,7 @@ export const O3_Contexto: React.FC<PropsO3Contexto> = ({
   progresso = 0.15,
   aproximado = true,
 }) => {
+  const area = useSafeArea();
   const frame = useCurrentFrame();
   const { durationInFrames, width } = useVideoConfig();
 
@@ -27,8 +29,8 @@ export const O3_Contexto: React.FC<PropsO3Contexto> = ({
       style={{
         pointerEvents: "none",
         zIndex: 48,
-        paddingLeft: `${tokens.safeArea.x * 100}%`,
-        paddingTop: `${tokens.safeArea.y * 100}%`,
+        paddingLeft: `${area.x * 100}%`,
+        paddingTop: `${area.y * 100}%`,
         display: "flex",
         flexDirection: "column",
         justifyContent: "flex-start",

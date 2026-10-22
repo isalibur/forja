@@ -5,12 +5,14 @@ import { tokens } from "../tokens";
 import { animarEntrada } from "../utilitarios/animacoes";
 import { useMarca } from "../utilitarios/marca";
 import { TexturaFilme } from "../utilitarios/TexturaFilme";
+import { useSafeArea } from "../utilitarios/SafeArea";
 
 export const T14_Encerramento: React.FC<PropsT14Encerramento> = ({
   titulo = "DOCFORJA",
   creditos = [],
   mostrar_espaco_youtube = true,
 }) => {
+  const area = useSafeArea();
   const frame = useCurrentFrame();
   const { width } = useVideoConfig();
   const marca = useMarca();
@@ -27,7 +29,7 @@ export const T14_Encerramento: React.FC<PropsT14Encerramento> = ({
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        padding: `${tokens.safeArea.y * 100}% ${tokens.safeArea.x * 100}%`,
+        padding: `${area.y * 100}% ${area.x * 100}%`,
         boxSizing: "border-box",
       }}
     >

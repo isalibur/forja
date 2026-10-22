@@ -4,12 +4,15 @@ import { PropsT11LinhaDoTempo } from "../schemas/templates";
 import { tokens } from "../tokens";
 import { animarEntrada, easingMovimento } from "../utilitarios/animacoes";
 import { TexturaFilme } from "../utilitarios/TexturaFilme";
+import { useSafeArea, useFormatoVertical } from "../utilitarios/SafeArea";
 
 export const T11_LinhaDoTempo: React.FC<PropsT11LinhaDoTempo> = ({
   titulo = "CRONOLOGIA DOS EVENTOS",
   eventos,
   indice_ativo = 0,
 }) => {
+  const area = useSafeArea();
+  const vertical = useFormatoVertical();
   const frame = useCurrentFrame();
   const { durationInFrames, width } = useVideoConfig();
 
@@ -28,6 +31,126 @@ export const T11_LinhaDoTempo: React.FC<PropsT11LinhaDoTempo> = ({
     }
   );
 
+  if (vertical) {
+    return (
+      <AbsoluteFill
+        style={{
+          backgroundColor: tokens.color.ink,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          paddingTop: `${area.y * 100}%`,
+          paddingBottom: `${area.title * 100}%`,
+          paddingLeft: `${area.x * 100}%`,
+          paddingRight: `${area.x * 100}%`,
+        }}
+      >
+        <div
+          style={{
+            opacity: entrada,
+            fontFamily: tokens.font.title.family,
+            fontSize: `${34 * escala}px`,
+            fontWeight: 600,
+            color: tokens.color.bone,
+            letterSpacing: tokens.font.title.tracking,
+            textTransform: "uppercase",
+            marginBottom: `${28 * escala}px`,
+          }}
+        >
+          {titulo}
+        </div>
+
+        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: `${22 * escala}px` }}>
+          <div
+            style={{
+              position: "absolute",
+              left: `${8 * escala}px`,
+              top: 0,
+              bottom: 0,
+              width: `${2 * escala}px`,
+              backgroundColor: "rgba(110, 106, 102, 0.4)",
+            }}
+          />
+          {eventos.map((ev, idx) => {
+            const isAtivo = idx === indice_ativo;
+            return (
+              <div
+                key={idx}
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  gap: `${20 * escala}px`,
+                  opacity: isAtivo ? 1 : 0.55,
+                }}
+              >
+                <div
+                  style={{
+                    width: `${18 * escala}px`,
+                    height: `${18 * escala}px`,
+                    borderRadius: "50%",
+                    backgroundColor: isAtivo ? tokens.color.ember : tokens.color.ash,
+                    border: `${3 * escala}px solid ${tokens.color.ink}`,
+                    boxShadow: isAtivo ? `0 0 12px ${tokens.color.ember}` : undefined,
+                    marginTop: `${4 * escala}px`,
+                    flexShrink: 0,
+                    zIndex: 2,
+                  }}
+                />
+                <div style={{ display: "flex", flexDirection: "column", gap: `${6 * escala}px` }}>
+                  {ev.src_ativo && (
+                    <div
+                      style={{
+                        width: "100%",
+                        maxWidth: `${520 * escala}px`,
+                        aspectRatio: "16 / 9",
+                        backgroundColor: tokens.color.basalt,
+                        borderRadius: "4px",
+                        overflow: "hidden",
+                        border: `1px solid ${isAtivo ? tokens.color.ember : "rgba(110, 106, 102, 0.4)"}`,
+                        boxShadow: "0 10px 24px rgba(0,0,0,0.7)",
+                      }}
+                    >
+                      <Img
+                        src={ev.src_ativo}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    </div>
+                  )}
+                  <div
+                    style={{
+                      fontFamily: tokens.font.data.family,
+                      fontSize: `${30 * escala}px`,
+                      fontWeight: 700,
+                      color: isAtivo ? tokens.color.ochre : tokens.color.bone,
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    {ev.data}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: tokens.font.body.family,
+                      fontSize: `${24 * escala}px`,
+                      color: tokens.color.ashLight,
+                      textAlign: "left",
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {ev.rotulo}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <TexturaFilme />
+      </AbsoluteFill>
+    );
+  }
+
   return (
     <AbsoluteFill
       style={{
@@ -42,8 +165,8 @@ export const T11_LinhaDoTempo: React.FC<PropsT11LinhaDoTempo> = ({
       <div
         style={{
           position: "absolute",
-          top: `${tokens.safeArea.y * 100}%`,
-          left: `${tokens.safeArea.x * 100}%`,
+          top: `${area.y * 100}%`,
+          left: `${area.x * 100}%`,
           opacity: entrada,
           fontFamily: tokens.font.title.family,
           fontSize: `${22 * escala}px`,

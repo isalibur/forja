@@ -4,6 +4,7 @@ import { PropsT10Mapa } from "../schemas/templates";
 import { tokens } from "../tokens";
 import { animarEntrada, easingEntrada, easingMovimento } from "../utilitarios/animacoes";
 import { TexturaFilme } from "../utilitarios/TexturaFilme";
+import { useSafeArea } from "../utilitarios/SafeArea";
 
 export const T10_Mapa: React.FC<PropsT10Mapa> = ({
   regiao = "BAÍA DE NÁPOLES · CAMPÂNIA 79 d.C.",
@@ -35,6 +36,7 @@ export const T10_Mapa: React.FC<PropsT10Mapa> = ({
   ],
   rotulo_costa = "LINHA DE COSTA APROXIMADA DE 79 d.C.",
 }) => {
+  const area = useSafeArea();
   const frame = useCurrentFrame();
   const { durationInFrames, width } = useVideoConfig();
 
@@ -187,8 +189,8 @@ export const T10_Mapa: React.FC<PropsT10Mapa> = ({
       <div
         style={{
           position: "absolute",
-          top: `${tokens.safeArea.y * 100}%`,
-          left: `${tokens.safeArea.x * 100}%`,
+          top: `${area.y * 100}%`,
+          left: `${area.x * 100}%`,
           opacity: entrada,
           fontFamily: tokens.font.data.family,
           fontSize: `${16 * escala}px`,
@@ -210,8 +212,8 @@ export const T10_Mapa: React.FC<PropsT10Mapa> = ({
       <div
         style={{
           position: "absolute",
-          bottom: `${tokens.safeArea.y * 100}%`,
-          right: `${tokens.safeArea.x * 100}%`,
+          bottom: `${area.y * 100}%`,
+          right: `${area.x * 100}%`,
           fontFamily: tokens.font.data.family,
           fontSize: `${12 * escala}px`,
           color: tokens.color.ashLight,

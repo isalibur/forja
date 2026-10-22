@@ -5,6 +5,7 @@ import { tokens } from "../tokens";
 import { animarEntrada, easingEntrada } from "../utilitarios/animacoes";
 import { AutoAjusteTexto } from "../utilitarios/AutoAjusteTexto";
 import { TexturaFilme } from "../utilitarios/TexturaFilme";
+import { useSafeArea } from "../utilitarios/SafeArea";
 
 export const T07_Citacao: React.FC<PropsT07Citacao> = ({
   texto,
@@ -12,6 +13,7 @@ export const T07_Citacao: React.FC<PropsT07Citacao> = ({
   fonte,
   estilo = "papel",
 }) => {
+  const area = useSafeArea();
   const frame = useCurrentFrame();
   const { width } = useVideoConfig();
 
@@ -55,7 +57,7 @@ export const T07_Citacao: React.FC<PropsT07Citacao> = ({
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        padding: `${tokens.safeArea.y * 100}% ${tokens.safeArea.x * 100}%`,
+        padding: `${area.y * 100}% ${area.x * 100}%`,
       }}
     >
       {/* Documento / Papiro central */}

@@ -77,6 +77,7 @@ export interface TokensKit {
   font: TokenFontes;
   size4k: TokenTamanhos4k;
   safeArea: TokenSafeArea;
+  safeAreaVertical: TokenSafeArea;
   easing: TokenEasings;
   durationFrames: TokenDuracoes;
   texture: TokenTexturas;

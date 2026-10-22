@@ -2,11 +2,13 @@ import React from "react";
 import { AbsoluteFill, useVideoConfig } from "remotion";
 import { PropsO2Rotulo } from "../schemas/sobreposicoes";
 import { tokens } from "../tokens";
+import { useSafeArea } from "../utilitarios/SafeArea";
 
 export const O2_Rotulo: React.FC<PropsO2Rotulo> = ({
   tipo = "reconstituicao",
   texto,
 }) => {
+  const area = useSafeArea();
   const { width } = useVideoConfig();
   const escala = width / 1920;
 
@@ -24,8 +26,8 @@ export const O2_Rotulo: React.FC<PropsO2Rotulo> = ({
     conteudoTexto = texto;
   }
 
-  const paddingX = tokens.safeArea.x * 100;
-  const paddingY = tokens.safeArea.y * 100;
+  const paddingX = area.x * 100;
+  const paddingY = area.y * 100;
 
   return (
     <AbsoluteFill

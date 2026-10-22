@@ -5,12 +5,14 @@ import { PropsT09Grafico } from "../schemas/templates";
 import { tokens } from "../tokens";
 import { animarEntrada, easingEntrada } from "../utilitarios/animacoes";
 import { TexturaFilme } from "../utilitarios/TexturaFilme";
+import { useSafeArea } from "../utilitarios/SafeArea";
 
 export const T09_Grafico: React.FC<PropsT09Grafico> = ({
   tipo = "escala",
   titulo,
   dados,
 }) => {
+  const area = useSafeArea();
   const frame = useCurrentFrame();
   const { width } = useVideoConfig();
 
@@ -40,7 +42,7 @@ export const T09_Grafico: React.FC<PropsT09Grafico> = ({
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        padding: `${tokens.safeArea.y * 100}% ${tokens.safeArea.x * 100}%`,
+        padding: `${area.y * 100}% ${area.x * 100}%`,
       }}
     >
       <div

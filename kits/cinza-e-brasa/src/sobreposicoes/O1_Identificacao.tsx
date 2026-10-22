@@ -3,11 +3,13 @@ import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { PropsO1Identificacao } from "../schemas/sobreposicoes";
 import { tokens } from "../tokens";
 import { animarEntrada, animarSaida } from "../utilitarios/animacoes";
+import { useSafeArea } from "../utilitarios/SafeArea";
 
 export const O1_Identificacao: React.FC<PropsO1Identificacao> = ({
   nome,
   descricao,
 }) => {
+  const area = useSafeArea();
   const frame = useCurrentFrame();
   const { durationInFrames, width } = useVideoConfig();
 
@@ -24,8 +26,8 @@ export const O1_Identificacao: React.FC<PropsO1Identificacao> = ({
       style={{
         pointerEvents: "none",
         zIndex: 50,
-        paddingLeft: `${tokens.safeArea.x * 100}%`,
-        paddingBottom: `${tokens.safeArea.y * 100}%`,
+        paddingLeft: `${area.x * 100}%`,
+        paddingBottom: `${area.y * 100}%`,
         display: "flex",
         flexDirection: "column",
         justifyContent: "flex-end",

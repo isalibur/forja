@@ -5,6 +5,7 @@ import { tokens } from "../tokens";
 import { animarEntrada, easingEntrada } from "../utilitarios/animacoes";
 import { AutoAjusteTexto } from "../utilitarios/AutoAjusteTexto";
 import { TexturaFilme } from "../utilitarios/TexturaFilme";
+import { useSafeArea } from "../utilitarios/SafeArea";
 
 export const T06_TextoImpacto: React.FC<PropsT06TextoImpacto> = ({
   texto,
@@ -12,6 +13,7 @@ export const T06_TextoImpacto: React.FC<PropsT06TextoImpacto> = ({
   src_fundo,
   fundo_escuro = true,
 }) => {
+  const area = useSafeArea();
   const frame = useCurrentFrame();
   const { width } = useVideoConfig();
 
@@ -32,7 +34,7 @@ export const T06_TextoImpacto: React.FC<PropsT06TextoImpacto> = ({
     extrapolateRight: "clamp",
   });
 
-  const larguraMaximaTexto = width * (1 - tokens.safeArea.x * 2);
+  const larguraMaximaTexto = width * (1 - area.x * 2);
 
   return (
     <AbsoluteFill style={{ backgroundColor: tokens.color.ink, overflow: "hidden" }}>
@@ -60,7 +62,7 @@ export const T06_TextoImpacto: React.FC<PropsT06TextoImpacto> = ({
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          padding: `${tokens.safeArea.y * 100}% ${tokens.safeArea.x * 100}%`,
+          padding: `${area.y * 100}% ${area.x * 100}%`,
         }}
       >
         <div

@@ -5,11 +5,13 @@ import { tokens } from "../tokens";
 import { animarEntrada, easingEntrada } from "../utilitarios/animacoes";
 import { AutoAjusteTexto } from "../utilitarios/AutoAjusteTexto";
 import { TexturaFilme } from "../utilitarios/TexturaFilme";
+import { useSafeArea } from "../utilitarios/SafeArea";
 
 export const T13_Abertura: React.FC<PropsT13Abertura> = ({
   titulo,
   subtitulo,
 }) => {
+  const area = useSafeArea();
   const frame = useCurrentFrame();
   const { width } = useVideoConfig();
 
@@ -23,7 +25,7 @@ export const T13_Abertura: React.FC<PropsT13Abertura> = ({
     extrapolateRight: "clamp",
   });
 
-  const larguraMaxima = width * (1 - tokens.safeArea.x * 2);
+  const larguraMaxima = width * (1 - area.x * 2);
 
   return (
     <AbsoluteFill
@@ -32,7 +34,7 @@ export const T13_Abertura: React.FC<PropsT13Abertura> = ({
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        padding: `${tokens.safeArea.y * 100}% ${tokens.safeArea.x * 100}%`,
+        padding: `${area.y * 100}% ${area.x * 100}%`,
       }}
     >
       <div

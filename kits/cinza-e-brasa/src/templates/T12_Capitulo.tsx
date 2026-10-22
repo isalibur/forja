@@ -5,18 +5,20 @@ import { tokens } from "../tokens";
 import { animarEntrada } from "../utilitarios/animacoes";
 import { AutoAjusteTexto } from "../utilitarios/AutoAjusteTexto";
 import { TexturaFilme } from "../utilitarios/TexturaFilme";
+import { useSafeArea } from "../utilitarios/SafeArea";
 
 export const T12_Capitulo: React.FC<PropsT12Capitulo> = ({
   numero,
   titulo,
   subtitulo,
 }) => {
+  const area = useSafeArea();
   const frame = useCurrentFrame();
   const { width } = useVideoConfig();
 
   const escala = width / 1920;
   const entrada = animarEntrada(frame, tokens.durationFrames.enter);
-  const larguraMaxima = width * (1 - tokens.safeArea.x * 2);
+  const larguraMaxima = width * (1 - area.x * 2);
 
   return (
     <AbsoluteFill
@@ -25,7 +27,7 @@ export const T12_Capitulo: React.FC<PropsT12Capitulo> = ({
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        padding: `${tokens.safeArea.y * 100}% ${tokens.safeArea.x * 100}%`,
+        padding: `${area.y * 100}% ${area.x * 100}%`,
       }}
     >
       <div
