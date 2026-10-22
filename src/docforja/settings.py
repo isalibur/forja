@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from pydantic import BaseModel, Field
@@ -53,6 +54,13 @@ class OmniVoiceSettings(BaseModel):
     passos: int = 64
 
 
+class ShortsAvulsosSettings(BaseModel):
+    """Voz padrão das campanhas avulsas, independente dos projetos longos."""
+
+    motor_tts: Literal["kokoro", "omnivoice"] = "kokoro"
+    voz: str = ""
+
+
 class AppSettings(BaseModel):
     minimum_free_disk_gb: int = 200
     paths: PathSettings = Field(default_factory=PathSettings)
@@ -62,6 +70,7 @@ class AppSettings(BaseModel):
     alinhamento: AlignmentSettings = Field(default_factory=AlignmentSettings)
     voicestudio: VoiceStudioSettings = Field(default_factory=VoiceStudioSettings)
     omnivoice: OmniVoiceSettings = Field(default_factory=OmniVoiceSettings)
+    shorts_avulsos: ShortsAvulsosSettings = Field(default_factory=ShortsAvulsosSettings)
 
     def resolver_ambiente(self, nome: str) -> Path | None:
         """Resolve o interpretador do ambiente; caminhos relativos partem da raiz do repositório."""

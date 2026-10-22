@@ -118,6 +118,16 @@ def test_handler_monta_o_motor_omnivoice_com_a_voz_do_projeto(
     assert orquestrador.tts.prompt.name == "nova_ref_7s.pt"
 
 
+def test_handler_aceita_voz_explicita_de_campanha_sem_projeto(monkeypatch) -> None:
+    monkeypatch.setattr("docforja.nucleo.handlers.load_settings", lambda: AppSettings())
+
+    orquestrador = _criar_orquestrador("omnivoice", voz="nova_ref_7s")
+
+    assert isinstance(orquestrador.tts, AdaptadorOmniVoice)
+    assert orquestrador.tts.prompt is not None
+    assert orquestrador.tts.prompt.name == "nova_ref_7s.pt"
+
+
 def test_motores_por_idioma_despacham_a_voz_clonada_para_o_pt(
     tmp_path: Path, monkeypatch
 ) -> None:

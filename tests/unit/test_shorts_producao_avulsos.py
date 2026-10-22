@@ -16,6 +16,7 @@ from docforja.shorts.modelos import ShortParaVerificar
 from docforja.shorts.producao_avulsos import (
     _criar_cenas,
     _gancho,
+    _selecionar_voz_tts,
     obter_artefato,
     preparar_producao,
     produzir_avulso,
@@ -75,7 +76,10 @@ def _campanha_pronta(
 
     monkeypatch.setattr("docforja.api.load_settings", settings)
     monkeypatch.setattr("docforja.api.obter_pasta_global", lambda: global_)
-    monkeypatch.setattr("docforja.shorts.producao_avulsos._voz_ptbr", lambda: "pm_alex")
+    monkeypatch.setattr(
+        "docforja.shorts.producao_avulsos._selecionar_voz_tts",
+        lambda: ("kokoro", "pm_alex"),
+    )
     client = TestClient(app)
     csv = (
         "tema,objetivo,duracao_s,formula,roteiro,cta,opcao_a,opcao_b\n"
@@ -146,6 +150,41 @@ def test_producao_exige_codigo_e_revisoes_vigentes(
     imagem = global_ / "imagens" / "cena.png"
     imagem.write_bytes(b"imagem-modificada")
     assert client.post(f"{base}/produzir", json={"codigo": "PRODUZIR"}).status_code == 409
+
+
+def test_short_avulso_seleciona_omnivoice_e_invalida_cache_ao_mudar_voz(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    prompt = tmp_path / "voz.pt"
+    prompt.write_bytes(b"prompt-local")
+    monkeypatch.setattr(
+        "docforja.shorts.producao_avulsos.load_settings",
+        lambda: SimpleNamespace(
+            shorts_avulsos=SimpleNamespace(motor_tts="omnivoice", voz="nova_ref_7s")
+        ),
+    )
+    monkeypatch.setattr(
+        "docforja.shorts.producao_avulsos.resolver_voz",
+        lambda motor, voz: {
+            "id": voz,
+            "language": "pt-BR",
+            "path": str(prompt),
+        }
+        if motor == "omnivoice" and voz == "nova_ref_7s"
+        else None,
+    )
+    assert _selecionar_voz_tts() == ("omnivoice", "nova_ref_7s")
+
+    _, projetos, global_, campanha_id, _ = _campanha_pronta(tmp_path, monkeypatch)
+    inicial = preparar_producao(projetos, global_, campanha_id, "A001")
+    monkeypatch.setattr(
+        "docforja.shorts.producao_avulsos._selecionar_voz_tts",
+        lambda: ("omnivoice", "nova_ref_7s"),
+    )
+    novo = preparar_producao(projetos, global_, campanha_id, "A001")
+    assert novo.motor_tts == "omnivoice"
+    assert novo.voz == "nova_ref_7s"
+    assert novo.revisao != inicial.revisao
 
 
 def test_avulso_comercial_e_bloqueado(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -432,10 +471,8 @@ def test_producao_piloto_publica_revisao_ou_usa_cache_sem_rederivar(
         destino.write_bytes(b"capa" if still else b"video")
 
     monkeypatch.setattr(
-        "docforja.shorts.producao_avulsos._criar_orquestrador", lambda _: Narrador()
-    )
-    monkeypatch.setattr(
-        "docforja.shorts.producao_avulsos._criar_orquestrador", lambda _: Narrador()
+        "docforja.shorts.producao_avulsos._criar_orquestrador",
+        lambda *_args, **_kwargs: Narrador(),
     )
     monkeypatch.setattr(
         "docforja.shorts.producao_avulsos.semaforo_gpu.adquirir_sync", lambda **_: nullcontext()
@@ -454,6 +491,7 @@ def test_producao_piloto_publica_revisao_ou_usa_cache_sem_rederivar(
     assert meta["publicacao_autorizada"] is False
     assert meta["objetivo"] == objetivo
     assert meta["formula_id"] == preparo.formula_id
+    assert meta["narracao"] == {"motor_tts": "kokoro", "voz": "pm_alex"}
     if objetivo == "engajamento":
         assert meta["opcoes_engajamento"] == {"A": "Pompeia", "B": "Herculano"}
     if objetivo == "bastidores":

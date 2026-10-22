@@ -13,12 +13,14 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
+from docforja.audio.catalogo import resolver_voz
 from docforja.io import atomic_write_json, atomic_write_text
 from docforja.nucleo.etapas import calcular_hash_dados
 from docforja.nucleo.gpu import semaforo_gpu
 from docforja.nucleo.handlers import _criar_orquestrador
 from docforja.planejamento.entidades import SegmentoProcessado
 from docforja.planejamento.previa import KIT_REMOTION
+from docforja.settings import load_settings
 from docforja.shorts.afiliados import (
     AVISO_PUBLICIDADE as AVISO_AFILIADO,
 )
@@ -87,6 +89,7 @@ class PreparacaoAvulsa(BaseModel):
     cta: str
     duracao_alvo_s: int
     ids_imagens: list[str]
+    motor_tts: str
     voz: str
     ids_clipes: list[str] = Field(default_factory=list)
     opcao_a: str = ""
@@ -104,6 +107,18 @@ def _voz_ptbr() -> str:
             if voz.get("language") == "pt-BR" and Path(voz.get("path", "")).is_file():
                 return str(voz["id"])
     raise ValueError("Nenhuma voz Kokoro pt-BR instalada no catálogo.")
+
+
+def _selecionar_voz_tts() -> tuple[str, str]:
+    configuracao = load_settings().shorts_avulsos
+    motor = configuracao.motor_tts
+    voz = configuracao.voz or (_voz_ptbr() if motor == "kokoro" else "")
+    dados = resolver_voz(motor, voz) if voz else None
+    if dados is None or dados.get("language") != "pt-BR":
+        raise ValueError(f"Voz pt-BR '{voz}' não encontrada no catálogo do motor {motor}.")
+    if motor == "omnivoice" and not Path(str(dados.get("path", ""))).is_file():
+        raise ValueError("Prompt de clonagem OmniVoice não encontrado para o Short avulso.")
+    return motor, voz
 
 
 def _pasta_saida(raiz_projetos: Path, campanha_id: str, pedido_id: str) -> Path:
@@ -180,7 +195,7 @@ def preparar_producao(
         raise ValueError(
             "Informe um CTA de até seis palavras que apareça uma vez no roteiro aprovado."
         )
-    voz = _voz_ptbr()
+    motor_tts, voz = _selecionar_voz_tts()
     produto = pedido.produto
     fontes = {
         "campanha": campanha.hash_conteudo,
@@ -188,6 +203,7 @@ def preparar_producao(
         "midias": selecao.revisao,
         "alegacoes": documentacao.revisao,
         "voz": voz,
+        "motor_tts": motor_tts,
         "catalogo_tts": calcular_hash_dados(MODELOS_CONFIG),
         "producao": calcular_hash_dados(Path(__file__)),
         "produto": produto.model_dump(mode="json") if produto else "",
@@ -211,6 +227,7 @@ def preparar_producao(
         cta=cta,
         duracao_alvo_s=pedido.duracao_s,
         ids_imagens=[item.id_global for item in selecao.midias if item.tipo == "imagem"],
+        motor_tts=motor_tts,
         voz=voz,
         ids_clipes=[item.id_global for item in selecao.midias if item.tipo == "clipe"],
         opcao_a=pedido.opcao_a or "",
@@ -432,9 +449,11 @@ def produzir_avulso(
         return {"status": "concluido", "revisao": preparacao.revisao, "cache": True}
     if saida.exists():
         raise RuntimeError("Revisão incompleta existente; nada será sobrescrito.")
-    orquestrador = _criar_orquestrador("kokoro")
+    orquestrador = _criar_orquestrador(preparacao.motor_tts, voz=preparacao.voz)
     if not orquestrador.tts.disponivel() or not orquestrador.alinhador.disponivel():
-        raise RuntimeError("Kokoro e WhisperX locais são necessários para legendas verificadas.")
+        raise RuntimeError(
+            f"{preparacao.motor_tts} e WhisperX locais são necessários para legendas verificadas."
+        )
     saida.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="avulso-", dir=saida.parent) as temporario:
         work = Path(temporario)
@@ -459,7 +478,7 @@ def produzir_avulso(
             id="avulso", texto_original=preparacao.texto, texto_limpo=preparacao.texto
         )
         with semaforo_gpu.adquirir_sync(
-            modelo="kokoro",
+            modelo=preparacao.motor_tts,
             tarefa=f"M8 avulso {preparacao.pedido_id}",
             projeto=preparacao.campanha_id,
         ):
@@ -579,6 +598,7 @@ def produzir_avulso(
             ],
             "duracao_s": duracao,
             "wer": narracao.wer_medio,
+            "narracao": {"motor_tts": preparacao.motor_tts, "voz": preparacao.voz},
             "relacao_comercial": preparacao.relacao_comercial,
             "qa": qa.model_dump(mode="json"),
             "creditos_imagens": [

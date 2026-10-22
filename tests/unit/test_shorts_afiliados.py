@@ -158,7 +158,10 @@ def _campanha_afiliada(
 
     monkeypatch.setattr("docforja.api.load_settings", settings)
     monkeypatch.setattr("docforja.api.obter_pasta_global", lambda: global_)
-    monkeypatch.setattr("docforja.shorts.producao_avulsos._voz_ptbr", lambda: "pm_alex")
+    monkeypatch.setattr(
+        "docforja.shorts.producao_avulsos._selecionar_voz_tts",
+        lambda: ("kokoro", "pm_alex"),
+    )
     client = TestClient(app)
     planilha = CSV_PRODUTOS.replace("global:imagens:produto-furadeira", "global:imagens:produto")
     previa = client.post("/api/shorts/afiliados/planilhas/planejar", json={"csv_texto": planilha})
@@ -267,7 +270,8 @@ def test_producao_afiliada_publica_agenda_e_texto_com_link(
         destino.write_bytes(b"capa" if still else b"video")
 
     monkeypatch.setattr(
-        "docforja.shorts.producao_avulsos._criar_orquestrador", lambda _: Narrador()
+        "docforja.shorts.producao_avulsos._criar_orquestrador",
+        lambda *_args, **_kwargs: Narrador(),
     )
     monkeypatch.setattr(
         "docforja.shorts.producao_avulsos.semaforo_gpu.adquirir_sync", lambda **_: nullcontext()

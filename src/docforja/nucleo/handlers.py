@@ -105,13 +105,13 @@ def _adaptador_por_motor(
 
 
 def _criar_orquestrador(
-    motor_tts: str | None = None, projeto: Projeto | None = None
+    motor_tts: str | None = None, projeto: Projeto | None = None, voz: str | None = None
 ) -> OrquestradorNarracao:
     settings = load_settings()
     opcoes = projeto.obter_opcoes() if projeto else {}
     motor_nome = (motor_tts or str(opcoes.get("motor_tts") or "kokoro")).lower()
     vozes = opcoes.get("vozes", {}) if isinstance(opcoes.get("vozes"), dict) else {}
-    voz_padrao = str(opcoes.get("voz") or "")
+    voz_padrao = voz or str(opcoes.get("voz") or "")
     adaptador = _adaptador_por_motor(motor_nome, settings, voz_padrao)
 
     declarados = opcoes.get("motores", {})

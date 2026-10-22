@@ -1,7 +1,7 @@
-"""Ensaio isolado dos cinco objetivos de avulsos do aceite M8.
+"""Ensaio isolado dos cinco objetivos avulsos ou de uma amostra do aceite M8.
 
-Cria mídia sintética, aprova apenas dados fictícios dentro da raiz do ensaio,
-renderiza cinco rascunhos locais e verifica os pacotes. Não publica nada.
+Usa mídia sintética ou ilustrações fornecidas, aprova dados fictícios apenas
+na raiz do ensaio e verifica os rascunhos locais. Não publica nada.
 """
 
 from __future__ import annotations
@@ -47,8 +47,8 @@ CASOS = [
             "ganha o nome que o mundo costuma conhecer. Por isso dois mapas podem chamar o "
             "mesmo rio de maneiras diferentes, e nenhum dos dois está errado. Cada trecho "
             "do percurso é tratado como um rio próprio, e é por isso que os nomes vão "
-            "mudando. No fim, o rio pode ter cinco nomes e chegar ao mar com um só. E é "
-            "assim que o nome mais famoso quase sempre chega depois. Salve este vídeo para "
+            "mudando. No fim, o rio pode ter cinco nomes e chegar ao mar com um só. "
+            "Salve este vídeo para "
             "lembrar."
         ),
     },
@@ -176,6 +176,39 @@ def gerar_clipes(raiz: Path) -> list[str]:
     return ids
 
 
+def registrar_imagens_ilustrativas(raiz: Path, origens: list[Path]) -> list[str]:
+    """Copia ilustrações para o ensaio sem tocar no acervo global do usuário."""
+    if len(origens) != 3:
+        raise ValueError("Informe exatamente três ilustrações para a amostra.")
+    pasta = raiz / "global" / "imagens"
+    pasta.mkdir(parents=True, exist_ok=True)
+    ids: list[str] = []
+    for indice, origem in enumerate(origens, start=1):
+        if not origem.is_file() or origem.suffix.lower() not in {".png", ".jpg", ".jpeg"}:
+            raise ValueError(f"Ilustração ausente ou incompatível: {origem}")
+        identificador = f"rio-ilustrativo-{indice:02d}"
+        destino = pasta / f"{identificador}{origem.suffix.lower()}"
+        shutil.copy2(origem, destino)
+        ficha = {
+            "id": identificador,
+            "tipo": "imagens",
+            "descricao": "Ilustração gerada por IA para ensaio interno; não retrata lugar real",
+            "licenca": "autorização do titular para ensaio interno",
+            "comercial": True,
+            "credito": "Imagem gerada por IA para teste visual do DocForja",
+            "arquivo": destino.name,
+            "publicacao_permitida": True,
+            "origem": "gerada para esta amostra, sem verificação factual de localidade",
+            "id_global": f"global:imagens:{identificador}",
+            "sha256": calcular_hash_dados(destino),
+        }
+        (pasta / f"{identificador}.json").write_text(
+            json.dumps(ficha, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        ids.append(f"global:imagens:{identificador}")
+    return ids
+
+
 def _csv() -> str:
     linhas = ["tema,objetivo,duracao_s,formula,cta,opcao_a,opcao_b"]
     for caso in CASOS:
@@ -213,7 +246,9 @@ def _verificar_artefatos(pasta: Path) -> dict[str, Any]:
     }
 
 
-def executar_fluxo(base: str, raiz: Path, imagens: list[str], clipes: list[str]) -> dict[str, Any]:
+def executar_fluxo(
+    base: str, raiz: Path, imagens: list[str], clipes: list[str], apenas: str | None = None
+) -> dict[str, Any]:
     cliente = httpx.Client(base_url=base, timeout=3600.0)
     previa = cliente.post("/api/shorts/avulsos/planejar", json={"csv_texto": _csv()})
     if previa.status_code != 200 or previa.json().get("quantidade") != 5:
@@ -270,6 +305,8 @@ def executar_fluxo(base: str, raiz: Path, imagens: list[str], clipes: list[str])
             raise RuntimeError(f"{pedido_id} ficha: {_json_erro(ficha)}")
         registro["pedidos"].append({"id": pedido_id, "objetivo": caso["objetivo"], "rota": rota})
     for item in registro["pedidos"]:
+        if apenas and item["id"] != apenas:
+            continue
         rota = item["rota"]
         print(f"[M8] Produzindo {item['id']} ({item['objetivo']})...", flush=True)
         sem_codigo = cliente.post(f"{rota}/produzir", json={"codigo": "sim"})
@@ -313,6 +350,8 @@ def executar_fluxo(base: str, raiz: Path, imagens: list[str], clipes: list[str])
 def main() -> int:
     analisador = argparse.ArgumentParser(description=__doc__)
     analisador.add_argument("--raiz", type=Path)
+    analisador.add_argument("--apenas", choices=[f"A{numero:03d}" for numero in range(1, 6)])
+    analisador.add_argument("--imagens-ilustrativas", nargs=3, type=Path)
     argumentos = analisador.parse_args()
     raiz = argumentos.raiz or Path("E:/05_PROJETOS/forja") / (
         f"ensaio-m8-cinco-avulsos-{time.strftime('%Y%m%d-%H%M%S')}"
@@ -321,7 +360,11 @@ def main() -> int:
         raise SystemExit(f"A raiz do ensaio já contém arquivos: {raiz}")
     raiz.mkdir(parents=True, exist_ok=True)
     preparar_raiz(raiz)
-    imagens = gerar_imagens(raiz)
+    imagens = (
+        registrar_imagens_ilustrativas(raiz, argumentos.imagens_ilustrativas)
+        if argumentos.imagens_ilustrativas
+        else gerar_imagens(raiz)
+    )
     clipes = gerar_clipes(raiz)
     porta = _porta_livre()
     processo = iniciar_api(raiz, porta)
@@ -330,7 +373,9 @@ def main() -> int:
     erro: str | None = None
     try:
         esperar_api(f"http://127.0.0.1:{porta}", processo)
-        registro = executar_fluxo(f"http://127.0.0.1:{porta}", raiz, imagens, clipes)
+        registro = executar_fluxo(
+            f"http://127.0.0.1:{porta}", raiz, imagens, clipes, argumentos.apenas
+        )
     except (RuntimeError, SystemExit) as exc:
         erro = str(exc)
     finally:
@@ -339,10 +384,13 @@ def main() -> int:
             processo.wait(timeout=30)
         except subprocess.TimeoutExpired:
             processo.kill()
-    pedidos = registro.get("pedidos", [])
+    pedidos = [
+        item for item in registro.get("pedidos", [])
+        if argumentos.apenas is None or item["id"] == argumentos.apenas
+    ]
     sucesso = bool(
         erro is None
-        and len(pedidos) == 5
+        and len(pedidos) == (1 if argumentos.apenas else 5)
         and all(
             item.get("verificacoes", {}).get("qa_aprovado") is True
             and item["verificacoes"]["video"].get("ok") is True
@@ -363,10 +411,12 @@ def main() -> int:
         "raiz": str(raiz),
         "sucesso": sucesso,
         "erro": erro,
+        "apenas": argumentos.apenas,
+        "imagens_ilustrativas": [str(path) for path in argumentos.imagens_ilustrativas or []],
         "tempo_s": round(time.monotonic() - inicio, 1),
         "avisos": [
             "Roteiros e fichas são simulações; a aprovação humana ocorre só dentro do ensaio.",
-            "Imagens e clipes são sintéticos; nenhum pacote está autorizado para publicação.",
+            "Imagens e clipes são ilustrativos/sintéticos; nada está autorizado para publicação.",
         ],
         **registro,
     }
